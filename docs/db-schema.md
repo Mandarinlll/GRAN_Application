@@ -1,5 +1,48 @@
-# データベース定義書 (Database Specification)
-## 1. ER図 (Mermaid)
+ご提示いただいたデータベース定義書（source: 1）をもとに、**「管理者による初期値査定」「イロレーティング（実力）と順位ポイント（実績）のハイブリッド（2軸分離・連動型）」** の仕様を反映した修正版DB定義書および差分詳細を整理しました。
+
+---
+
+## 修正の差分一覧（どこをどう変更したか）
+
+```
+【修正対象テーブルと変更内容の概要】
+1. users（ユーザー管理）
+   ├─ gran_level: 管理者が個別査定した初期値を格納（CHECK制約: 100〜999）
+   ├─ is_level_calibrated（新規追加）: 管理者の初期査定完了フラグ（BOOLEAN）
+   └─ rated_match_count（新規追加）: K値分岐（1〜5戦: K=32 / 6戦以降: K=16）用の消化試合数
+
+2. tournament_results（大会結果・変動ログ）
+   ├─ awarded_points: 「point」から名称明確化（年間加算pt: 1〜3pt）
+   ├─ pre_gran_level（新規追加）: 試合前のGRANレベル（イロレーティング監査用）
+   ├─ gran_level_diff: 1試合ごとのElo変動値（±数pt）
+   ├─ post_gran_level（新規追加）: 試合後のGRANレベル
+   └─ user_id: 個人レート計算のため NOT NULL 制約へ変更
+
+```
+
+### 1. `users` テーブルの差分
+
+* **`gran_level`**：一律500固定ではなく、管理者が主観・実績（150〜850）で査定・設定できるように運用を変更。100〜999の範囲制約を追加。
+
+
+* **`is_level_calibrated`（BOOLEAN / 新規追加）**：管理者が初期レベル査定を完了しているかを判定するフラグ（初期値: `false`）。
+* **`rated_match_count`（SMALLINT / 新規追加）**：イロレーティングの変動係数（初期プレースメント $K=32$ / 通常 $K=16$）を切り替えるための公式戦消化試合数カウンター（初期値: `0`）。
+
+### 2. `tournament_results` テーブルの差分
+
+* **`point` $\rightarrow$ `awarded_points`（名称変更）**：チーム/個人に加算される固定順位ポイント（1pt: 参加 / 2pt: 2位L優勝・1位準優勝 / 3pt: 1位優勝）であることを明確化。
+
+
+* **`pre_gran_level` / `post_gran_level`（SMALLINT / 新規追加）**：対戦前後のレートを記録し、レーティング計算の透明性と履歴追跡性を担保。
+* **`user_id`（NULL許容 $\rightarrow$ NOT NULL）**：個人のイロレーティング（GRANレベル）を計算・更新するために必須化。
+
+
+
+---
+
+## 修正版 データベース定義書
+
+### 1. ER図 (Mermaid)
 
 ```mermaid
 erDiagram
@@ -39,7 +82,9 @@ erDiagram
         varchar line_user_id UK
         varchar role
         boolean is_admin
-        int gran_level
+        int gran_level "100-999"
+        boolean is_level_calibrated "初期査定済フラグ"
+        smallint rated_match_count "消化試合数"
     }
 
     teams {
@@ -90,8 +135,13 @@ erDiagram
     tournament_results {
         uuid id PK
         uuid tournament_id FK
-        int point
-        int gran_level_diff
+        uuid user_id FK
+        uuid team_id FK
+        varchar rank_type
+        smallint awarded_points "年間加算pt(1-3)"
+        smallint pre_gran_level "変動前レート"
+        smallint gran_level_diff "Elo変動値"
+        smallint post_gran_level "変動後レート"
     }
 
     yearly_rankings {
@@ -112,9 +162,7 @@ erDiagram
 
 ---
 
-## 2. ENUM（列挙型）定義一覧
-
-データ整合性の担保とストレージ容量削減のため、主要なステータス・区分には PostgreSQL のカスタム ENUM 型を採用します。
+### 2. ENUM（列挙型）定義一覧
 
 ```sql
 -- ユーザー権限（4段階ステータス）
@@ -183,7 +231,7 @@ CREATE TYPE cancellation_admin_status_enum AS ENUM (
     'WAIVED'            -- 免除
 );
 
--- 大会結果・成績区分
+-- 大会結果・成績区分（年間加算ポイント基準）
 CREATE TYPE result_rank_enum AS ENUM (
     'PARTICIPATED',     -- 参加（予選敗退等）: 1pt
     'L2_WINNER',        -- 2位トーナメント優勝: 2pt
@@ -207,11 +255,9 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
-## 3. テーブル定義書
+### 3. テーブル定義書
 
-### 3.1 users（ユーザー・認証・プロフィール・権限）
-
-ユーザーの基本情報、認証情報、権限、GRANレベルを管理します。
+#### 3.1 users（ユーザー・認証・プロフィール・レベル管理）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -257,9 +303,9 @@ CREATE TYPE notification_type_enum AS ENUM (
 | 電話番号 | `phone_number` | VARCHAR(15) | YES | - | 連絡先電話番号
 
  |
-| GRANレベル | `gran_level` | SMALLINT | NO | - | 初期値: `500`（3桁の整数値: 100〜999）
-
- |
+| **GRANレベル** | `gran_level` | SMALLINT | NO | - | **初期査定値（CHECK: 100〜999）**<br> |
+| **初期レベル査定済フラグ** | `is_level_calibrated` | **BOOLEAN** | **NO** | - | **【変更】初期値: `false`（管理者査定完了で true）** |
+| **公式戦消化試合数** | `rated_match_count` | **SMALLINT** | **NO** | - | **【変更】初期値: `0`（K値判定用: 5戦未満=32, 以降=16）** |
 | 最終ログイン日時 | `last_login_at` | TIMESTAMPTZ | YES | - | 最終アクセス日時
 
  |
@@ -268,9 +314,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
-### 3.2 teams（チーム基本情報）
-
-団体戦・ダブルスのエントリー母体となるチーム情報です。
+#### 3.2 teams（チーム基本情報）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -287,9 +331,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
-### 3.3 team_members（チーム所属メンバー構成）
-
-一般メンバーの所属関係を管理します（複数チームへの所属可能）。
+#### 3.3 team_members（チーム所属メンバー構成）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -307,9 +349,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
-### 3.4 tournaments（大会要項・管理情報・ドロー連携）
-
-大会の要項、募集設定、ドローPDFの管理情報です。
+#### 3.4 tournaments（大会要項・管理情報・ドロー連携）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -332,7 +372,9 @@ CREATE TYPE notification_type_enum AS ENUM (
 | 会場名 / コート情報 | `venue` | VARCHAR(120) | NO | - | 開催場所
 
  |
-| 要項画像URL | `image_url` | TEXT | YES | - | 要項ポスター等の画像パス |
+| 要項画像URL | `image_url` | TEXT | YES | - | 要項ポスター等の画像パス
+
+ |
 | 大会要項・詳細テキスト | `description` | TEXT | YES | - | 詳細説明、注意事項等
 
  |
@@ -355,15 +397,15 @@ CREATE TYPE notification_type_enum AS ENUM (
 | 1ヶ月前アラート閾値 | `alert_threshold` | SMALLINT | YES | - | 開催1ヶ月前の最低目標枠数
 
  |
-| ドロー表PDF URL | `draw_pdf_url` | TEXT | YES | - | 管理者が出力したドロー表PDFのパス |
+| ドロー表PDF URL | `draw_pdf_url` | TEXT | YES | - | 管理者が出力したドロー表PDFのパス
+
+ |
 | 作成日時 | `created_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
 | 更新日時 | `updated_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
 
 ---
 
-### 3.5 entries（大会エントリー基本情報）
-
-大会への申込データ本体です。
+#### 3.5 entries（大会エントリー基本情報）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -390,9 +432,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
-### 3.6 entry_members（エントリー参加メンバー構成）
-
-登録ユーザー、ゲスト、未定枠を正規化して管理します。
+#### 3.6 entry_members（エントリー参加メンバー構成）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -420,9 +460,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
-### 3.7 waitlists（キャンセル待ちキュー管理）
-
-満員時の順番待ちおよび繰り上がり状態を管理します。
+#### 3.7 waitlists（キャンセル待ちキュー管理）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -451,9 +489,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
-### 3.8 cancellations（キャンセル・精算管理）
-
-日数判定に応じたキャンセル料率と管理者対応ステータスを管理します（決済機能は持たず、対応ログを記録）。
+#### 3.8 cancellations（キャンセル・精算管理）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -483,30 +519,42 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
-### 3.9 tournament_matches（ドロー進行・スコア管理）
-
-ドロー表作成および当日の進行状況・試合スコアを管理するテーブルです。
+#### 3.9 tournament_matches（ドロー進行・スコア管理）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
-| 試合ID | `id` | UUID | NO | PK | `gen_random_uuid()` |
-| 大会ID | `tournament_id` | UUID | NO | FK | `tournaments(id)` 参照 |
-| ラウンド番号 / 段階 | `round_number` | SMALLINT | NO | - | 1: 1回戦, 2: 準決勝, 3: 決勝 等 |
-| 試合番号 | `match_number` | SMALLINT | NO | - | トーナメント表上の位置番号 |
-| コート番号 | `court_name` | VARCHAR(30) | YES | - | 割り当てコート名 |
-| エントリー1 ID | `entry1_id` | UUID | YES | FK | `entries(id)` 参照 |
-| エントリー2 ID | `entry2_id` | UUID | YES | FK | `entries(id)` 参照 |
-| 勝者エントリーID | `winner_entry_id` | UUID | YES | FK | `entries(id)` 参照 |
-| スコア詳細 | `score_detail` | VARCHAR(50) | YES | - | 例: `6-4, 3-6, [10-8]` |
-| 試合ステータス | `match_status` | VARCHAR(20) | NO | - | `READY`, `PLAYING`, `FINISHED` |
-| 次戦マッチID | `next_match_id` | UUID | YES | FK | `tournament_matches(id)` 参照（勝ち上がり先） |
-| 更新日時 | `updated_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP` |
+| 試合ID | `id` | UUID | NO | PK | `gen_random_uuid()`<br> |
+| 大会ID | `tournament_id` | UUID | NO | FK | `tournaments(id)` 参照
+
+ |
+| ラウンド番号 / 段階 | `round_number` | SMALLINT | NO | - | 1: 1回戦, 2: 準決勝, 3: 決勝 等
+
+ |
+| 試合番号 | `match_number` | SMALLINT | NO | - | トーナメント表上の位置番号
+
+ |
+| コート番号 | `court_name` | VARCHAR(30) | YES | - | 割り当てコート名
+
+ |
+| エントリー1 ID | `entry1_id` | UUID | YES | FK | `entries(id)` 参照
+
+ |
+| エントリー2 ID | `entry2_id` | UUID | YES | FK | `entries(id)` 参照
+
+ |
+| 勝者エントリーID | `winner_entry_id` | UUID | YES | FK | `entries(id)` 参照
+
+ |
+| スコア詳細 | `score_detail` | VARCHAR(50) | YES | - | 例: `6-4, 3-6, [10-8]`<br> |
+| 試合ステータス | `match_status` | VARCHAR(20) | NO | - | `READY`, `PLAYING`, `FINISHED`<br> |
+| 次戦マッチID | `next_match_id` | UUID | YES | FK | `tournament_matches(id)` 参照（勝ち上がり先）
+
+ |
+| 更新日時 | `updated_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
 
 ---
 
-### 3.10 tournament_results（大会結果・GRANレベル変動記録）
-
-大会終了後の確定順位、年間pt、GRANレベル変動値を記録します。
+#### 3.10 tournament_results（大会結果・順位ポイント・GRANレベル変動記録）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -517,25 +565,19 @@ CREATE TYPE notification_type_enum AS ENUM (
 | チームID | `team_id` | UUID | YES | FK | `teams(id)` 参照（団体戦/複時）
 
  |
-| ユーザーID | `user_id` | UUID | YES | FK | `users(id)` 参照（個人戦時）
-
- |
+| **ユーザーID** | `user_id` | UUID | **NO** | FK | **`users(id)` 参照（個人レート更新対象）**<br> |
 | 成績区分 | `rank_type` | result_rank_enum | NO | - | T1_WINNER, L2_WINNER 等
 
  |
-| 獲得ポイント | `point` | SMALLINT | NO | - | 参加: 1pt / 上位: 2〜3pt
-
- |
-| GRANレベル変動値 | `gran_level_diff` | SMALLINT | NO | - | 例: `+12`, `-5` 等
-
- |
+| **獲得年間ポイント** | `awarded_points` | SMALLINT | NO | - | **【変更】参加: 1pt / 2位L優勝・1位準優勝: 2pt / 1位優勝: 3pt**<br> |
+| **変動前GRANレベル** | `pre_gran_level` | **SMALLINT** | **NO** | - | **【変更】試合直前の実力レート** |
+| **GRANレベル変動値** | `gran_level_diff` | SMALLINT | NO | - | **イロレーティング増減値（例: +8, -6）**<br> |
+| **変動後GRANレベル** | `post_gran_level` | **SMALLINT** | **NO** | - | **【変更】計算後の新レート** |
 | 確定日時 | `recorded_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
 
 ---
 
-### 3.11 yearly_rankings（年間ランキング集計）
-
-3部門（男子団体/女子団体/ミックス団体）ごとの年間累計順位をキャッシュ保持します。
+#### 3.11 yearly_rankings（年間ランキング集計）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -556,9 +598,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
-### 3.12 notification_logs（LINE通知・配信ログ）
-
-LINE Messaging APIを介した自動通知および管理者の一斉配信履歴です。
+#### 3.12 notification_logs（LINE通知・配信ログ）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -589,9 +629,7 @@ LINE Messaging APIを介した自動通知および管理者の一斉配信履�
 
 ---
 
-## 4. パフォーマンス向上・インデックス設計
-
-主要なユースケースおよびバッチ処理を高速化するための推奨インデックス定義です。
+### 4. パフォーマンス向上・インデックス設計
 
 ```sql
 -- 1. 大会一覧・カレンダー表示（日付順・受付中検索）
@@ -616,19 +654,7 @@ CREATE INDEX idx_yearly_rankings_sort ON yearly_rankings(target_year, category, 
 CREATE INDEX idx_cancellations_admin_alert ON cancellations(admin_status) 
 WHERE is_paid = TRUE AND admin_status IN ('UNCONTACTED', 'IN_CONSULTATION');
 
+-- 8. GRANレベル分布・ランキング検索用
+CREATE INDEX idx_users_gran_level ON users(gran_level DESC);
+
 ```
-
----
-
-## 5. 設計のポイントと整合性担保
-
-1. **1人1チーム代表制約の物理保証**：
-`teams.leader_user_id` に `UNIQUE` 制約を付与し、アプリケーションの不具合やレースコンディションによる複数代表の登録をDB層で物理遮断しています。
-
-
-2. **権限設計と管理者認証**：
-4段階の権限（`role`）と `is_admin` フラグを併用することで、将来的な運営者（`OPERATOR`）向けのスコア入力権限分割にも柔軟に対応できる構造としています。
-3. **ドロー・スコア管理（`tournament_matches`）の拡張性**：
-ドロー表作成機能および当日のスコア進行を管理するため、トーナメントの勝ち上がりツリー（`next_match_id`）を扱える対戦テーブルを設計しています。
-4. **GRANレベルと年間ランキングの連動**：
-`tournament_results` に大会単位のポイントとGRANレベル変動値（`gran_level_diff`）を保持させ、結果確定時に `users.gran_level` と `yearly_rankings` へ即時反映できる設計にしています。
