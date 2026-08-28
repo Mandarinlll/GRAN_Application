@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GRAN レベル計算シミュレーター</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 数値入力フィールドのスピンボタン（矢印）を非表示にしてスタイリッシュにする */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen py-10 px-4 sm:px-6 lg:px-8 font-sans antialiased">
+
+  <div class="max-w-4xl mx-auto space-y-8">
+    
+    <!-- ヘッダーエリア -->
+    <header class="text-center space-y-3 border-b border-slate-800 pb-6">
+      <div class="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
+        GRAN Elo Rating Simulator
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+        GRANレベル（イロレート）計算シミュレーター
+      </h1>
+      <p class="text-slate-400 text-sm max-w-xl mx-auto leading-relaxed">
+        ダブルスペア平均、ロジスティック勝率期待値、ゲーム差補正係数 $G(\Delta Games)$ を適用した試合レート変動の検証ツールです。
+      </p>
+    </header>
+
+    <!-- クイックプリセット切り替えボタン -->
+    <div class="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 flex flex-wrap items-center gap-2 shadow-md">
+      <span class="text-xs font-semibold text-slate-400 mr-2 flex items-center gap-1">
+        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        クイック検証:
+      </span>
+      <button type="button" onclick="applyPreset('equal_close')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition">
+        同格の接戦 (6-4)
+      </button>
+      <button type="button" onclick="applyPreset('equal_crush')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition">
+        同格の圧勝 (6-0)
+      </button>
+      <button type="button" onclick="applyPreset('giant_kill')" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-lg transition font-medium">
+        格上へ圧勝 (ジャイアントキリング 6-0)
+      </button>
+      <button type="button" onclick="applyPreset('favorite_win')" class="text-xs bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 px-3 py-1.5 rounded-lg transition">
+        格上の順当勝ち (6-1)
+      </button>
+      <button type="button" onclick="applyPreset('clamp_guard')" class="text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 px-3 py-1.5 rounded-lg transition">
+        下限境界値ガード (100pt)
+      </button>
+    </div>
+
+    <!-- 入力フォームエリア -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- ペアA 入力カード -->
+      <div class="bg-slate-900 rounded-2xl p-6 border border-indigo-500/30 shadow-xl space-y-4 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <h2 class="text-lg font-bold text-indigo-400 flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-indigo-500 inline-block shadow-sm shadow-indigo-500/50"></span>
+            ペア A
+          </h2>
+          <div class="text-xs text-slate-400">
+            ペア平均: <span id="pairA_avg_badge" class="font-mono font-bold text-indigo-300 text-sm">500.0</span>
+          </div>
+        </div>
+
+        <!-- 選手A1 -->
+        <div class="grid grid-cols-5 gap-2 items-center">
+          <div class="col-span-3">
+            <label class="block text-xs text-slate-400 mb-1">選手 A1 名前</label>
+            <input type="text" id="pA1_name" value="佐藤" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 text-white" />
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs text-slate-400 mb-1">大会前レート</label>
+            <input type="number" id="pA1_rate" value="500" min="100" max="999" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-right focus:outline-none focus:border-indigo-500 text-white font-mono" />
+          </div>
+        </div>
+
+        <!-- 選手A2 -->
+        <div class="grid grid-cols-5 gap-2 items-center">
+          <div class="col-span-3">
+            <label class="block text-xs text-slate-400 mb-1">選手 A2 名前</label>
+            <input type="text" id="pA2_name" value="田中" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 text-white" />
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs text-slate-400 mb-1">大会前レート</label>
+            <input type="number" id="pA2_rate" value="500" min="100" max="999" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-right focus:outline-none focus:border-indigo-500 text-white font-mono" />
+          </div>
+        </div>
+
+        <!-- 獲得ゲーム数 -->
+        <div class="pt-2">
+          <label class="block text-xs font-semibold text-indigo-300 mb-1">獲得ゲーム数 (スコア)</label>
+          <input type="number" id="games_A" value="6" min="0" max="30" class="w-full bg-indigo-950/30 border border-indigo-500/40 rounded-xl px-4 py-2.5 text-2xl font-bold text-center text-indigo-300 focus:outline-none focus:border-indigo-400 font-mono" />
+        </div>
+      </div>
+
+      <!-- ペアB 入力カード -->
+      <div class="bg-slate-900 rounded-2xl p-6 border border-amber-500/30 shadow-xl space-y-4 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <h2 class="text-lg font-bold text-amber-400 flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-amber-500 inline-block shadow-sm shadow-amber-500/50"></span>
+            ペア B
+          </h2>
+          <div class="text-xs text-slate-400">
+            ペア平均: <span id="pairB_avg_badge" class="font-mono font-bold text-amber-300 text-sm">500.0</span>
+          </div>
+        </div>
+
+        <!-- 選手B1 -->
+        <div class="grid grid-cols-5 gap-2 items-center">
+          <div class="col-span-3">
+            <label class="block text-xs text-slate-400 mb-1">選手 B1 名前</label>
+            <input type="text" id="pB1_name" value="高橋" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 text-white" />
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs text-slate-400 mb-1">大会前レート</label>
+            <input type="number" id="pB1_rate" value="500" min="100" max="999" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-right focus:outline-none focus:border-amber-500 text-white font-mono" />
+          </div>
+        </div>
+
+        <!-- 選手B2 -->
+        <div class="grid grid-cols-5 gap-2 items-center">
+          <div class="col-span-3">
+            <label class="block text-xs text-slate-400 mb-1">選手 B2 名前</label>
+            <input type="text" id="pB2_name" value="伊藤" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 text-white" />
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs text-slate-400 mb-1">大会前レート</label>
+            <input type="number" id="pB2_rate" value="500" min="100" max="999" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-right focus:outline-none focus:border-amber-500 text-white font-mono" />
+          </div>
+        </div>
+
+        <!-- 獲得ゲーム数 -->
+        <div class="pt-2">
+          <label class="block text-xs font-semibold text-amber-300 mb-1">獲得ゲーム数 (スコア)</label>
+          <input type="number" id="games_B" value="4" min="0" max="30" class="w-full bg-amber-950/30 border border-amber-500/40 rounded-xl px-4 py-2.5 text-2xl font-bold text-center text-amber-300 focus:outline-none focus:border-amber-400 font-mono" />
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 計算実行ボタン -->
+    <div class="text-center">
+      <button type="button" onclick="calculateRating()" class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-8 py-3.5 rounded-xl shadow-lg shadow-emerald-950 transition duration-200 w-full sm:w-auto">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+        GRANレベル計算を実行
+      </button>
+      <p class="text-slate-500 text-xs mt-2">※ 入力値を変更するだけでもリアルタイムに自動再計算されます</p>
+    </div>
+
+    <!-- 勝率期待値 & ゲーム差補正バー -->
+    <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 space-y-4 shadow-lg">
+      <h3 class="text-xs font-bold text-slate-400 tracking-wider uppercase">中間計算ステップの検証</h3>
+      
+      <!-- 期待勝率バー -->
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs font-semibold">
+          <span class="text-indigo-400">ペアA 期待勝率 (E_A): <span id="exp_A_text" class="text-sm font-bold font-mono">50.0%</span></span>
+          <span class="text-amber-400">ペアB 期待勝率 (E_B): <span id="exp_B_text" class="text-sm font-bold font-mono">50.0%</span></span>
+        </div>
+        <div class="w-full h-4 bg-slate-950 rounded-full overflow-hidden flex border border-slate-800">
+          <div id="exp_bar_A" class="bg-indigo-500 h-full transition-all duration-300" style="width: 50%;"></div>
+          <div id="exp_bar_B" class="bg-amber-500 h-full transition-all duration-300" style="width: 50%;"></div>
+        </div>
+      </div>
+
+      <!-- ゲーム差補正係数 -->
+      <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800 text-xs">
+        <div class="text-slate-300 space-y-1">
+          <span class="text-indigo-400 font-semibold">ペアA ゲーム差:</span> <span id="g_diff_A_text" class="font-mono">+2</span>
+          <div>補正係数 G: <span id="g_mult_A_text" class="font-bold text-white font-mono text-sm">1.20x</span></div>
+        </div>
+        <div class="text-right text-slate-300 space-y-1">
+          <span class="text-amber-400 font-semibold">ペアB ゲーム差:</span> <span id="g_diff_B_text" class="font-mono">-2</span>
+          <div>補正係数 G: <span id="g_mult_B_text" class="font-bold text-white font-mono text-sm">0.80x</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 最終計算結果カード -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- ペアA 結果 -->
+      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/50 rounded-2xl p-6 border border-indigo-500/40 shadow-xl space-y-5">
+        <div class="flex justify-between items-center">
+          <span class="font-bold text-indigo-400 text-lg">ペア A 試合後レート</span>
+          <span id="result_badge_A" class="px-3 py-1 text-xs font-extrabold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            WIN
+          </span>
+        </div>
+
+        <div class="text-center py-2 bg-slate-950/40 rounded-xl border border-indigo-500/20">
+          <div class="text-slate-400 text-xs mb-1">1人あたりのレート変動値 (ΔR)</div>
+          <div id="delta_A_disp" class="text-4xl font-extrabold text-emerald-400 font-mono tracking-tight">+10</div>
+          <div class="text-[11px] text-slate-500 mt-1 font-mono">
+            round( 16 × (1 - <span id="formula_eA">0.50</span>) × <span id="formula_gA">1.20</span> )
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2">
+          <!-- 選手A1 結果 -->
+          <div class="flex justify-between items-center p-2.5 rounded-lg bg-slate-950/30 border border-slate-800">
+            <div>
+              <div id="res_pA1_name" class="text-sm font-semibold text-slate-200">佐藤</div>
+              <div class="text-[11px] text-slate-500">初期: <span id="res_pA1_old">500</span></div>
+            </div>
+            <div class="text-right">
+              <div id="res_pA1_new" class="text-lg font-bold text-white font-mono">510</div>
+              <div id="res_pA1_diff" class="text-[11px] font-mono text-emerald-400">+10</div>
+            </div>
+          </div>
+          <!-- 選手A2 結果 -->
+          <div class="flex justify-between items-center p-2.5 rounded-lg bg-slate-950/30 border border-slate-800">
+            <div>
+              <div id="res_pA2_name" class="text-sm font-semibold text-slate-200">田中</div>
+              <div class="text-[11px] text-slate-500">初期: <span id="res_pA2_old">500</span></div>
+            </div>
+            <div class="text-right">
+              <div id="res_pA2_new" class="text-lg font-bold text-white font-mono">510</div>
+              <div id="res_pA2_diff" class="text-[11px] font-mono text-emerald-400">+10</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ペアB 結果 -->
+      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/50 rounded-2xl p-6 border border-amber-500/40 shadow-xl space-y-5">
+        <div class="flex justify-between items-center">
+          <span class="font-bold text-amber-400 text-lg">ペア B 試合後レート</span>
+          <span id="result_badge_B" class="px-3 py-1 text-xs font-extrabold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+            LOSE
+          </span>
+        </div>
+
+        <div class="text-center py-2 bg-slate-950/40 rounded-xl border border-amber-500/20">
+          <div class="text-slate-400 text-xs mb-1">1人あたりのレート変動値 (ΔR)</div>
+          <div id="delta_B_disp" class="text-4xl font-extrabold text-rose-400 font-mono tracking-tight">-6</div>
+          <div class="text-[11px] text-slate-500 mt-1 font-mono">
+            round( 16 × (0 - <span id="formula_eB">0.50</span>) × <span id="formula_gB">0.80</span> )
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2">
+          <!-- 選手B1 結果 -->
+          <div class="flex justify-between items-center p-2.5 rounded-lg bg-slate-950/30 border border-slate-800">
+            <div>
+              <div id="res_pB1_name" class="text-sm font-semibold text-slate-200">高橋</div>
+              <div class="text-[11px] text-slate-500">初期: <span id="res_pB1_old">500</span></div>
+            </div>
+            <div class="text-right">
+              <div id="res_pB1_new" class="text-lg font-bold text-white font-mono">494</div>
+              <div id="res_pB1_diff" class="text-[11px] font-mono text-rose-400">-6</div>
+            </div>
+          </div>
+          <!-- 選手B2 結果 -->
+          <div class="flex justify-between items-center p-2.5 rounded-lg bg-slate-950/30 border border-slate-800">
+            <div>
+              <div id="res_pB2_name" class="text-sm font-semibold text-slate-200">伊藤</div>
+              <div class="text-[11px] text-slate-500">初期: <span id="res_pB2_old">500</span></div>
+            </div>
+            <div class="text-right">
+              <div id="res_pB2_new" class="text-lg font-bold text-white font-mono">494</div>
+              <div id="res_pB2_diff" class="text-[11px] font-mono text-rose-400">-6</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 計算ロジック & UIバインディング JS -->
+  <!-- ========================================================================= -->
+  <script>
+    /**
+     * (1) ペア平均レートの算出
+     * @param {number} r1 - 選手1の基準レート
+     * @param {number} r2 - 選手2の基準レート
+     * @returns {number} ペア平均レート
+     */
+    function calculatePairRating(r1, r2) {
+      return (r1 + r2) / 2.0;
+    }
+
+    /**
+     * (2) 勝率期待値 (E_A, E_B) の算出
+     * 標準ロジスティック曲線: E_A = 1 / (1 + 10 ^ ((R_B - R_A) / 400))
+     * @param {number} pairA - ペアAの平均レート
+     * @param {number} pairB - ペアBの平均レート
+     * @returns {{expA: number, expB: number}}
+     */
+    function calculateExpectedScore(pairA, pairB) {
+      const diff = pairB - pairA;
+      const expA = 1.0 / (1.0 + Math.pow(10.0, diff / 400.0));
+      const expB = 1.0 - expA;
+      return { expA, expB };
+    }
+
+    /**
+     * (3)-a ゲーム差補正係数 G(ΔGames) の算出
+     * G(ΔGames) = max(0.2, 1 + 0.1 * ΔGames)
+     * @param {number} gameDiff - 獲得ゲーム数 - 喪失ゲーム数
+     * @returns {number} 補正係数（下限0.2）
+     */
+    function calculateGameDiffMultiplier(gameDiff) {
+      return Math.max(0.2, 1.0 + 0.1 * gameDiff);
+    }
+
+    /**
+     * 四捨五入処理（絶対値が大きい方へ丸める標準的な四捨五入）
+     * @param {number} val
+     * @returns {number}
+     */
+    function roundHalfUp(val) {
+      return val >= 0 ? Math.floor(val + 0.5) : Math.ceil(val - 0.5);
+    }
+
+    /**
+     * (3)-b 試合単位のレート変動値 (ΔR) の算出
+     * ΔR = round( 16 * (S - E) * G(ΔGames) )
+     * @param {number} s - 勝敗 (勝利: 1, 敗北: 0)
+     * @param {number} expected - 勝率期待値
+     * @param {number} gameDiff - ゲーム差
+     * @param {number} scale - 固定スケール (16pt)
+     * @returns {{delta: number, g: number}}
+     */
+    function calculateMatchDelta(s, expected, gameDiff, scale = 16.0) {
+      const g = calculateGameDiffMultiplier(gameDiff);
+      const rawDelta = scale * (s - expected) * g;
+      const delta = roundHalfUp(rawDelta);
+      return { delta, g };
+    }
+
+    /**
+     * (4) 最終レートのクリップ（Clamp）処理 [100, 999]
+     * @param {number} rate
+     * @param {number} minVal
+     * @param {number} maxVal
+     * @returns {number}
+     */
+    function clampRating(rate, minVal = 100, maxVal = 999) {
+      return Math.max(minVal, Math.min(maxVal, rate));
+    }
+
+
+    /**
+     * UIの入力値を取得し、計算および画面反映を実行
+     */
+    function calculateRating() {
+      // 1. 各入力値の取得
+      const pA1_name = document.getElementById('pA1_name').value || 'A1';
+      const pA1_rate = parseFloat(document.getElementById('pA1_rate').value) || 500;
+      const pA2_name = document.getElementById('pA2_name').value || 'A2';
+      const pA2_rate = parseFloat(document.getElementById('pA2_rate').value) || 500;
+
+      const pB1_name = document.getElementById('pB1_name').value || 'B1';
+      const pB1_rate = parseFloat(document.getElementById('pB1_rate').value) || 500;
+      const pB2_name = document.getElementById('pB2_name').value || 'B2';
+      const pB2_rate = parseFloat(document.getElementById('pB2_rate').value) || 500;
+
+      const gamesA = parseInt(document.getElementById('games_A').value) || 0;
+      const gamesB = parseInt(document.getElementById('games_B').value) || 0;
+
+      // 2. ペア平均レートの算出
+      const pairA_avg = calculatePairRating(pA1_rate, pA2_rate);
+      const pairB_avg = calculatePairRating(pB1_rate, pB2_rate);
+
+      document.getElementById('pairA_avg_badge').innerText = pairA_avg.toFixed(1);
+      document.getElementById('pairB_avg_badge').innerText = pairB_avg.toFixed(1);
+
+      // 3. 勝率期待値の算出
+      const { expA, expB } = calculateExpectedScore(pairA_avg, pairB_avg);
+      document.getElementById('exp_A_text').innerText = (expA * 100).toFixed(1) + '%';
+      document.getElementById('exp_B_text').innerText = (expB * 100).toFixed(1) + '%';
+      document.getElementById('exp_bar_A').style.width = (expA * 100) + '%';
+      document.getElementById('exp_bar_B').style.width = (expB * 100) + '%';
+
+      // 4. 勝敗 (S) と ゲーム差 (ΔGames) の判定
+      const sA = gamesA > gamesB ? 1.0 : 0.0;
+      const sB = 1.0 - sA;
+      const diffA = gamesA - gamesB;
+      const diffB = gamesB - gamesA;
+
+      // 5. 変動値 (ΔR) の算出
+      const resA = calculateMatchDelta(sA, expA, diffA);
+      const resB = calculateMatchDelta(sB, expB, diffB);
+
+      // ゲーム差・補正係数の表示
+      document.getElementById('g_diff_A_text').innerText = (diffA >= 0 ? '+' : '') + diffA;
+      document.getElementById('g_diff_B_text').innerText = (diffB >= 0 ? '+' : '') + diffB;
+      document.getElementById('g_mult_A_text').innerText = resA.g.toFixed(2) + 'x';
+      document.getElementById('g_mult_B_text').innerText = resB.g.toFixed(2) + 'x';
+
+      // 変動値の表示
+      const deltaADisp = document.getElementById('delta_A_disp');
+      const deltaBDisp = document.getElementById('delta_B_disp');
+      deltaADisp.innerText = (resA.delta >= 0 ? '+' : '') + resA.delta;
+      deltaBDisp.innerText = (resB.delta >= 0 ? '+' : '') + resB.delta;
+      deltaADisp.className = `text-4xl font-extrabold font-mono tracking-tight ${resA.delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+      deltaBDisp.className = `text-4xl font-extrabold font-mono tracking-tight ${resB.delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+      // 計算式の数値プレビュー
+      document.getElementById('formula_eA').innerText = expA.toFixed(2);
+      document.getElementById('formula_gA').innerText = resA.g.toFixed(2);
+      document.getElementById('formula_eB').innerText = expB.toFixed(2);
+      document.getElementById('formula_gB').innerText = resB.g.toFixed(2);
+
+      // 勝敗バッジの更新
+      const badgeA = document.getElementById('result_badge_A');
+      const badgeB = document.getElementById('result_badge_B');
+      if (sA === 1.0) {
+        badgeA.className = 'px-3 py-1 text-xs font-extrabold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        badgeA.innerText = 'WIN';
+        badgeB.className = 'px-3 py-1 text-xs font-extrabold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30';
+        badgeB.innerText = 'LOSE';
+      } else {
+        badgeA.className = 'px-3 py-1 text-xs font-extrabold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30';
+        badgeA.innerText = 'LOSE';
+        badgeB.className = 'px-3 py-1 text-xs font-extrabold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        badgeB.innerText = 'WIN';
+      }
+
+      // 6. 選手別の確定レート反映 (Clamp処理 [100, 999])
+      const final_A1 = clampRating(pA1_rate + resA.delta);
+      const final_A2 = clampRating(pA2_rate + resA.delta);
+      const final_B1 = clampRating(pB1_rate + resB.delta);
+      const final_B2 = clampRating(pB2_rate + resB.delta);
+
+      document.getElementById('res_pA1_name').innerText = pA1_name;
+      document.getElementById('res_pA2_name').innerText = pA2_name;
+      document.getElementById('res_pB1_name').innerText = pB1_name;
+      document.getElementById('res_pB2_name').innerText = pB2_name;
+
+      document.getElementById('res_pA1_old').innerText = pA1_rate;
+      document.getElementById('res_pA2_old').innerText = pA2_rate;
+      document.getElementById('res_pB1_old').innerText = pB1_rate;
+      document.getElementById('res_pB2_old').innerText = pB2_rate;
+
+      document.getElementById('res_pA1_new').innerText = final_A1;
+      document.getElementById('res_pA2_new').innerText = final_A2;
+      document.getElementById('res_pB1_new').innerText = final_B1;
+      document.getElementById('res_pB2_new').innerText = final_B2;
+
+      document.getElementById('res_pA1_diff').innerText = (resA.delta >= 0 ? '+' : '') + resA.delta;
+      document.getElementById('res_pA2_diff').innerText = (resA.delta >= 0 ? '+' : '') + resA.delta;
+      document.getElementById('res_pB1_diff').innerText = (resB.delta >= 0 ? '+' : '') + resB.delta;
+      document.getElementById('res_pB2_diff').innerText = (resB.delta >= 0 ? '+' : '') + resB.delta;
+      
+      document.getElementById('res_pA1_diff').className = `text-[11px] font-mono ${resA.delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+      document.getElementById('res_pA2_diff').className = `text-[11px] font-mono ${resA.delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+      document.getElementById('res_pB1_diff').className = `text-[11px] font-mono ${resB.delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+      document.getElementById('res_pB2_diff').className = `text-[11px] font-mono ${resB.delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+    }
+
+    /**
+     * プリセットデータの自動入力
+     */
+    function applyPreset(type) {
+      if (type === 'equal_close') {
+        // 同格の接戦
+        setInputs('佐藤', 500, '田中', 500, 6, '高橋', 500, '伊藤', 500, 4);
+      } else if (type === 'equal_crush') {
+        // 同格の圧勝
+        setInputs('佐藤', 500, '田中', 500, 6, '高橋', 500, '伊藤', 500, 0);
+      } else if (type === 'giant_kill') {
+        // ジャイアントキリング（レート差400ptへの圧勝）
+        setInputs('挑戦者A', 300, '挑戦者B', 300, 6, '王者X', 700, '王者Y', 700, 0);
+      } else if (type === 'favorite_win') {
+        // 格上の順当勝ち
+        setInputs('王者X', 700, '王者Y', 700, 6, '挑戦者A', 300, '挑戦者B', 300, 1);
+      } else if (type === 'clamp_guard') {
+        // 下限100のガード
+        setInputs('ビギナー1', 105, 'ビギナー2', 100, 0, '上級者1', 700, '上級者2', 700, 6);
+      }
+      calculateRating();
+    }
+
+    function setInputs(nA1, rA1, nA2, rA2, gA, nB1, rB1, nB2, rB2, gB) {
+      document.getElementById('pA1_name').value = nA1;
+      document.getElementById('pA1_rate').value = rA1;
+      document.getElementById('pA2_name').value = nA2;
+      document.getElementById('pA2_rate').value = rA2;
+      document.getElementById('games_A').value = gA;
+
+      document.getElementById('pB1_name').value = nB1;
+      document.getElementById('pB1_rate').value = rB1;
+      document.getElementById('pB2_name').value = nB2;
+      document.getElementById('pB2_rate').value = rB2;
+      document.getElementById('games_B').value = gB;
+    }
+
+    // 全ての入力フォームに対して、入力変更時に自動再計算するイベントリスナーを登録
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', calculateRating);
+    });
+
+    // 初回レンダリング
+    calculateRating();
+  </script>
+</body>
+</html>
