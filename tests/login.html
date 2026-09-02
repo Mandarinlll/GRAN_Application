@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -71,27 +71,7 @@
     <!-- ユーザーログインカード -->
     <div id="card-user" class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 fade-enter space-y-6">
       
-      <!-- LINE連携ログインボタン（主要CTA） -->
-      <div class="space-y-3">
-        <button type="button" onclick="handleLineLogin()" class="w-full h-12 bg-[#06C755] hover:bg-[#05b34c] active:scale-[0.99] text-white font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-3">
-          <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
-            <path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.019 9.589.391.084.922.258 1.057.592.122.303.079.777.039 1.085l-.171 1.027c-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967 1.739-1.907 2.589-3.843 2.589-5.973z"/>
-          </svg>
-          <span>LINEでかんたんログイン</span>
-        </button>
-        <p class="text-[11px] text-center text-slate-400">
-          ※ LIFFブラウザ起動時は自動でログイン・会員照合されます
-        </p>
-      </div>
-
-      <!-- 区切り線 -->
-      <div class="relative flex py-1 items-center">
-        <div class="flex-grow border-t border-slate-200"></div>
-        <span class="flex-shrink mx-3 text-xs text-slate-400 font-medium">または メール・IDでログイン</span>
-        <div class="flex-grow border-t border-slate-200"></div>
-      </div>
-
-      <!-- メール/ID ログインフォーム -->
+      <!-- ユーザーログインフォーム（直接表示） -->
       <form id="form-user-login" onsubmit="handleEmailLogin(event, 'user')" class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1.5">ログインID / メールアドレス</label>
@@ -106,7 +86,7 @@
         <div>
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-xs font-semibold text-slate-700">パスワード</label>
-            <a href="#" onclick="showNotice('パスワード再設定はLINE公式アカウントまたは管理者に問い合わせてください。')" class="text-xs text-emerald-600 hover:text-emerald-700 font-medium">お忘れの方</a>
+            <a href="#" onclick="showNotice('パスワード再設定は管理者に問い合わせてください。')" class="text-xs text-emerald-600 hover:text-emerald-700 font-medium">お忘れの方</a>
           </div>
           <div class="relative">
             <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -129,7 +109,7 @@
       <div class="pt-4 border-t border-slate-100 text-center">
         <p class="text-xs text-slate-500">
           アカウントをお持ちでないですか？
-          <a href="#" onclick="showNotice('新規登録画面（U-01）へ遷移します')" class="text-emerald-600 hover:text-emerald-700 font-semibold ml-1">新規登録</a>
+          <a href="register.html" class="text-emerald-600 hover:text-emerald-700 font-semibold ml-1">新規登録</a>
         </p>
       </div>
 
@@ -176,7 +156,7 @@
 
         <div class="bg-indigo-50/70 border border-indigo-100 rounded-lg p-3 text-xs text-indigo-800 flex items-start gap-2">
           <i data-lucide="info" class="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5"></i>
-          <span>管理者ログインにはLINEによる2要素認証（ワンタイムパスワード）が必要です。</span>
+          <span>管理者ログインにはメールによる2要素認証（ワンタイムパスワード）が必要です。</span>
         </div>
 
         <button type="submit" class="w-full h-11 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-lg shadow-sm transition flex items-center justify-center gap-2">
@@ -241,14 +221,14 @@
         <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
           <i data-lucide="key-round" class="w-6 h-6"></i>
         </div>
-        <h3 class="text-lg font-bold text-slate-900">2要素認証（LINE OTP）</h3>
+        <h3 class="text-lg font-bold text-slate-900">2要素認証（メール OTP）</h3>
         <p class="text-xs text-slate-500 leading-relaxed">
-          管理者アカウント保護のため、連携中の公式LINEへ6桁の認証コードを送信しました。
+          管理者アカウント保護のため、登録メールアドレス宛てに6桁の認証コードを送信しました。
         </p>
       </div>
 
       <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center font-mono text-xs text-slate-600">
-        送信先: <span class="font-bold text-slate-800">LINE: 田中 (Admin)</span>
+        送信先: <span class="font-bold text-slate-800">admin@gran-tennis.jp</span>
       </div>
 
       <!-- OTP入力フォーム -->
@@ -342,17 +322,6 @@
 
     function showNotice(msg) {
       showToast(msg, 'info');
-    }
-
-    // LINE ログイン
-    function handleLineLogin() {
-      showToast('LINE LIFF 認証を実行中...', 'info');
-      setTimeout(() => {
-        showToast('LINE認証成功！ホーム画面へ遷移します...', 'success');
-        setTimeout(() => {
-          window.location.href = 'home.html?role=leader&userId=000101';
-        }, 800);
-      }, 800);
     }
 
     // メール / ID ログイン

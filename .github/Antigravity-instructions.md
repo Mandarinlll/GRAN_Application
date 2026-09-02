@@ -1,6 +1,6 @@
 # テニス大会運営システム「GRAN」コーディング規約・開発ガイドライン
 
-本書は、テニス大会運営Webアプリケーション「GRAN」（LIFF / モバイルWeb / PC管理画面）の品質・保守性・安全性を高水準で維持するためのコーディング規約および開発標準です。
+本書は、テニス大会運営Webアプリケーション「GRAN」（モバイルWeb / PC管理画面）の品質・保守性・安全性を高水準で維持するためのコーディング規約および開発標準です。
 開発者およびAIエージェントは、すべての実装において本規約を遵守してください。
 
 ---
@@ -15,7 +15,7 @@
 src/
 ├── app/                        # ルーティング・エントリーポイント（Next.js App Router）
 │   ├── (auth)/                 # 認証系画面（ログイン、新規登録、PWリセット）
-│   ├── (user)/                 # 一般ユーザー・代表者向け画面（LIFF/モバイルWeb: U-01〜U-22）
+│   ├── (user)/                 # 一般ユーザー・代表者向け画面（モバイルWeb: U-01〜U-22）
 │   │   ├── tournaments/        # 大会一覧・詳細・カレンダー
 │   │   ├── entries/            # 申込・マイスケジュール・キャンセル
 │   │   ├── teams/              # チーム作成・メンバー管理
@@ -31,7 +31,7 @@ src/
 │   ├── entries/                # 申込・定員排他制御・キャンセル待ちキュー
 │   ├── teams/                  # チーム・メンバー権限
 │   ├── ratings/                # イロレーティング（GRANレベル）・年間ポイント計算
-│   └── notifications/          # LINE Messaging API連携・自動配信バッチ
+│   └── notifications/          # メール通知連携・自動配信バッチ
 │       # 各 feature の内部構成:
 │       ├── components/         # 機能固有のUIコンポーネント
 │       ├── hooks/              # カスタムフック・UI状態管理
@@ -40,7 +40,7 @@ src/
 │       └── utils/              # 機能固有の計算・純粋関数（レート計算、キャンセル料率判定等）
 ├── components/                 # 全機能共通UIコンポーネント（shadcn/ui, Button, Modal, Toast等）
 │   └── ui/                     # 基本アトミックコンポーネント
-├── lib/                        # 外部クライアント・共通設定（Supabase, LINE SDK, Prisma, 日付ライブラリ等）
+├── lib/                        # 外部クライアント・共通設定（Supabase, Resend, Prisma, 日付ライブラリ等）
 ├── types/                      # アプリケーション全体の共通型・DB自動生成型
 └── utils/                      # 全体共通の純粋ユーティリティ（cn, 日付フォーマット, ロガー等）
 ```
@@ -63,7 +63,7 @@ src/
 | **Reactコンポーネント** | `PascalCase` | `TournamentCard.tsx`, `CancelModal.tsx` | ファイル名とコンポーネント名を一致 |
 | **カスタムフック** | `camelCase` | `useTournamentList.ts`, `useAuth.ts` | 接頭辞 `use` を必須 |
 | **ユーティリティ・関数** | `camelCase` | `calculateCancelFee()`, `formatDate()` | 原則として「動詞＋名詞」で開始 |
-| **定数 / 環境変数** | `UPPER_SNAKE_CASE` | `MAX_WAITLIST_LIMIT`, `LINE_CHANNEL_ID` | 再代入不可・静的設定値 |
+| **定数 / 環境変数** | `UPPER_SNAKE_CASE` | `MAX_WAITLIST_LIMIT`, `RESEND_API_KEY` | 再代入不可・静的設定値 |
 | **TypeScript 型 / インターフェース** | `PascalCase` | `Tournament`, `EntryMember` | 接頭辞 `I` や `T`（`ITournament`等）は禁止 |
 | **Zod バリデーションスキーマ** | `camelCase` | `tournamentCreateSchema`, `userProfileSchema` | 末尾に `Schema` を付与 |
 | **真偽値変数 / プロパティ** | `camelCase` | `isAdmin`, `isLevelCalibrated`, `hasPaid` | `is`, `has`, `can`, `should` を前置 |
@@ -75,34 +75,31 @@ src/
 
 ### 3.1 `any` 型の完全禁止と型ガードの徹底
 - `any` 型の使用は禁止です。
-- 型が不明な外部入力（LINE Webhookペイロード、未知のAPIレスポンス等）は `unknown` で受け取り、Zod または Type Guard 関数でバリデーションを行ってください。
+- 型が不明な外部入力（外部Webhookペイロード、未知のAPIレスポンス等）は `unknown` で受け取り、Zod または Type Guard 関数でバリデーションを行ってください。
 
 ```typescript
 // ❌ 非推奨: any の使用
 function handleWebhook(payload: any) {
-  console.log(payload.events[0].source.userId);
+  console.log(payload.event.userId);
 }
 
 // ⭕ 推奨: Zod または 型ガードによる安全な検証
 import { z } from 'zod';
 
-const lineWebhookSchema = z.object({
-  events: z.array(
-    z.object({
-      type: z.string(),
-      source: z.object({
-        userId: z.string(),
-      }),
-    })
-  ),
+const webhookPayloadSchema = z.object({
+  event: z.object({
+    type: z.string(),
+    userId: z.string(),
+    timestamp: z.string(),
+  }),
 });
 
 function handleWebhook(payload: unknown) {
-  const result = lineWebhookSchema.safeParse(payload);
+  const result = webhookPayloadSchema.safeParse(payload);
   if (!result.success) {
-    throw new Error('Invalid LINE webhook payload');
+    throw new Error('Invalid webhook payload');
   }
-  const userId = result.data.events[0].source.userId;
+  const userId = result.data.event.userId;
 }
 ```
 
@@ -291,7 +288,7 @@ export function calculateNewGranLevel(
 3. **試合結果確定 & レート更新**: `tournament_matches`, `tournament_results`, `users.gran_level` の一括アトミック更新。
 
 ### 6.2 監査・通知ログの記録義務
-- LINE通知（エントリー完了、キャンセル待ち繰り上がり、10日前督促等）送信時は、成否を問わず必ず `notification_logs` テーブルにログを記録してください。
+- 通知（エントリー完了、キャンセル待ち繰り上がり、10日前督促等）送信時は、成否を問わず必ず `notification_logs` テーブルにログを記録してください。
 
 ---
 
@@ -302,7 +299,7 @@ export function calculateNewGranLevel(
 2. **安全なエラーメッセージ返却**:
    - クライアント側へDBエラーや内部スタックトレースを直接返却せず、ユーザーフレンドリーなメッセージ（例: `「エントリーの受付期間外です」`）へマッピングしてください。
 3. **機密情報の保護**:
-   - `password_hash` や LINE Channel Secret 等はクライアントサイドに露出させてはなりません。
+   - `password_hash` や 外部API秘密鍵等はクライアントサイドに露出させてはなりません。
 
 ---
 

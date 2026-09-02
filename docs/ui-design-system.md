@@ -9,7 +9,7 @@
 
 md_content = """# 共通UI・デザインシステム定義書 (UI Design System Specification)
 
-本書は、本Webアプリケーション（LIFF / SPA / PC管理画面）におけるUIの一貫性を担保し、AIコード生成および開発者実装においてデザインのブレを防ぐための厳格な共通UI・デザインシステム定義書です。
+本書は、本Webアプリケーション（モバイルWeb / SPA / PC管理画面）におけるUIの一貫性を担保し、AIコード生成および開発者実装においてデザインのブレを防ぐための厳格な共通UI・デザインシステム定義書です。
 AIエージェントおよび開発者は、すべての画面・コンポーネント実装において本ドキュメントの定義・クラス指定・規約に厳密に従ってください。
 
 ---
@@ -28,7 +28,7 @@ Tailwind CSS v3/v4の標準セマンティックカラーにマッピングさ�
 | **Primary Light** | `emerald-50` | `#ecfdf5` | プライマリアクティブ背景、バッジ背景 |
 | **Secondary (補助)** | `indigo-600` | `#4f46e5` | 管理者アクション、カレンダー連携、GRANレベル強調 |
 | **Secondary Hover** | `indigo-700` | `#4338ca` | セカンダリボタンホバー |
-| **Background (全体背景)** | `slate-50` | `#f8fafc` | アプリ全体のベース背景色（LIFF/Web共通） |
+| **Background (全体背景)** | `slate-50` | `#f8fafc` | アプリ全体のベース背景色（全画面共通） |
 | **Surface (カード/面)** | `white` | `#ffffff` | コンポーネントカード、ダイアログ、ボトムナビ背景 |
 | **Text Primary (主要文字)** | `slate-900` | `#0f172a` | 見出し、メインテキスト、重要数値 |
 | **Text Secondary (副次文字)** | `slate-600` | `#475569` | ラベル、説明文、メタデータ、プレースホルダー |
@@ -224,7 +224,7 @@ font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'BIZ UDPGothic', 'Mei
 
 ### 5.2 画面コンテナ & ページ構造ルール
 
-* **LIFF / モバイル画面**:
+* **モバイル画面**:
 * ルートラッパー: `min-h-screen bg-slate-50 pb-20` (※ボトムナビの被りを防ぐため `pb-20` 必須)
 * 水平パディング: `px-4` (16px)
 * 最大幅制限: `max-w-md mx-auto` (モバイル画面をPCでプレビューした際の中央寄せ)
@@ -240,13 +240,13 @@ font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'BIZ UDPGothic', 'Mei
 
 ## 6. レスポンシブ対応基準 (Responsive Breakpoints)
 
-本システムは **モバイルファースト（Mobile-First）** を原則とします。ベースクラスはスマートフォン（LINE / LIFF環境: 375px〜430px）向けに記述し、管理者画面やタブレット向けにブレイクポイント接頭辞を付与します。
+本システムは **モバイルファースト（Mobile-First）** を原則とします。ベースクラスはスマートフォン（モバイル環境: 375px〜430px）向けに記述し、管理者画面やタブレット向けにブレイクポイント接頭辞を付与します。
 
 ### 6.1 ブレイクポイント定義
 
 | 接頭辞 | 最小幅 | 主なターゲットデバイス | レイアウト指針 |
 | --- | --- | --- | --- |
-| *(None)* | `0px` | スマートフォン (LIFF / iOS / Android) | 1カラム構成、フルワイドボタン、下部固定ボトムナビ |
+| *(None)* | `0px` | スマートフォン (iOS / Android) | 1カラム構成、フルワイドボタン、下部固定ボトムナビ |
 | `sm:` | `640px` | 大型スマホ / 小型タブレット | カードパディング拡張 (`p-6`)、ボタン幅の自動調整 |
 | `md:` | `768px` | タブレット / 管理画面サブPC | 2カラムグリッド (`grid-cols-2`)、サイドバーナビ表示切替 |
 | `lg:` | `1024px` | デスクトップ PC (管理画面メイン) | 3〜4カラムグリッド、テーブル全列表示、固定サイドメニュー |
@@ -391,7 +391,7 @@ export const UserRatingBadge: React.FC<UserRatingBadgeProps> = ({
 
 ```
 
-### 7.3 共通ボトムナビゲーション (LIFF専用: `BottomNav.tsx`)
+### 7.3 共通ボトムナビゲーション (モバイル専用: `BottomNav.tsx`)
 
 ```tsx
 import React from 'react';
@@ -469,7 +469,7 @@ print("Saved docs/ui-design-system.md successfully.")
 ```markdown
 # 共通UI・デザインシステム定義書 (UI Design System Specification)
 
-本書は、本Webアプリケーション（LIFF / モバイルSPA / PC管理画面）におけるUI・UXの一貫性を担保し、AIコード生成およびバイブコーディングにおいてデザインの破綻やツギハギを防ぐための厳格な共通UI・デザインシステム定義書です。
+本書は、本Webアプリケーション（モバイルWeb / SPA / PC管理画面）におけるUI・UXの一貫性を担保し、AIコード生成およびバイブコーディングにおいてデザインの破綻やツギハギを防ぐための厳格な共通UI・デザインシステム定義書です。
 AIエージェントおよび開発者は、すべての画面・コンポーネント実装において本定義書のデザイントークン、クラス名、コンポーネント規約に厳密に従ってください。
 
 ---
@@ -488,7 +488,7 @@ Tailwind CSS の標準セマンティックカラーにマッピングされた�
 | **Primary Light** | `emerald-50` | `#ecfdf5` | プライマリアクティブ背景、カテゴリバッジ背景 |
 | **Secondary (補助)** | `indigo-600` | `#4f46e5` | 管理者アクション、カレンダー連携、GRANレベル強調 |
 | **Secondary Hover** | `indigo-700` | `#4338ca` | セカンダリボタンホバー |
-| **Background (全体背景)** | `slate-50` | `#f8fafc` | アプリ全体のベース背景色（LIFF/Web共通） |
+| **Background (全体背景)** | `slate-50` | `#f8fafc` | アプリ全体のベース背景色（全画面共通） |
 | **Surface (カード/面)** | `white` | `#ffffff` | コンポーネントカード、ダイアログ、ボトムナビ背景 |
 | **Text Primary (主要文字)** | `slate-900` | `#0f172a` | 見出し、メインテキスト、重要数値 |
 | **Text Secondary (副次文字)** | `slate-600` | `#475569` | ラベル、説明文、メタデータ、プレースホルダー |
@@ -684,7 +684,7 @@ font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'BIZ UDPGothic', 'Mei
 
 ### 5.2 画面コンテナ & ページ構造ルール
 
-* **LIFF / モバイル画面**:
+* **モバイル画面**:
 * ルートラッパー: `min-h-screen bg-slate-50 pb-20` (※ボトムナビの被りを防ぐため `pb-20` 必須)
 * 水平パディング: `px-4` (16px)
 * 最大幅制限: `max-w-md mx-auto` (モバイル画面をPCでプレビューした際の中央寄せ)
@@ -700,13 +700,13 @@ font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'BIZ UDPGothic', 'Mei
 
 ## 6. レスポンシブ対応の基準 (Responsive Breakpoints)
 
-本システムは **モバイルファースト（Mobile-First）** を原則とします。ベースクラスはスマートフォン（LINE / LIFF環境: 375px〜430px）向けに記述し、管理者画面やタブレット向けにブレイクポイント接頭辞を付与します。
+本システムは **モバイルファースト（Mobile-First）** を原則とします。ベースクラスはスマートフォン（モバイル環境: 375px〜430px）向けに記述し、管理者画面やタブレット向けにブレイクポイント接頭辞を付与します。
 
 ### 6.1 ブレイクポイント定義
 
 | 接頭辞 | 最小幅 | 主なターゲットデバイス | レイアウト指針 |
 | --- | --- | --- | --- |
-| *(None)* | `0px` | スマートフォン (LIFF / iOS / Android) | 1カラム構成、フルワイドボタン、下部固定ボトムナビ |
+| *(None)* | `0px` | スマートフォン (iOS / Android) | 1カラム構成、フルワイドボタン、下部固定ボトムナビ |
 | `sm:` | `640px` | 大型スマホ / 小型タブレット | カードパディング拡張 (`p-6`)、ボタン幅の自動調整 |
 | `md:` | `768px` | タブレット / 管理画面サブPC | 2カラムグリッド (`grid-cols-2`)、サイドバーナビ表示切替 |
 | `lg:` | `1024px` | デスクトップ PC (管理画面メイン) | 3〜4カラムグリッド、テーブル全列表示、固定サイドメニュー |
@@ -848,7 +848,7 @@ export const UserRatingBadge: React.FC<UserRatingBadgeProps> = ({
 
 ```
 
-### 7.3 共通ボトムナビゲーション (LIFF専用: `BottomNav.tsx`)
+### 7.3 共通ボトムナビゲーション (モバイル専用: `BottomNav.tsx`)
 
 ```tsx
 import React from 'react';

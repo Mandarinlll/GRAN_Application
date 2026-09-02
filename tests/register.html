@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GRAN テニス大会運営システム - 新規会員登録 (U-01)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            admin: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .fade-enter {
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* カレンダーアイコンのスタイル調整 */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: 0.6;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col justify-between font-sans antialiased">
+
+  <!-- メインラッパー -->
+  <div class="w-full max-w-xl mx-auto px-4 py-8 sm:py-10 flex-1 flex flex-col justify-center">
+
+    <!-- ロゴ・ブランドヘッダー -->
+    <div class="text-center mb-6">
+      <a href="login.html" class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20 mb-3 hover:scale-105 transition-transform">
+        <i data-lucide="trophy" class="w-7 h-7"></i>
+      </a>
+      <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">GRAN TENNIS</h1>
+      <p class="text-sm text-slate-500 mt-1">新規プレイヤー登録 (U-01)</p>
+    </div>
+
+    <!-- 登録カード本体 -->
+    <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 fade-enter space-y-6">
+
+      <!-- 新規登録入力フォーム -->
+      <form id="form-register" onsubmit="handleRegister(event)" class="space-y-6">
+
+        <!-- セクション1: ログイン認証情報 -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 pb-1 border-b border-slate-100">
+            <i data-lucide="key" class="w-4 h-4 text-emerald-600"></i>
+            <h3 class="text-xs font-bold text-slate-700 tracking-wide uppercase">ログイン認証情報</h3>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+              メールアドレス <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <i data-lucide="mail" class="w-4 h-4"></i>
+              </span>
+              <input type="email" id="reg-email" required placeholder="player@example.com" class="w-full h-11 pl-9 pr-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-slate-900 transition" />
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">※ ログインIDとして使用されます</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                パスワード <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <i data-lucide="lock" class="w-4 h-4"></i>
+                </span>
+                <input type="password" id="reg-password" minlength="8" required placeholder="8文字以上の英数字" class="w-full h-11 pl-9 pr-10 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-slate-900 transition" />
+                <button type="button" onclick="togglePassword('reg-password', this)" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                パスワード（確認用） <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <i data-lucide="shield-check" class="w-4 h-4"></i>
+                </span>
+                <input type="password" id="reg-password-confirm" minlength="8" required placeholder="再入力してください" class="w-full h-11 pl-9 pr-10 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-slate-900 transition" />
+                <button type="button" onclick="togglePassword('reg-password-confirm', this)" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- セクション2: 基本情報（個人情報）※修正点1: 電話番号フィールドは削除 -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 pb-1 border-b border-slate-100">
+            <i data-lucide="user-check" class="w-4 h-4 text-emerald-600"></i>
+            <h3 class="text-xs font-bold text-slate-700 tracking-wide uppercase">基本情報（本人確認・運営用）</h3>
+          </div>
+
+          <!-- 氏名（漢字） -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">姓 (本名) <span class="text-rose-500">*</span></label>
+              <input type="text" id="reg-last-name" required placeholder="佐藤" class="w-full h-11 px-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-slate-900 transition" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">名 (本名) <span class="text-rose-500">*</span></label>
+              <input type="text" id="reg-first-name" required placeholder="健太" class="w-full h-11 px-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-slate-900 transition" />
+            </div>
+          </div>
+
+          <!-- フリガナ（カタカナ） -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">セイ (フリガナ) <span class="text-rose-500">*</span></label>
+              <input type="text" id="reg-last-kana" required placeholder="サトウ" class="w-full h-11 px-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-slate-900 transition" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">メイ (フリガナ) <span class="text-rose-500">*</span></label>
+              <input type="text" id="reg-first-kana" required placeholder="ケンタ" class="w-full h-11 px-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-slate-900 transition" />
+            </div>
+          </div>
+
+          <!-- 性別 & 生年月日 -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">性別 <span class="text-rose-500">*</span></label>
+              <div class="grid grid-cols-2 gap-2 h-11">
+                <label class="flex items-center justify-center gap-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50/60 has-[:checked]:text-emerald-700 font-medium text-xs">
+                  <input type="radio" name="gender" value="male" checked class="accent-emerald-600" />
+                  <span>男性</span>
+                </label>
+                <label class="flex items-center justify-center gap-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50/60 has-[:checked]:text-emerald-700 font-medium text-xs">
+                  <input type="radio" name="gender" value="female" class="accent-emerald-600" />
+                  <span>女性</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">生年月日 <span class="text-rose-500">*</span></label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <i data-lucide="calendar" class="w-4 h-4"></i>
+                </span>
+                <input type="date" id="reg-birthday" required value="1996-08-20" class="w-full h-11 pl-9 pr-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-slate-900 transition" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- セクション3: 公開プロフィール設定（※修正点3: アバター画像アップロード機能） -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 pb-1 border-b border-slate-100">
+            <i data-lucide="badge-percent" class="w-4 h-4 text-emerald-600"></i>
+            <h3 class="text-xs font-bold text-slate-700 tracking-wide uppercase">大会公開プロフィール</h3>
+          </div>
+
+          <!-- ニックネーム -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">ニックネーム <span class="text-rose-500">*</span></label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <i data-lucide="user" class="w-4 h-4"></i>
+              </span>
+              <input type="text" id="reg-nickname" required placeholder="ケンタ" class="w-full h-11 pl-9 pr-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-slate-900 transition" />
+            </div>
+            <div class="mt-1.5 p-2.5 bg-amber-50 rounded-lg border border-amber-200/60 flex items-start gap-2 text-[11px] text-amber-800">
+              <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+              <span>外部公開用（対戦表・ドロー表）に掲載されます。本名などの個人情報を含めることはお控えください。</span>
+            </div>
+          </div>
+
+          <!-- プレイヤーアイコン（好きな画像ファイルをアップロード可能） -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-semibold text-slate-700">アバター画像</label>
+              <span class="text-[11px] text-slate-400">好きな画像をアップロード可能</span>
+            </div>
+
+            <div class="flex items-center gap-4 bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
+              <!-- アバタープレビュー枠（クリックでファイル選択） -->
+              <div class="relative group cursor-pointer flex-shrink-0" onclick="document.getElementById('reg-avatar-file').click()" title="画像を選択する">
+                <div id="avatar-preview-container" class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xl shadow-sm overflow-hidden border-2 border-white ring-2 ring-slate-200 transition group-hover:ring-emerald-500">
+                  <span id="avatar-preview-text">佐</span>
+                  <img id="avatar-preview-img" src="" alt="アバタープレビュー" class="w-full h-full object-cover hidden" />
+                </div>
+                <div class="absolute inset-0 bg-black/35 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition">
+                  <i data-lucide="camera" class="w-4 h-4"></i>
+                </div>
+              </div>
+
+              <!-- アップロード操作ボタン & ガイド -->
+              <div class="flex-1 min-w-0 space-y-1.5">
+                <input type="file" id="reg-avatar-file" accept="image/*" class="hidden" onchange="handleAvatarFileUpload(event)" />
+                <div class="flex items-center gap-2 flex-wrap">
+                  <button type="button" onclick="document.getElementById('reg-avatar-file').click()" class="h-8 px-3 text-xs bg-white hover:bg-slate-100 active:bg-slate-200 text-slate-700 font-semibold rounded-lg transition flex items-center gap-1.5 border border-slate-300 shadow-xs">
+                    <i data-lucide="upload" class="w-3.5 h-3.5 text-emerald-600"></i>
+                    <span>画像をアップロード</span>
+                  </button>
+                  <button type="button" id="btn-remove-avatar" onclick="resetAvatarImage()" class="h-8 px-2.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg transition border border-rose-200 hidden flex items-center gap-1">
+                    <i data-lucide="trash-2" class="w-3 h-3"></i>
+                    <span>解除</span>
+                  </button>
+                </div>
+                <p id="avatar-filename-text" class="text-[11px] text-slate-400 truncate">
+                  JPEG, PNG, GIF, WebP 等（タップして画像を選択）
+                </p>
+              </div>
+            </div>
+
+            <!-- クイック選択プリセット（補助機能） -->
+            <div class="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500">
+              <span class="text-slate-400">またはアイコン絵文字:</span>
+              <button type="button" onclick="selectPresetEmoji('🎾', 'bg-slate-800')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-xs transition hover:scale-105" title="テニスボール">🎾</button>
+              <button type="button" onclick="selectPresetEmoji('⚡', 'bg-amber-500')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-xs transition hover:scale-105" title="稲妻">⚡</button>
+              <button type="button" onclick="selectPresetEmoji('🔥', 'bg-rose-500')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-xs transition hover:scale-105" title="炎">🔥</button>
+              <button type="button" onclick="selectPresetEmoji('🏆', 'bg-indigo-600')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-xs transition hover:scale-105" title="トロフィー">🏆</button>
+              <button type="button" onclick="selectPresetInitial()" class="h-7 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-[10.5px] font-bold text-slate-600 transition" title="イニシャルに戻す">イニシャル</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- セクション4: テニス実績 & GRANレベル初期申告（※修正点4: 8段階 A,AB,B,BC,C,CD,D,DE の降順） -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 pb-1 border-b border-slate-100">
+            <i data-lucide="award" class="w-4 h-4 text-emerald-600"></i>
+            <h3 class="text-xs font-bold text-slate-700 tracking-wide uppercase">テニス階級自己申告 (GRANレベル)</h3>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+              もっともよく出場する階級 <span class="text-rose-500">*</span>
+            </label>
+            <!-- 降順: A -> AB -> B -> BC -> C -> CD -> D -> DE -->
+            <select id="reg-rank-class" onchange="updateClassGuidance()" required class="w-full h-11 px-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-slate-900 transition font-medium">
+              <option value="A">A 級</option>
+              <option value="AB">AB 級 </option>
+              <option value="B">B 級 </option>
+              <option value="BC">BC 級 </option>
+              <option value="C" selected>C 級 </option>
+              <option value="CD">CD 級 </option>
+              <option value="D">D 級 </option>
+              <option value="DE">DE 級 </option>
+            </select>
+          </div>
+
+          <!-- GRANレベル査定の案内カード -->
+          <div id="class-info-card" class="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3.5 space-y-2 text-xs">
+            <div class="flex items-center justify-between font-bold text-emerald-900">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="gauge" class="w-4 h-4 text-emerald-600"></i>
+                申告階級の査定基準レンジ
+              </span>
+              <span id="class-rate-badge" class="px-2 py-0.5 rounded bg-emerald-600 text-white font-mono text-[11px]">450 〜 570 pt</span>
+            </div>
+            <p id="class-desc" class="text-slate-600 leading-relaxed text-[11px]">
+              市民大会B/C級、一般草トーナメント中級レベルの標準階級です。
+            </p>
+            <div class="pt-2 border-t border-emerald-200/60 flex items-start gap-1.5 text-[10.5px] text-slate-500">
+              <i data-lucide="info" class="w-3.5 h-3.5 text-emerald-700 flex-shrink-0 mt-0.5"></i>
+              <span>
+                ※ アカウント登録時は申告をもとに運営事務局にて初期GRANレベル（100〜999）を手作業で査定します。登録時は「未査定 (<code class="bg-emerald-100/70 px-1 py-0.5 rounded font-mono text-emerald-800">is_level_calibrated: false</code>)」となり、大会結果に応じてイロレートが自動更新されます。
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 利用規約・プライバシーポリシー同意 -->
+        <div class="space-y-3 pt-2">
+          <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-600">
+            <input type="checkbox" id="reg-agree" required class="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20" />
+            <span>
+              <a href="#" onclick="showNotice('利用規約モーダルを表示します')" class="text-emerald-600 hover:underline font-medium">利用規約</a>
+              および
+              <a href="#" onclick="showNotice('プライバシーポリシーを表示します')" class="text-emerald-600 hover:underline font-medium">プライバシーポリシー</a>
+              に同意します
+            </span>
+          </label>
+        </div>
+
+        <!-- 登録実行ボタン -->
+        <button type="submit" class="w-full h-12 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-2 text-sm">
+          <span>アカウントを作成して登録</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+
+      </form>
+
+      <!-- ログイン画面への復帰リンク -->
+      <div class="pt-4 border-t border-slate-100 text-center">
+        <p class="text-xs text-slate-500">
+          すでにアカウントをお持ちですか？
+          <a href="login.html" class="text-emerald-600 hover:text-emerald-700 font-semibold ml-1 inline-flex items-center gap-0.5">
+            ログインはこちら
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          </a>
+        </p>
+      </div>
+
+    </div>
+
+    <!-- テスト用クイック自動入力エリア（検証用） -->
+    <div class="mt-6 bg-white/80 backdrop-blur rounded-xl p-4 border border-slate-200 shadow-sm space-y-3">
+      <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+        <span class="flex items-center gap-1.5">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+          テスト用自動入力プリセット（検証用）
+        </span>
+        <span class="text-[10px] text-slate-400 font-mono">Test Presets</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+        <button type="button" onclick="quickFillRegister('user_c')" class="p-2.5 rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 text-left transition flex flex-col">
+          <span class="font-bold text-emerald-700 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-600"></span> 一般選手 (C級)
+          </span>
+          <span class="text-[11px] text-slate-500">佐藤 健太 / 一般参加</span>
+        </button>
+
+        <button type="button" onclick="quickFillRegister('leader_b')" class="p-2.5 rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 text-left transition flex flex-col">
+          <span class="font-bold text-teal-700 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-teal-600"></span> チーム代表者 (B級)
+          </span>
+          <span class="text-[11px] text-slate-500">鈴木 大輔 / 代表枠</span>
+        </button>
+
+        <button type="button" onclick="quickFillRegister('expert_a')" class="p-2.5 rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 text-left transition flex flex-col">
+          <span class="font-bold text-indigo-700 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-indigo-600"></span> 上級選手 (A級)
+          </span>
+          <span class="text-[11px] text-slate-500">田中 拓也 / A級上位</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- フッター -->
+  <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-200/60">
+    <p>&copy; 2026 GRAN Tennis Tournament Platform. All rights reserved.</p>
+  </footer>
+
+  <!-- 登録完了モーダル -->
+  <div id="modal-success" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 fade-enter space-y-5">
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+          <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900">アカウント登録完了</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          プレイヤー登録が完了しました。<br />システムよりユーザIDが自動採番されました。
+        </p>
+      </div>
+
+      <!-- 採番結果カード -->
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
+        <!-- アバターと名前 -->
+        <div class="flex items-center gap-3 pb-2 border-b border-slate-200">
+          <div id="modal-avatar-preview" class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-base overflow-hidden border border-white shadow-xs">
+            <span id="modal-avatar-text">佐</span>
+            <img id="modal-avatar-img" src="" alt="アバター" class="w-full h-full object-cover hidden" />
+          </div>
+          <div>
+            <div id="registered-name" class="font-bold text-sm text-slate-900 leading-tight">佐藤 健太</div>
+            <div id="registered-nickname" class="text-xs text-slate-500 leading-tight">@ケンタ</div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500">自動採番 ユーザID:</span>
+          <span id="assigned-user-id" class="font-mono font-bold text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+            000103
+          </span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500">申告階級:</span>
+          <span id="registered-class" class="font-semibold text-slate-800">C級 (基準 450〜570pt)</span>
+        </div>
+        <div class="flex items-center justify-between text-xs pt-1.5 border-t border-slate-200">
+          <span class="text-slate-500">GRANレベル査定:</span>
+          <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 未査定 (初回大会前査定)
+          </span>
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-2">
+        <button type="button" onclick="goToHome()" class="w-full h-11 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+          <span>ホーム画面へ進む</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+        <button type="button" onclick="window.location.href='login.html'" class="w-full h-10 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl transition">
+          ログイン画面へ戻る
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-16 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-lg">
+    <i id="toast-icon" data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toast-message">メッセージ</span>
+  </div>
+
+  <!-- スクリプト -->
+  <script>
+    // アイコン初期化
+    lucide.createIcons();
+
+    let currentAvatarDataUrl = null;
+    let currentAvatarText = '佐';
+    let currentAvatarBg = 'bg-emerald-600';
+    let newlyAssignedId = '000103';
+
+    // 階級情報のガイダンス定義（修正点4: 8段階 A, AB, B, BC, C, CD, D, DE 降順対応）
+    const classGuidanceMap = {
+      'A': {
+        rate: '850 〜 999 pt',
+        desc: '全日本・都道府県大会本選上位者、インカレ・実業団トップクラスなどの上級者階級です。',
+        color: 'bg-indigo-600'
+      },
+      'AB': {
+        rate: '750 〜 870 pt',
+        desc: '地区大会本選上位、市民大会A級上位など、上級〜中上級の上位選手階級です。',
+        color: 'bg-blue-600'
+      },
+      'B': {
+        rate: '650 〜 770 pt',
+        desc: '市民大会A級、ベテラン上位入賞者などの中上級者階級です。',
+        color: 'bg-teal-600'
+      },
+      'BC': {
+        rate: '550 〜 670 pt',
+        desc: '草トー中級上位〜中上級、市民大会B級上位などの中級上位階級です。',
+        color: 'bg-emerald-600'
+      },
+      'C': {
+        rate: '450 〜 570 pt',
+        desc: '市民大会B/C級、一般草トーナメント中級レベルの標準階級です。',
+        color: 'bg-emerald-500'
+      },
+      'CD': {
+        rate: '350 〜 470 pt',
+        desc: 'テニススクール中級レベル、草トー初中級クラスなどの初中級上位階級です。',
+        color: 'bg-amber-600'
+      },
+      'D': {
+        rate: '250 〜 370 pt',
+        desc: 'スクール初中級、大会出場経験が数回程度の初中級階級です。',
+        color: 'bg-orange-600'
+      },
+      'DE': {
+        rate: '100 〜 270 pt',
+        desc: '大会初参加、ビギナー・スクール初級クラスなどのエントリー階級です。',
+        color: 'bg-slate-600'
+      }
+    };
+
+    // 階級セレクト連動
+    function updateClassGuidance() {
+      const selected = document.getElementById('reg-rank-class').value;
+      const info = classGuidanceMap[selected] || classGuidanceMap['C'];
+      
+      const badge = document.getElementById('class-rate-badge');
+      badge.textContent = info.rate;
+      badge.className = `px-2 py-0.5 rounded text-white font-mono text-[11px] ${info.color}`;
+
+      document.getElementById('class-desc').textContent = info.desc;
+    }
+
+    // アバター画像アップロード処理（修正点3）
+    function handleAvatarFileUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('画像ファイルを選択してください', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        currentAvatarDataUrl = e.target.result;
+        
+        // プレビュー表示更新
+        const img = document.getElementById('avatar-preview-img');
+        const textSpan = document.getElementById('avatar-preview-text');
+        const btnRemove = document.getElementById('btn-remove-avatar');
+        const filenameText = document.getElementById('avatar-filename-text');
+
+        img.src = currentAvatarDataUrl;
+        img.classList.remove('hidden');
+        textSpan.classList.add('hidden');
+        btnRemove.classList.remove('hidden');
+        filenameText.textContent = `選択中: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        filenameText.className = 'text-[11px] text-emerald-600 font-medium truncate';
+
+        showToast('アバター画像を設定しました', 'success');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // アバター画像解除
+    function resetAvatarImage() {
+      currentAvatarDataUrl = null;
+      document.getElementById('reg-avatar-file').value = '';
+      const img = document.getElementById('avatar-preview-img');
+      const textSpan = document.getElementById('avatar-preview-text');
+      const btnRemove = document.getElementById('btn-remove-avatar');
+      const filenameText = document.getElementById('avatar-filename-text');
+
+      img.src = '';
+      img.classList.add('hidden');
+      textSpan.classList.remove('hidden');
+      btnRemove.classList.add('hidden');
+      filenameText.textContent = 'JPEG, PNG, GIF, WebP 等（タップして画像を選択）';
+      filenameText.className = 'text-[11px] text-slate-400 truncate';
+
+      // 苗字の頭文字に戻す
+      selectPresetInitial();
+      showToast('アバター画像を解除しました', 'info');
+    }
+
+    // プリセット絵文字選択
+    function selectPresetEmoji(emoji, bgClass) {
+      currentAvatarDataUrl = null;
+      document.getElementById('reg-avatar-file').value = '';
+      const img = document.getElementById('avatar-preview-img');
+      const textSpan = document.getElementById('avatar-preview-text');
+      const container = document.getElementById('avatar-preview-container');
+      const btnRemove = document.getElementById('btn-remove-avatar');
+      const filenameText = document.getElementById('avatar-filename-text');
+
+      img.src = '';
+      img.classList.add('hidden');
+      btnRemove.classList.add('hidden');
+      filenameText.textContent = `プリセット: ${emoji}`;
+      filenameText.className = 'text-[11px] text-slate-600 font-medium truncate';
+
+      currentAvatarText = emoji;
+      currentAvatarBg = bgClass;
+      textSpan.textContent = emoji;
+      textSpan.classList.remove('hidden');
+      container.className = `w-14 h-14 rounded-2xl ${bgClass} text-white flex items-center justify-center font-bold text-xl shadow-sm overflow-hidden border-2 border-white ring-2 ring-slate-200 transition group-hover:ring-emerald-500`;
+    }
+
+    // イニシャルアバターに戻す
+    function selectPresetInitial() {
+      const lastName = document.getElementById('reg-last-name').value.trim();
+      const initial = lastName ? lastName.charAt(0) : '佐';
+      currentAvatarText = initial;
+      currentAvatarBg = 'bg-emerald-600';
+
+      const container = document.getElementById('avatar-preview-container');
+      const textSpan = document.getElementById('avatar-preview-text');
+      textSpan.textContent = initial;
+      textSpan.classList.remove('hidden');
+      container.className = `w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xl shadow-sm overflow-hidden border-2 border-white ring-2 ring-slate-200 transition group-hover:ring-emerald-500`;
+    }
+
+    // 名前の入力に合わせてアバター頭文字を自動更新（画像未設定かつテキストが1文字の場合）
+    document.getElementById('reg-last-name').addEventListener('input', function(e) {
+      if (!currentAvatarDataUrl && e.target.value.trim().length > 0 && !['🎾','⚡','🔥','🏆'].includes(currentAvatarText)) {
+        currentAvatarText = e.target.value.trim().charAt(0);
+        document.getElementById('avatar-preview-text').textContent = currentAvatarText;
+      }
+    });
+
+    // パスワード表示切替
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      btn.innerHTML = isPassword 
+        ? '<i data-lucide="eye-off" class="w-4 h-4"></i>' 
+        : '<i data-lucide="eye" class="w-4 h-4"></i>';
+      lucide.createIcons();
+    }
+
+    // トースト通知
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.textContent = message;
+      if (type === 'success') {
+        toastIcon.setAttribute('data-lucide', 'check-circle-2');
+        toastIcon.className = 'w-4 h-4 text-emerald-400';
+      } else if (type === 'info') {
+        toastIcon.setAttribute('data-lucide', 'info');
+        toastIcon.className = 'w-4 h-4 text-sky-400';
+      } else {
+        toastIcon.setAttribute('data-lucide', 'alert-circle');
+        toastIcon.className = 'w-4 h-4 text-rose-400';
+      }
+      lucide.createIcons();
+
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 3000);
+    }
+
+    function showNotice(msg) {
+      showToast(msg, 'info');
+    }
+
+    // フォーム送信ハンドラー
+    function handleRegister(e) {
+      e.preventDefault();
+
+      const pass = document.getElementById('reg-password').value;
+      const passConfirm = document.getElementById('reg-password-confirm').value;
+
+      if (pass !== passConfirm) {
+        showToast('パスワードが確認用と一致しません', 'error');
+        document.getElementById('reg-password-confirm').focus();
+        return;
+      }
+
+      const lastName = document.getElementById('reg-last-name').value;
+      const firstName = document.getElementById('reg-first-name').value;
+      const nickname = document.getElementById('reg-nickname').value;
+      const rank = document.getElementById('reg-rank-class').value;
+      const guidance = classGuidanceMap[rank];
+
+      // 新規user_idの自動採番（要件: 000101以上が代表者・一般ユーザー）
+      newlyAssignedId = '000' + Math.floor(103 + Math.random() * 20);
+
+      document.getElementById('assigned-user-id').textContent = newlyAssignedId;
+      document.getElementById('registered-name').textContent = `${lastName} ${firstName}`;
+      document.getElementById('registered-nickname').textContent = `@${nickname}`;
+      document.getElementById('registered-class').textContent = `${rank} 級 (基準 ${guidance.rate})`;
+
+      // モーダル側アバター反映
+      const modalImg = document.getElementById('modal-avatar-img');
+      const modalText = document.getElementById('modal-avatar-text');
+      const modalPreview = document.getElementById('modal-avatar-preview');
+
+      if (currentAvatarDataUrl) {
+        modalImg.src = currentAvatarDataUrl;
+        modalImg.classList.remove('hidden');
+        modalText.classList.add('hidden');
+      } else {
+        modalImg.classList.add('hidden');
+        modalText.textContent = currentAvatarText;
+        modalText.classList.remove('hidden');
+        modalPreview.className = `w-10 h-10 rounded-xl ${currentAvatarBg} text-white flex items-center justify-center font-bold text-base overflow-hidden border border-white shadow-xs`;
+      }
+
+      // 完了モーダル表示
+      document.getElementById('modal-success').classList.remove('hidden');
+    }
+
+    // ホーム画面遷移
+    function goToHome() {
+      const role = 'user';
+      window.location.href = `home.html?role=${role}&userId=${newlyAssignedId}`;
+    }
+
+    // テスト用クイック自動入力（電話番号削除・8段階新階級に対応）
+    function quickFillRegister(type) {
+      if (type === 'user_c') {
+        document.getElementById('reg-email').value = 'sato.kenta@example.com';
+        document.getElementById('reg-password').value = 'TennisPass2026!';
+        document.getElementById('reg-password-confirm').value = 'TennisPass2026!';
+        document.getElementById('reg-last-name').value = '佐藤';
+        document.getElementById('reg-first-name').value = '健太';
+        document.getElementById('reg-last-kana').value = 'サトウ';
+        document.getElementById('reg-first-kana').value = 'ケンタ';
+        document.getElementById('reg-birthday').value = '1996-08-20';
+        document.getElementById('reg-nickname').value = 'ケンタ';
+        document.getElementById('reg-rank-class').value = 'C';
+        document.getElementById('reg-agree').checked = true;
+        resetAvatarImage();
+        updateClassGuidance();
+        showToast('一般選手 (C級: 佐藤 健太) のテストデータを設定しました', 'info');
+      } else if (type === 'leader_b') {
+        document.getElementById('reg-email').value = 'suzuki.daisuke@example.com';
+        document.getElementById('reg-password').value = 'LeaderPass2026!';
+        document.getElementById('reg-password-confirm').value = 'LeaderPass2026!';
+        document.getElementById('reg-last-name').value = '鈴木';
+        document.getElementById('reg-first-name').value = '大輔';
+        document.getElementById('reg-last-kana').value = 'スズキ';
+        document.getElementById('reg-first-kana').value = 'ダイスケ';
+        document.getElementById('reg-birthday').value = '1991-03-12';
+        document.getElementById('reg-nickname').value = 'ダイスケ';
+        document.getElementById('reg-rank-class').value = 'B';
+        document.getElementById('reg-agree').checked = true;
+        selectPresetEmoji('🏆', 'bg-indigo-600');
+        updateClassGuidance();
+        showToast('代表者候補 (B級: 鈴木 大輔) のテストデータを設定しました', 'info');
+      } else if (type === 'expert_a') {
+        document.getElementById('reg-email').value = 'tanaka.takuya@example.com';
+        document.getElementById('reg-password').value = 'ExpertPass2026!';
+        document.getElementById('reg-password-confirm').value = 'ExpertPass2026!';
+        document.getElementById('reg-last-name').value = '田中';
+        document.getElementById('reg-first-name').value = '拓也';
+        document.getElementById('reg-last-kana').value = 'タナカ';
+        document.getElementById('reg-first-kana').value = 'タクヤ';
+        document.getElementById('reg-birthday').value = '1993-11-05';
+        document.getElementById('reg-nickname').value = 'タクヤ (A級)';
+        document.getElementById('reg-rank-class').value = 'A';
+        document.getElementById('reg-agree').checked = true;
+        selectPresetEmoji('⚡', 'bg-amber-500');
+        updateClassGuidance();
+        showToast('上級選手 (A級: 田中 拓也) のテストデータを設定しました', 'info');
+      }
+    }
+  </script>
+</body>
+</html>

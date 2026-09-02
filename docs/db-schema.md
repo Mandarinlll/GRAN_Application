@@ -66,7 +66,7 @@ erDiagram
     teams ||--o{ tournament_results : "結果チーム"
     users ||--o{ tournament_results : "結果個人"
 
-    teams ||--o{ yearly_rankings : "年間ランキング"
+    teams ||--o{ yearly_rankings : "【廃止】年間ランキング"
 
     users ||--o{ notification_logs : "通知先"
     tournaments ||--o{ notification_logs : "対象大会"
@@ -75,7 +75,7 @@ erDiagram
     users {
         uuid id PK
         varchar login_id UK
-        varchar line_user_id UK
+        varchar email UK
         varchar role
         boolean is_admin
         int gran_level "100-999"
@@ -235,7 +235,7 @@ CREATE TYPE result_rank_enum AS ENUM (
     'T1_WINNER'         -- 1位トーナメント優勝: 3pt
 );
 
--- LINE通知配信種別
+-- 通知配信種別
 CREATE TYPE notification_type_enum AS ENUM (
     'ENTRY_CONFIRMED',     -- エントリー完了
     'CANCEL_FREE',         -- 無料キャンセル完了
@@ -261,13 +261,10 @@ CREATE TYPE notification_type_enum AS ENUM (
 | ログインID | `login_id` | VARCHAR(32) | NO | UK | 自動採番または手動入力（一意制約）
 
  |
+| メールアドレス | `email` | VARCHAR(255) | NO | UK | ログイン・各種通知用メールアドレス
+
+ |
 | パスワードハッシュ | `password_hash` | CHAR(60) | NO | - | bcryptハッシュ値
-
- |
-| LINE User ID | `line_user_id` | CHAR(33) | YES | UK | LIFF連携用識別子（ローカル登録時はNULL）
-
- |
-| LINE表示名 | `line_display_name` | VARCHAR(64) | YES | - | LINEの登録名
 
  |
 | アカウント権限 | `role` | user_role_enum | NO | - | 初期値: `USER`（ADMIN/OPERATOR/LEADER/USER） |
@@ -474,7 +471,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 
  |
 | ステータス | `status` | waitlist_status_enum | NO | - | 初期値: `WAITING`<br> |
-| 繰り上がり通知日時 | `offered_at` | TIMESTAMPTZ | YES | - | LINE通知送信時刻
+| 繰り上がり通知日時 | `offered_at` | TIMESTAMPTZ | YES | - | 繰り上がり通知送信時刻
 
  |
 | 承諾期限日時 | `accept_deadline` | TIMESTAMPTZ | YES | - | 承諾有効期限
@@ -565,7 +562,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 | 成績区分 | `rank_type` | result_rank_enum | NO | - | T1_WINNER, L2_WINNER 等
 
  |
-| **獲得年間ポイント** | `awarded_points` | SMALLINT | NO | - | **【変更】参加: 1pt / 2位L優勝・1位準優勝: 2pt / 1位優勝: 3pt**<br> |
+| **獲得年間ポイント** | `awarded_points` | SMALLINT | YES | - | **【廃止】年間ランキング廃止に伴い非推奨/NULL許容**<br> |
 | **変動前GRANレベル** | `pre_gran_level` | **SMALLINT** | **NO** | - | **【変更】試合直前の実力レート** |
 | **GRANレベル変動値** | `gran_level_diff` | SMALLINT | NO | - | **イロレーティング増減値（例: +8, -6）**<br> |
 | **変動後GRANレベル** | `post_gran_level` | **SMALLINT** | **NO** | - | **【変更】計算後の新レート** |
@@ -573,28 +570,24 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
-#### 3.11 yearly_rankings（年間ランキング集計）
+#### 3.11 【廃止】yearly_rankings（年間ランキング集計）
+
+> **【注意】本テーブルは年間ランキング制度の廃止に伴い、新規利用が停止（非推奨/廃止）となりました。順位および実力判定は `users.gran_level`（規定階級内順位）に一本化されます。**
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
 | ランキングID | `id` | UUID | NO | PK | `gen_random_uuid()`<br> |
 | 対象年度 | `target_year` | SMALLINT | NO | - | 例: `2026`<br> |
-| 部門区分 | `category` | tournament_category_enum | NO | - | MEN_TEAM / WOMEN_TEAM / MIX_TEAM
-
- |
-| チームID | `team_id` | UUID | NO | FK | `teams(id)` 参照
-
- |
+| 部門区分 | `category` | tournament_category_enum | NO | - | MEN_TEAM / WOMEN_TEAM / MIX_TEAM |
+| チームID | `team_id` | UUID | NO | FK | `teams(id)` 参照 |
 | 累計ポイント | `total_points` | SMALLINT | NO | - | 初期値: `0`<br> |
-| 現在順位 | `current_rank` | SMALLINT | NO | - | 順位（1, 2, 3...）
-
- |
+| 現在順位 | `current_rank` | SMALLINT | NO | - | 順位（1, 2, 3...） |
 | 更新日時 | `updated_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
 | *複合一意制約* | - | - | - | UK | `(target_year, category, team_id)`<br> |
 
 ---
 
-#### 3.12 notification_logs（LINE通知・配信ログ）
+#### 3.12 notification_logs（通知・配信ログ）
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -605,7 +598,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 | 送信先ユーザーID | `user_id` | UUID | YES | FK | `users(id)` 参照（個別送信時）
 
  |
-| 送信先LINE ID | `line_user_id` | CHAR(33) | YES | - | LINE User ID
+| 送信先メールアドレス | `recipient_email` | VARCHAR(255) | YES | - | 送信先メールアドレス
 
  |
 | 関連大会ID | `tournament_id` | UUID | YES | FK | `tournaments(id)` 参照
@@ -643,14 +636,14 @@ CREATE INDEX idx_entry_members_pending ON entry_members(is_pending) WHERE is_pen
 -- 5. キャンセル待ちキュー順位の取得
 CREATE INDEX idx_waitlists_queue ON waitlists(tournament_id, status, queue_number ASC);
 
--- 6. 年間ランキング表示（部門別・ポイント降順）
-CREATE INDEX idx_yearly_rankings_sort ON yearly_rankings(target_year, category, total_points DESC);
+-- 6. 【廃止】年間ランキング表示用インデックス（年間ランキング廃止に伴い不要）
+-- CREATE INDEX idx_yearly_rankings_sort ON yearly_rankings(target_year, category, total_points DESC);
 
 -- 7. 未対応の有償キャンセル抽出（ダッシュボードアラート用）
 CREATE INDEX idx_cancellations_admin_alert ON cancellations(admin_status) 
 WHERE is_paid = TRUE AND admin_status IN ('UNCONTACTED', 'IN_CONSULTATION');
 
--- 8. GRANレベル分布・ランキング検索用
+-- 8. GRANレベル分布・規定レベル内順位検索用
 CREATE INDEX idx_users_gran_level ON users(gran_level DESC);
 
 ```
