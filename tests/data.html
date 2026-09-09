@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GRAN - データ & レベル順位 (Analytics)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            admin: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* ダークモード用スタイル */
+    body.dark {
+      background-color: #0f172a !important;
+      color: #f8fafc !important;
+    }
+    body.dark header {
+      background-color: #1e293b !important;
+      border-color: #334155 !important;
+    }
+    body.dark header .bg-slate-50 {
+      background-color: #0f172a !important;
+      border-color: #334155 !important;
+    }
+    body.dark header .text-slate-900,
+    body.dark header .text-slate-800 {
+      color: #f8fafc !important;
+    }
+    body.dark .bg-white {
+      background-color: #1e293b !important;
+      color: #f8fafc !important;
+    }
+    body.dark .border-slate-200,
+    body.dark .border-slate-100 {
+      border-color: #334155 !important;
+    }
+    body.dark .text-slate-900,
+    body.dark .text-slate-800,
+    body.dark .text-slate-700 {
+      color: #f8fafc !important;
+    }
+    body.dark .text-slate-600,
+    body.dark .text-slate-500 {
+      color: #94a3b8 !important;
+    }
+    body.dark .bg-slate-50 {
+      background-color: #0f172a !important;
+    }
+    body.dark .bg-slate-100 {
+      background-color: #1e293b !important;
+    }
+    body.dark .bg-slate-200 {
+      background-color: #334155 !important;
+      color: #cbd5e1 !important;
+    }
+    body.dark nav {
+      background-color: #1e293b !important;
+      border-color: #334155 !important;
+    }
+    body.dark input,
+    body.dark select {
+      background-color: #0f172a !important;
+      color: #f8fafc !important;
+      border-color: #334155 !important;
+    }
+    .fade-in {
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen pb-20 sm:pb-8 font-sans antialiased">
+
+  <!-- トップヘッダー (共通デザイン) -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+      
+      <!-- ロゴ & アプリ名 (タップでホームへ) -->
+      <a href="home.html" class="flex items-center gap-2.5 hover:opacity-90 transition" title="ホームへ戻る">
+        <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+          <i data-lucide="trophy" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-base tracking-tight text-slate-900">GRAN TENNIS</span>
+          <span class="text-[10px] text-emerald-600 font-bold ml-1 px-1.5 py-0.5 bg-emerald-50 rounded">2026 Season</span>
+        </div>
+      </a>
+
+      <!-- ユーザー情報 & 操作 (マイページ表示専用) -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 py-1 px-2.5 rounded-full cursor-pointer hover:bg-slate-100 transition" onclick="openMyPageModal()" title="マイページを表示">
+          <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold" id="user-avatar-text">
+            佐
+          </div>
+          <div class="text-left hidden sm:block">
+            <div class="text-xs font-bold text-slate-800 leading-none" id="user-display-name">佐藤 健太</div>
+            <div class="text-[10px] text-slate-500 leading-tight mt-0.5">Rate: <span class="font-bold text-emerald-600 font-mono">580</span> (B級)</div>
+          </div>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="max-w-5xl mx-auto px-4 py-5 sm:py-6 space-y-5">
+
+    <!-- ページ見出し & アクションバー -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="p-1.5 bg-emerald-100 text-emerald-700 rounded-lg">
+            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+          </span>
+          <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">データ & レベル順位</h1>
+          <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-full">イロレーティング公式査定</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">GRANレベル（100〜999）、規定階級（A〜E級）内順位、レベル分布、対戦履歴</p>
+      </div>
+
+      <!-- アクションボタン群 -->
+      <div class="flex items-center gap-2">
+        <button onclick="shareStatsReport()" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl shadow-sm transition">
+          <i data-lucide="share-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>戦績レポート共有</span>
+        </button>
+        <button onclick="refreshDataStats()" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>最新レート再同期</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- メインナビゲーションタブ (スクロール可能) -->
+    <div class="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+      <div class="flex items-center gap-1 overflow-x-auto no-scrollbar" id="tab-buttons-container">
+        <button onclick="switchTab('my-level')" id="tab-btn-my-level" class="tab-btn flex-shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition bg-emerald-600 text-white shadow-sm">
+          <i data-lucide="trending-up" class="w-4 h-4"></i>
+          <span>マイレベル・推移 & 分布</span>
+        </button>
+        <button onclick="switchTab('rankings')" id="tab-btn-rankings" class="tab-btn flex-shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i data-lucide="award" class="w-4 h-4"></i>
+          <span>規定階級内順位 (ランキング)</span>
+        </button>
+        <button onclick="switchTab('matches')" id="tab-btn-matches" class="tab-btn flex-shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i data-lucide="history" class="w-4 h-4"></i>
+          <span>出場履歴 & レート変動</span>
+        </button>
+        <button onclick="switchTab('teams')" id="tab-btn-teams" class="tab-btn flex-shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span>チーム別対戦成績</span>
+        </button>
+        <button onclick="switchTab('analysis')" id="tab-btn-analysis" class="tab-btn flex-shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i data-lucide="pie-chart" class="w-4 h-4"></i>
+          <span>詳細分析・ライバル比較</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 1: マイレベル・推移 & レベル分布 (GRAN Level & Distribution) -->
+    <!-- ======================================================== -->
+    <div id="tab-content-my-level" class="tab-content space-y-5 fade-in">
+      
+      <!-- ユーザGRANレベル ハイライトカード (イロレーティング公式仕様 100〜999) -->
+      <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl p-5 sm:p-6 shadow-md relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-44 h-44 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="absolute right-6 top-6 opacity-10 hidden sm:block">
+          <i data-lucide="activity" class="w-32 h-32"></i>
+        </div>
+
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <!-- 左側: レベル数値 (3桁整数) & 規定階級バッジ -->
+          <div class="space-y-2">
+            <div class="flex items-center gap-2.5">
+              <span class="px-2.5 py-0.5 bg-emerald-400 text-slate-950 text-xs font-black rounded-full flex items-center gap-1 shadow-sm">
+                <i data-lucide="shield" class="w-3 h-3 fill-current"></i>
+                規定階級: B級 (中上級)
+              </span>
+              <span class="text-xs text-emerald-300 font-medium">イロレーティング方式 (100〜999)</span>
+            </div>
+            
+            <div class="flex items-baseline gap-3">
+              <span class="text-xs text-slate-300 font-bold">GRAN LEVEL</span>
+              <span class="text-4xl sm:text-5xl font-black tracking-tight text-white font-mono">580</span>
+              <span class="inline-flex items-center text-xs font-bold text-emerald-400 bg-emerald-900/60 border border-emerald-600/40 px-2 py-0.5 rounded-md font-mono">
+                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 mr-0.5"></i>
+                +32 (直近3大会累計)
+              </span>
+            </div>
+
+            <p class="text-xs text-slate-300 max-w-md">
+              対戦相手の実力差と勝敗結果に基づく「イロレーティング計算」により算出。B級（Lv.550〜699）の上位帯に位置し、A級昇級圏内に到達しています。
+            </p>
+          </div>
+
+          <!-- 右側: 規定階級ゲージ & 上位昇級メーター -->
+          <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/15 min-w-[280px] space-y-3">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-300">現在所属階級</span>
+              <span class="font-extrabold text-emerald-300 text-sm">B級 (550〜699)</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-300">初期査定レート</span>
+              <span class="font-bold text-slate-200 font-mono">500</span>
+            </div>
+            
+            <hr class="border-white/10" />
+            
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-[11px]">
+                <span class="text-slate-300">最上位「A級 (700〜)」昇級まで</span>
+                <span class="font-bold text-amber-300 font-mono">あと 120 (60%)</span>
+              </div>
+              <div class="w-full bg-slate-700/80 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-gradient-to-r from-emerald-400 to-amber-400 h-full rounded-full" style="width: 60%"></div>
+              </div>
+              <div class="flex justify-between text-[9px] text-slate-400">
+                <span>B級下限: 550</span>
+                <span>A級昇級: 700</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 規定階級内順位 & 分布 KPIグリッド (docs 5.1 準拠) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <!-- 規定階級内順位 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-500 text-xs">
+            <span>B級内 順位</span>
+            <span class="p-1 bg-emerald-50 text-emerald-600 rounded-lg"><i data-lucide="award" class="w-3.5 h-3.5"></i></span>
+          </div>
+          <div class="my-2">
+            <div class="flex items-baseline gap-1">
+              <span class="text-2xl sm:text-3xl font-black text-slate-900 font-mono">14</span>
+              <span class="text-xs text-slate-400 font-bold">/ 320 名</span>
+            </div>
+            <span class="text-[11px] text-emerald-600 font-bold">B級内上位 4.4%</span>
+          </div>
+          <div class="text-[10px] text-slate-400">同率時: 消化試合数・勝率考慮</div>
+        </div>
+
+        <!-- 所属チーム内順位 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-500 text-xs">
+            <span>所属チーム内</span>
+            <span class="p-1 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="users" class="w-3.5 h-3.5"></i></span>
+          </div>
+          <div class="my-2">
+            <div class="flex items-baseline gap-1">
+              <span class="text-2xl sm:text-3xl font-black text-slate-900 font-mono">2</span>
+              <span class="text-xs text-slate-400 font-bold">/ 28 名</span>
+            </div>
+            <span class="text-[11px] text-blue-600 font-bold">チーム内上位 7.1%</span>
+          </div>
+          <div class="text-[10px] text-slate-400">チーム: GREEN STARS</div>
+        </div>
+
+        <!-- 地域エリア順位 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-500 text-xs">
+            <span>神奈川・湘南エリア</span>
+            <span class="p-1 bg-amber-50 text-amber-600 rounded-lg"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i></span>
+          </div>
+          <div class="my-2">
+            <div class="flex items-baseline gap-1">
+              <span class="text-2xl sm:text-3xl font-black text-slate-900 font-mono">48</span>
+              <span class="text-xs text-slate-400 font-bold">/ 1,250 名</span>
+            </div>
+            <span class="text-[11px] text-amber-600 font-bold">地域上位 3.8%</span>
+          </div>
+          <div class="text-[10px] text-slate-400">前月比: +4位上昇 ↗</div>
+        </div>
+
+        <!-- 全階級総合順位 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-500 text-xs">
+            <span>全階級総合順位</span>
+            <span class="p-1 bg-purple-50 text-purple-600 rounded-lg"><i data-lucide="globe" class="w-3.5 h-3.5"></i></span>
+          </div>
+          <div class="my-2">
+            <div class="flex items-baseline gap-1">
+              <span class="text-2xl sm:text-3xl font-black text-slate-900 font-mono">118</span>
+              <span class="text-xs text-slate-400 font-bold">/ 3,400 名</span>
+            </div>
+            <span class="text-[11px] text-purple-600 font-bold">全登録者 上位 3.5%</span>
+          </div>
+          <div class="text-[10px] text-slate-400">全階級レート順</div>
+        </div>
+      </div>
+
+      <!-- レベル推移グラフ & 全体・階級別レベル分布ヒストグラム (docs 5.1 仕様) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        
+        <!-- 1. GRANレベル推移グラフ -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="trending-up" class="w-4 h-4 text-emerald-600"></i>
+                GRANレベル (イロレーティング) 推移
+              </h3>
+              <p class="text-[11px] text-slate-500">大会対戦ごとのレート変動推移 (100〜999)</p>
+            </div>
+
+            <!-- 期間切り替え -->
+            <div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[11px] font-bold">
+              <button onclick="updateChartPeriod('6m')" id="period-6m" class="px-2.5 py-1 rounded-md bg-white text-emerald-700 shadow-xs">6ヶ月</button>
+              <button onclick="updateChartPeriod('1y')" id="period-1y" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">1年</button>
+              <button onclick="updateChartPeriod('all')" id="period-all" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">全期間</button>
+            </div>
+          </div>
+
+          <div class="h-64 w-full relative">
+            <canvas id="levelHistoryChart"></canvas>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> あなたのレート (現在 580)</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block"></span> 全体平均レート (485)</span>
+            <span class="text-[11px] text-emerald-600 font-bold">最高レート: 585 (2026.02)</span>
+          </div>
+        </div>
+
+        <!-- 2. 全体 & 階級別 GRANレベル分布グラフ (docs 5.1 準拠ヒストグラム) -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-600"></i>
+                GRANレベル分布 & 階級ボリューム
+              </h3>
+              <p class="text-[11px] text-slate-500">リーグ全登録者のレート分布（docs 5.1仕様）</p>
+            </div>
+            <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-full">現在位置: B級 (580)</span>
+          </div>
+
+          <div class="h-64 w-full relative">
+            <canvas id="levelDistributionChart"></canvas>
+          </div>
+
+          <div class="grid grid-cols-5 gap-1 text-center text-[10px] pt-2 border-t border-slate-100">
+            <div class="bg-slate-50 p-1 rounded-lg">
+              <span class="text-slate-400 block">E級</span>
+              <span class="font-bold text-slate-600">100-249</span>
+            </div>
+            <div class="bg-slate-50 p-1 rounded-lg">
+              <span class="text-slate-400 block">D級</span>
+              <span class="font-bold text-slate-600">250-399</span>
+            </div>
+            <div class="bg-slate-50 p-1 rounded-lg">
+              <span class="text-slate-400 block">C級 (最多)</span>
+              <span class="font-bold text-slate-600">400-549</span>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-200 p-1 rounded-lg">
+              <span class="text-emerald-700 font-bold block">B級 (あなた)</span>
+              <span class="font-extrabold text-emerald-800">550-699</span>
+            </div>
+            <div class="bg-amber-50 p-1 rounded-lg">
+              <span class="text-amber-700 block">A級</span>
+              <span class="font-bold text-amber-800">700-999</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 規定階級（A〜E級）定義一覧テーブル -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="info" class="w-4 h-4 text-emerald-600"></i>
+            <span class="text-xs font-bold text-slate-800">GRAN規定階級（A〜E級）基準定義</span>
+          </div>
+          <span class="text-[11px] text-slate-400">※年間ポイント制は廃止され、GRANレベルと階級順位に一本化</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+              <tr>
+                <th class="py-2.5 px-3">規定階級</th>
+                <th class="py-2.5 px-3">対象GRANレベル</th>
+                <th class="py-2.5 px-3">実力目安・プレースタイル</th>
+                <th class="py-2.5 px-3 text-center">所属人数比率</th>
+                <th class="py-2.5 px-3 text-center">エントリー対象大会</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr class="hover:bg-slate-50">
+                <td class="py-2.5 px-3 font-black text-amber-700 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span> A級</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-slate-900">700 〜 999</td>
+                <td class="py-2.5 px-3 text-slate-600">上級・チャンピオンシップクラス / 実業団・インカレ・全国上位水準</td>
+                <td class="py-2.5 px-3 text-center font-medium">約 5 %</td>
+                <td class="py-2.5 px-3 text-center text-slate-600">A級トーナメント / 無差別オープン</td>
+              </tr>
+              <tr class="bg-emerald-50/80 font-bold">
+                <td class="py-2.5 px-3 font-black text-emerald-800 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> B級 ★あなた</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-emerald-900">550 〜 699</td>
+                <td class="py-2.5 px-3 text-emerald-800">中上級 / 各地域クラブ上位・市民大会本戦上位進出水準</td>
+                <td class="py-2.5 px-3 text-center font-bold text-emerald-800">約 20 %</td>
+                <td class="py-2.5 px-3 text-center text-emerald-800">B級・A級トーナメント</td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="py-2.5 px-3 font-black text-blue-700 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500"></span> C級</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-slate-900">400 〜 549</td>
+                <td class="py-2.5 px-3 text-slate-600">中級 / 定期的にトーナメントに出場し安定したラリーが可能な実力層</td>
+                <td class="py-2.5 px-3 text-center font-medium">約 38 % (最多)</td>
+                <td class="py-2.5 px-3 text-center text-slate-600">C級・オープン大会</td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="py-2.5 px-3 font-black text-slate-700 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-400"></span> D級</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-slate-900">250 〜 399</td>
+                <td class="py-2.5 px-3 text-slate-600">初中級 / ゲーム展開の基本を習得し、大会出場経験を積み始めた段階</td>
+                <td class="py-2.5 px-3 text-center font-medium">約 25 %</td>
+                <td class="py-2.5 px-3 text-center text-slate-600">D級・ビギナートーナメント</td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="py-2.5 px-3 font-black text-slate-500 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-300"></span> E級</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-slate-900">100 〜 249</td>
+                <td class="py-2.5 px-3 text-slate-600">初級・ビギナー / ルールを学び公式戦デビューを目指す段階</td>
+                <td class="py-2.5 px-3 text-center font-medium">約 12 %</td>
+                <td class="py-2.5 px-3 text-center text-slate-600">フレッシュトーナメント・E級</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: 規定階級内順位 (Rankings in Classes - docs 5.1仕様) -->
+    <!-- ======================================================== -->
+    <div id="tab-content-rankings" class="tab-content space-y-5 hidden fade-in">
+      
+      <!-- 階級別切り替えフィルター & 検索バー (docs 5.1 準拠) -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+        
+        <!-- 規定階級タブ (A級〜E級切り替え) -->
+        <div>
+          <div class="text-[11px] font-bold text-slate-500 mb-1.5 flex items-center justify-between">
+            <span>規定階級フィルター (A〜E級):</span>
+            <span class="text-[10px] text-emerald-600 font-semibold">※同率時は消化試合数・勝率で判定</span>
+          </div>
+          <div class="grid grid-cols-3 sm:grid-cols-6 gap-1 bg-slate-100 p-1 rounded-xl" id="class-filter-container">
+            <button onclick="filterByClass('all')" id="class-btn-all" class="class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">総合 (全階級)</button>
+            <button onclick="filterByClass('A')" id="class-btn-A" class="class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">A級 (700+)</button>
+            <button onclick="filterByClass('B')" id="class-btn-B" class="class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-xs transition">B級 (550〜) ★</button>
+            <button onclick="filterByClass('C')" id="class-btn-C" class="class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">C級 (400〜)</button>
+            <button onclick="filterByClass('D')" id="class-btn-D" class="class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">D級 (250〜)</button>
+            <button onclick="filterByClass('E')" id="class-btn-E" class="class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">E級 (100〜)</button>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+          <!-- 選手 / チーム切り替え -->
+          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+            <button onclick="switchRankingType('player')" id="rank-type-player" class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-xs transition">
+              <i data-lucide="user" class="w-3.5 h-3.5"></i>
+              <span>個人レベル順位</span>
+            </button>
+            <button onclick="switchRankingType('team')" id="rank-type-team" class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">
+              <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+              <span>チーム平均レート順位</span>
+            </button>
+          </div>
+
+          <!-- 検索 & ジャンプ -->
+          <div class="flex items-center gap-2">
+            <div class="relative w-full sm:w-48">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+              <input type="text" id="ranking-search-input" onkeyup="filterRankingList()" placeholder="選手・チーム検索..." class="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+
+            <button onclick="scrollToMyRank()" class="flex items-center gap-1 text-[11px] text-emerald-600 hover:text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200 transition shrink-0">
+              <i data-lucide="navigation" class="w-3 h-3"></i>
+              <span>自分の順位</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 選手ランキング表示コンテナ -->
+      <div id="player-ranking-container" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+          <span class="text-xs font-bold text-slate-700" id="ranking-table-header">規定階級: B級 選手順位一覧</span>
+          <span class="text-[11px] text-slate-400">公式戦消化数・直近勝率を考慮してソート</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-3.5 text-center w-12">順位</th>
+                <th class="py-3 px-3">選手名 / 所属チーム</th>
+                <th class="py-3 px-3 text-center">階級</th>
+                <th class="py-3 px-3 text-center">GRANレベル</th>
+                <th class="py-3 px-3 text-center">公式戦 (勝-敗)</th>
+                <th class="py-3 px-3 text-center">勝率</th>
+                <th class="py-3 px-3 text-right">アクション</th>
+              </tr>
+            </thead>
+            <tbody id="player-ranking-tbody" class="divide-y divide-slate-100">
+              <!-- JSで動的生成 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- チームランキング表示コンテナ -->
+      <div id="team-ranking-container" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+          <span class="text-xs font-bold text-slate-700">登録チーム 平均GRANレベル順位</span>
+          <span class="text-[11px] text-slate-400">チーム所属選手の平均イロレーティング</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-3.5 text-center w-12">順位</th>
+                <th class="py-3 px-3">チーム名 / 地域</th>
+                <th class="py-3 px-3 text-center">登録人数</th>
+                <th class="py-3 px-3 text-center">チーム平均Lv</th>
+                <th class="py-3 px-3 text-center">総対戦 (勝-敗)</th>
+                <th class="py-3 px-3 text-center">勝率</th>
+                <th class="py-3 px-3 text-right">対戦履歴</th>
+              </tr>
+            </thead>
+            <tbody id="team-ranking-tbody" class="divide-y divide-slate-100">
+              <!-- JSで動的生成 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 3: 出場履歴 & レート変動 (Tournament History & Elo Record) -->
+    <!-- ======================================================== -->
+    <div id="tab-content-matches" class="tab-content space-y-5 hidden fade-in">
+      
+      <!-- 通算成績サマリーカード -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+            <i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i>
+            通算公式戦績 & イロレーティング増減サマリー
+          </h3>
+          <span class="text-[11px] text-slate-400">公式戦通算 (2025-2026)</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+          <div class="bg-emerald-50/70 border border-emerald-100 p-3 rounded-xl">
+            <div class="text-[11px] text-emerald-800 font-bold">総公式戦数</div>
+            <div class="text-2xl font-black text-emerald-900 mt-0.5 font-mono">42 <span class="text-xs font-normal">戦</span></div>
+            <div class="text-[10px] text-emerald-600 font-semibold mt-1">31勝 11敗</div>
+          </div>
+
+          <div class="bg-blue-50/70 border border-blue-100 p-3 rounded-xl">
+            <div class="text-[11px] text-blue-800 font-bold">通算勝率</div>
+            <div class="text-2xl font-black text-blue-900 mt-0.5 font-mono">73.8<span class="text-xs font-normal">%</span></div>
+            <div class="text-[10px] text-blue-600 font-semibold mt-1">現在 🔥 4連勝中</div>
+          </div>
+
+          <div class="bg-amber-50/70 border border-amber-100 p-3 rounded-xl">
+            <div class="text-[11px] text-amber-800 font-bold">優勝 / 準優勝</div>
+            <div class="text-2xl font-black text-amber-900 mt-0.5 font-mono">3 / 2 <span class="text-xs font-normal">回</span></div>
+            <div class="text-[10px] text-amber-700 font-semibold mt-1">入賞率 62.5%</div>
+          </div>
+
+          <div class="bg-purple-50/70 border border-purple-100 p-3 rounded-xl">
+            <div class="text-[11px] text-purple-800 font-bold">通算レート上昇</div>
+            <div class="text-2xl font-black text-purple-900 mt-0.5 font-mono">+80 <span class="text-xs font-normal">Lv</span></div>
+            <div class="text-[10px] text-purple-600 font-semibold mt-1">初期 500 $ightarrow$ 現在 580</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 出場大会一覧リスト (pre_gran_level / post_gran_level / gran_level_diff) -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-black text-slate-900">大会別 対戦結果 & GRANレベル変動記録 (db仕様準拠)</h3>
+          <div class="flex items-center gap-1 text-xs">
+            <select id="match-year-filter" onchange="filterMatchHistory()" class="bg-white border border-slate-200 px-2 py-1 rounded-lg text-xs font-medium text-slate-700">
+              <option value="all">全期間</option>
+              <option value="2026" selected>2026年のみ</option>
+              <option value="2025">2025年のみ</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="match-history-cards-container" class="space-y-3">
+          <!-- JSで動的生成 -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 4: チーム別対戦成績 (Team Matchups) -->
+    <!-- ======================================================== -->
+    <div id="tab-content-teams" class="tab-content space-y-5 hidden fade-in">
+      
+      <!-- 対戦サマリー -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+            <i data-lucide="shield" class="w-4 h-4 text-emerald-600"></i>
+            クラブ・チーム別 対戦マトリクス
+          </h3>
+          <p class="text-[11px] text-slate-500">あなたの所属チーム（GREEN STARS）及び個人マッチにおける相手クラブ別戦績</p>
+        </div>
+
+        <div class="flex items-center gap-4 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
+          <div class="text-center">
+            <span class="text-slate-400 block text-[10px]">対戦クラブ数</span>
+            <span class="font-black text-slate-800 text-base font-mono">6 チーム</span>
+          </div>
+          <div class="w-px h-7 bg-slate-200"></div>
+          <div class="text-center">
+            <span class="text-slate-400 block text-[10px]">総対戦勝敗</span>
+            <span class="font-black text-emerald-700 text-base font-mono">20勝 8敗</span>
+          </div>
+          <div class="w-px h-7 bg-slate-200"></div>
+          <div class="text-center">
+            <span class="text-slate-400 block text-[10px]">総合勝率</span>
+            <span class="font-black text-emerald-700 text-base font-mono">71.4%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- チーム別カードグリッド -->
+      <div id="team-matchups-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        <!-- JSで動的生成 -->
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 5: 詳細分析＆ライバル比較 (Advanced Analytics & Rival Comparison) -->
+    <!-- ======================================================== -->
+    <div id="tab-content-analysis" class="tab-content space-y-5 hidden fade-in">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        
+        <!-- プレースタイル・能力レーダーチャート -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="activity" class="w-4 h-4 text-emerald-600"></i>
+                プレースタイル能力レーダー
+              </h3>
+              <p class="text-[11px] text-slate-500">イロレーティング・対戦データに基づく6要素評価</p>
+            </div>
+            <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-full">B級平均比較</span>
+          </div>
+
+          <div class="h-64 sm:h-72 w-full relative flex items-center justify-center">
+            <canvas id="skillsRadarChart"></canvas>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center text-[11px] pt-2 border-t border-slate-100">
+            <div class="bg-slate-50 p-1.5 rounded-lg">
+              <span class="text-slate-400 block text-[10px]">最大の強み</span>
+              <span class="font-bold text-emerald-700">勝負強さ (90)</span>
+            </div>
+            <div class="bg-slate-50 p-1.5 rounded-lg">
+              <span class="text-slate-400 block text-[10px]">安定性</span>
+              <span class="font-bold text-blue-700">ラリー力 (88)</span>
+            </div>
+            <div class="bg-slate-50 p-1.5 rounded-lg">
+              <span class="text-slate-400 block text-[10px]">改善課題</span>
+              <span class="font-bold text-amber-700">ネットプレー (65)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- サーフェス別勝率 & クラッチスタッツ -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i>
+              サーフェス別適性 & 勝負どころスタッツ
+            </h3>
+            <p class="text-[11px] text-slate-500">コートサーフェスおよび重要局面の勝率内訳</p>
+          </div>
+
+          <div class="space-y-3.5">
+            <!-- オムニコート -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="font-bold text-slate-700 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 砂入り人工芝 (オムニ)
+                </span>
+                <span class="font-extrabold text-slate-900 font-mono">80.0% <span class="text-slate-400 font-normal text-[11px] font-sans">(20勝 5敗)</span></span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-emerald-500 h-full rounded-full" style="width: 80%"></div>
+              </div>
+            </div>
+
+            <!-- ハードコート -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="font-bold text-slate-700 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> ハードコート
+                </span>
+                <span class="font-extrabold text-slate-900 font-mono">66.7% <span class="text-slate-400 font-normal text-[11px] font-sans">(8勝 4敗)</span></span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-blue-500 h-full rounded-full" style="width: 66.7%"></div>
+              </div>
+            </div>
+
+            <!-- クレーコート -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="font-bold text-slate-700 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> クレーコート
+                </span>
+                <span class="font-extrabold text-slate-900 font-mono">60.0% <span class="text-slate-400 font-normal text-[11px] font-sans">(3勝 2敗)</span></span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-amber-500 h-full rounded-full" style="width: 60%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- クラッチ指標 -->
+          <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100">
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+              <span class="text-[10px] text-slate-500 block">タイブレーク勝率</span>
+              <span class="text-lg font-black text-emerald-700 font-mono">80.0%</span>
+              <span class="text-[10px] text-slate-400 block">8勝 2敗 (勝負強さ◎)</span>
+            </div>
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+              <span class="text-[10px] text-slate-500 block">フルセット勝率</span>
+              <span class="text-lg font-black text-blue-700 font-mono">71.4%</span>
+              <span class="text-[10px] text-slate-400 block">5勝 2敗 (スタミナ維持)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ライバル直接対決 (Head-to-Head) 比較カード -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="swords" class="w-4 h-4 text-rose-500"></i>
+              ライバル直接対決 (Head-to-Head) 比較
+            </h3>
+            <p class="text-[11px] text-slate-500">B級・同階級ライバルとのGRANレベル & 直接対戦スタッツ比較</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-slate-500 font-bold">比較対象:</label>
+            <select id="rival-select" onchange="renderRivalComparison()" class="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-800">
+              <option value="kimura">木村 拓也 (横浜TC / Lv 610 B級)</option>
+              <option value="yamada">山田 浩二 (湘南グリーン / Lv 565 B級)</option>
+              <option value="suzuki">鈴木 一平 (東京メトロ / Lv 530 C級)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="rival-comparison-container" class="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-slate-200">
+          <!-- JSで動的描画 -->
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- モバイルボトムナビゲーション -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 sm:hidden">
+    <div class="grid grid-cols-5 h-14 text-[10px] font-medium text-slate-500">
+      <button onclick="window.location.href='home.html'" class="flex flex-col items-center justify-center hover:text-slate-900">
+        <i data-lucide="home" class="w-5 h-5 mb-0.5"></i>
+        <span>ホーム</span>
+      </button>
+      <button onclick="showToast('大会日程・エントリー画面へ遷移します', 'info')" class="flex flex-col items-center justify-center hover:text-slate-900">
+        <i data-lucide="calendar" class="w-5 h-5 mb-0.5"></i>
+        <span>大会日程</span>
+      </button>
+      <button class="flex flex-col items-center justify-center text-emerald-600 font-bold">
+        <i data-lucide="bar-chart-2" class="w-5 h-5 mb-0.5"></i>
+        <span>データ</span>
+      </button>
+      <button onclick="window.location.href='notifications.html'" class="flex flex-col items-center justify-center hover:text-slate-900 relative">
+        <div class="relative">
+          <i data-lucide="bell" class="w-5 h-5 mb-0.5"></i>
+          <span class="notification-badge absolute -top-1 -right-2 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] flex items-center justify-center font-bold">3</span>
+        </div>
+        <span>通知</span>
+      </button>
+      <button onclick="window.location.href='settings.html'" class="flex flex-col items-center justify-center hover:text-slate-900">
+        <i data-lucide="settings" class="w-5 h-5 mb-0.5"></i>
+        <span>設定</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- マイページモーダル -->
+  <div id="modal-mypage" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden fade-in">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+            <i data-lucide="user" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">マイプロフィール</h3>
+            <p class="text-[10px] text-slate-500">アカウント情報およびGRANレベル公式査定</p>
+          </div>
+        </div>
+        <button onclick="closeMyPageModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl font-bold shadow-md">
+            佐
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h4 class="text-base font-extrabold text-slate-900">佐藤 健太</h4>
+              <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">リーダー</span>
+            </div>
+            <p class="text-xs text-slate-500">サトウ ケンタ | GREEN STARS</p>
+            <p class="text-xs text-emerald-600 font-bold mt-0.5">GRAN Level: <span class="font-mono text-sm font-black">580</span> (規定階級: B級)</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-2">
+          <div class="flex justify-between"><span class="text-slate-500">登録メール</span><span class="font-medium text-slate-800">kenta.sato@example.com</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">所属クラブ</span><span class="font-medium text-slate-800">GREEN STARS (代表)</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">初期査定レート</span><span class="font-mono text-slate-800 font-bold">500</span></div>
+          <div class="flex justify-between"><span class="text-slate-500">JTA登録番号</span><span class="font-medium text-slate-800 font-mono">GR-2026-8819</span></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button onclick="window.location.href='settings.html'" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5">
+            <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+            <span>設定・変更</span>
+          </button>
+          <button onclick="closeMyPageModal()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition flex items-center justify-center">
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toast" class="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 transform translate-y-16 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-medium border border-slate-700">
+      <i id="toast-icon" data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+      <span id="toast-message">メッセージ</span>
+    </div>
+  </div>
+
+  <!-- JavaScript ロジック -->
+  <script>
+    // 選手ランキングモックデータ (イロレーティング 100〜999 & A〜E級)
+    const rankingPlayersData = [
+      { rank: 1, name: '高橋 雄大', team: '横浜テニスクラブ', classRank: 1, classTier: 'A', level: 820, matches: '24-2', winRate: '92.3%', trend: 'up' },
+      { rank: 2, name: '小林 誠', team: '湘南グリーンTC', classRank: 2, classTier: 'A', level: 780, matches: '21-4', winRate: '84.0%', trend: 'same' },
+      { rank: 3, name: '松本 隼人', team: '東京メトロTC', classRank: 3, classTier: 'A', level: 750, matches: '19-5', winRate: '79.1%', trend: 'up' },
+      { rank: 4, name: '渡辺 翔', team: 'ベイサイドTA', classRank: 4, classTier: 'A', level: 720, matches: '22-6', winRate: '78.5%', trend: 'down' },
+      { rank: 5, name: '木村 拓也', team: '横浜テニスクラブ', classRank: 1, classTier: 'B', level: 610, matches: '18-6', winRate: '75.0%', trend: 'up' },
+      { rank: 6, name: '伊藤 涼太', team: '川崎リバーサイドTC', classRank: 2, classTier: 'B', level: 595, matches: '14-8', winRate: '63.6%', trend: 'same' },
+      { rank: 14, name: '佐藤 健太 (あなた)', team: 'GREEN STARS', classRank: 14, classTier: 'B', level: 580, matches: '31-11', winRate: '73.8%', trend: 'up', isUser: true },
+      { rank: 15, name: '山田 浩二', team: '湘南グリーンTC', classRank: 15, classTier: 'B', level: 565, matches: '16-6', winRate: '72.7%', trend: 'same' },
+      { rank: 25, name: '鈴木 一平', team: '東京メトロTC', classRank: 1, classTier: 'C', level: 530, matches: '15-7', winRate: '68.1%', trend: 'down' },
+      { rank: 26, name: '中村 蓮', team: 'GREEN STARS', classRank: 2, classTier: 'C', level: 515, matches: '12-7', winRate: '63.1%', trend: 'up' },
+      { rank: 40, name: '加藤 大輔', team: '川崎リバーサイドTC', classRank: 1, classTier: 'D', level: 380, matches: '10-8', winRate: '55.5%', trend: 'same' },
+      { rank: 60, name: '井上 翔太', team: 'ベイサイドTA', classRank: 1, classTier: 'E', level: 230, matches: '6-10', winRate: '37.5%', trend: 'up' }
+    ];
+
+    // チームランキングモックデータ
+    const rankingTeamsData = [
+      { rank: 1, name: '横浜テニスクラブ', region: '神奈川', members: 42, avgLevel: 625, matches: '86-24', winRate: '78.1%' },
+      { rank: 2, name: 'GREEN STARS (所属)', region: '神奈川・湘南', members: 28, avgLevel: 585, matches: '64-22', winRate: '74.4%', isUserTeam: true },
+      { rank: 3, name: '湘南グリーンTC', region: '神奈川・湘南', members: 35, avgLevel: 570, matches: '70-28', winRate: '71.4%' },
+      { rank: 4, name: '東京メトロTC', region: '東京', members: 30, avgLevel: 535, matches: '58-30', winRate: '65.9%' },
+      { rank: 5, name: 'ベイサイドテニスアカデミー', region: '神奈川', members: 24, avgLevel: 510, matches: '45-28', winRate: '61.6%' },
+      { rank: 6, name: '川崎リバーサイドTC', region: '神奈川', members: 20, avgLevel: 460, matches: '38-32', winRate: '54.2%' },
+    ];
+
+    // 出場大会履歴モックデータ (db-schema.md準拠: pre_gran_level / post_gran_level / gran_level_diff)
+    const matchHistoryData = [
+      {
+        id: 'tour-2026-03',
+        year: '2026',
+        date: '2026.03.15',
+        title: '第14回 湘南スプリングオープントーナメント',
+        category: '男子シングルス B級',
+        result: '優勝',
+        resultBadge: 'bg-amber-100 text-amber-800 border-amber-300',
+        preLevel: 568,
+        postLevel: 580,
+        levelDelta: '+12',
+        matches: [
+          { round: '1回戦', opponent: '松田 健 (川崎TC / Lv.530)', score: '6-1', result: 'WIN', diff: '+2' },
+          { round: '2回戦', opponent: '鈴木 一平 (東京メトロTC / Lv.530)', score: '6-3', result: 'WIN', diff: '+3' },
+          { round: '準決勝', opponent: '山田 浩二 (湘南グリーンTC / Lv.565)', score: '7-5', result: 'WIN', diff: '+3' },
+          { round: '決勝', opponent: '木村 拓也 (横浜テニスクラブ / Lv.610)', score: '6-4', result: 'WIN', diff: '+4' }
+        ]
+      },
+      {
+        id: 'tour-2026-01',
+        year: '2026',
+        date: '2026.01.20',
+        title: 'GRAN ウィンターカップ 2026',
+        category: '男子ダブルス B級',
+        result: '準優勝',
+        resultBadge: 'bg-slate-200 text-slate-800 border-slate-300',
+        preLevel: 560,
+        postLevel: 568,
+        levelDelta: '+8',
+        partner: '中村 蓮 (GREEN STARS / Lv.515)',
+        matches: [
+          { round: '1回戦', opponent: '加藤・小川ペア (横浜TA / 平均Lv.540)', score: '6-2', result: 'WIN', diff: '+3' },
+          { round: '準決勝', opponent: '木村・渡辺ペア (横浜TC / 平均Lv.665)', score: '7-6(4)', result: 'WIN', diff: '+6' },
+          { round: '決勝', opponent: '高橋・小林ペア (選抜合同 / 平均Lv.800)', score: '4-6', result: 'LOSE', diff: '-1' }
+        ]
+      },
+      {
+        id: 'tour-2025-11',
+        year: '2025',
+        date: '2025.11.03',
+        title: '横浜オータムチャンピオントーナメント 2025',
+        category: '男子シングルス B級',
+        result: 'ベスト4',
+        resultBadge: 'bg-amber-50 text-amber-700 border-amber-200',
+        preLevel: 552,
+        postLevel: 560,
+        levelDelta: '+8',
+        matches: [
+          { round: '1回戦', opponent: '斉藤 佑 (ベイサイドTA / Lv.520)', score: '6-0', result: 'WIN', diff: '+3' },
+          { round: '2回戦', opponent: '原田 亮 (湘南グリーンTC / Lv.555)', score: '6-3', result: 'WIN', diff: '+5' },
+          { round: '準決勝', opponent: '高橋 雄大 (横浜TC / Lv.820)', score: '3-6', result: 'LOSE', diff: '0' }
+        ]
+      },
+      {
+        id: 'tour-2025-09',
+        year: '2025',
+        date: '2025.09.18',
+        title: '関東地域クラブ対抗 プレシーズントーナメント',
+        category: '男子シングルス C・B級',
+        result: 'ベスト8',
+        resultBadge: 'bg-blue-50 text-blue-700 border-blue-200',
+        preLevel: 545,
+        postLevel: 552,
+        levelDelta: '+7',
+        matches: [
+          { round: '1回戦', opponent: '青木 達也 (千葉TC / Lv.480)', score: '6-2', result: 'WIN', diff: '+3' },
+          { round: '2回戦', opponent: '木村 拓也 (横浜TC / Lv.600)', score: '5-7', result: 'LOSE', diff: '+4' }
+        ]
+      }
+    ];
+
+    // チーム別対戦モックデータ
+    const teamMatchupsData = [
+      {
+        teamName: '横浜テニスクラブ',
+        avgLevel: 625,
+        matchesCount: '6試合 (5勝 1敗)',
+        winRate: '83.3%',
+        gameRate: '64.5%',
+        statusBadge: '優勢 🟢',
+        statusColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        recentLog: '直近: 2026.03.15 決勝 vs 木村 (6-4 WIN)',
+        keyRival: '木村 拓也 (Lv 610 B級) / 過去対戦 2勝1敗'
+      },
+      {
+        teamName: '湘南グリーンTC',
+        avgLevel: 570,
+        matchesCount: '6試合 (3勝 3敗)',
+        winRate: '50.0%',
+        gameRate: '51.2%',
+        statusBadge: '互角 🟡',
+        statusColor: 'bg-amber-50 text-amber-700 border-amber-200',
+        recentLog: '直近: 2026.03.15 準決勝 vs 山田 (7-5 WIN)',
+        keyRival: '山田 浩二 (Lv 565 B級) / 過去対戦 2勝2敗'
+      },
+      {
+        teamName: '東京メトロTC',
+        avgLevel: 535,
+        matchesCount: '4試合 (4勝 0敗)',
+        winRate: '100%',
+        gameRate: '72.0%',
+        statusBadge: '圧倒 🟢',
+        statusColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        recentLog: '直近: 2026.03.15 2回戦 vs 鈴木 (6-3 WIN)',
+        keyRival: '鈴木 一平 (Lv 530 C級) / 過去対戦 3勝0敗'
+      },
+      {
+        teamName: 'ベイサイドテニスアカデミー',
+        avgLevel: 510,
+        matchesCount: '4試合 (1勝 3敗)',
+        winRate: '25.0%',
+        gameRate: '42.8%',
+        statusBadge: '要対策 🔴',
+        statusColor: 'bg-rose-50 text-rose-700 border-rose-200',
+        recentLog: '直近: 2026.01.20 ダブルス vs 渡辺ペア (LOSE)',
+        keyRival: '渡辺 翔 (Lv 720 A級) / 過去対戦 0勝2敗'
+      },
+      {
+        teamName: '川崎リバーサイドTC',
+        avgLevel: 460,
+        matchesCount: '5試合 (4勝 1敗)',
+        winRate: '80.0%',
+        gameRate: '61.0%',
+        statusBadge: '優勢 🟢',
+        statusColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        recentLog: '直近: 2026.03.15 1回戦 vs 松田 (6-1 WIN)',
+        keyRival: '伊藤 涼太 (Lv 595 B級) / 過去対戦 2勝1敗'
+      },
+      {
+        teamName: '千葉ベイサイドTC',
+        avgLevel: 440,
+        matchesCount: '3試合 (3勝 0敗)',
+        winRate: '100%',
+        gameRate: '68.0%',
+        statusBadge: '圧倒 🟢',
+        statusColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        recentLog: '直近: 2025.09.18 1回戦 vs 青木 (6-2 WIN)',
+        keyRival: '青木 達也 (Lv 480 C級) / 過去対戦 2勝0敗'
+      }
+    ];
+
+    // ライバル詳細データ
+    const rivalProfiles = {
+      kimura: {
+        name: '木村 拓也',
+        team: '横浜テニスクラブ',
+        classTier: 'B級',
+        level: 610,
+        directRecord: '2勝 1敗 (あなた優勢)',
+        skills: { serve: 88, return: 80, rally: 85, net: 82, stamina: 78, clutch: 82 },
+        notes: '強烈なフラットサーブとネットラッシュが得意。リターンからラリー戦に持ち込めば優位に立てます。'
+      },
+      yamada: {
+        name: '山田 浩二',
+        team: '湘南グリーンTC',
+        classTier: 'B級',
+        level: 565,
+        directRecord: '2勝 2敗 (完全互角)',
+        skills: { serve: 75, return: 84, rally: 90, net: 70, stamina: 88, clutch: 80 },
+        notes: '抜群のコートカバーリングとシコラー型ラリー巧者。焦らずドロップやコース変化で前後を揺さぶるのが有効。'
+      },
+      suzuki: {
+        name: '鈴木 一平',
+        team: '東京メトロTC',
+        classTier: 'C級',
+        level: 530,
+        directRecord: '3勝 0敗 (あなた連勝中)',
+        skills: { serve: 80, return: 76, rally: 78, net: 75, stamina: 74, clutch: 72 },
+        notes: 'バックハンドのクロスが武器。フォア側への鋭い配球で相手の展開を封じるパターンが機能しています。'
+      }
+    };
+
+    let levelChartInstance = null;
+    let distributionChartInstance = null;
+    let radarChartInstance = null;
+    let currentClassFilter = 'B';
+
+    // タブ切り替え処理
+    function switchTab(tabId) {
+      const tabs = ['my-level', 'rankings', 'matches', 'teams', 'analysis'];
+      tabs.forEach(t => {
+        const content = document.getElementById('tab-content-' + t);
+        const btn = document.getElementById('tab-btn-' + t);
+        if (t === tabId) {
+          content.classList.remove('hidden');
+          btn.className = 'tab-btn flex-shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition bg-emerald-600 text-white shadow-sm';
+        } else {
+          content.classList.add('hidden');
+          btn.className = 'tab-btn flex-shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition';
+        }
+      });
+
+      if (tabId === 'my-level') {
+        if (levelChartInstance) levelChartInstance.resize();
+        if (distributionChartInstance) distributionChartInstance.resize();
+      }
+      if (tabId === 'analysis' && radarChartInstance) {
+        radarChartInstance.resize();
+      }
+      lucide.createIcons();
+    }
+
+    // 規定階級別フィルター切り替え (docs 5.1仕様)
+    function filterByClass(classKey) {
+      currentClassFilter = classKey;
+      const classKeys = ['all', 'A', 'B', 'C', 'D', 'E'];
+      classKeys.forEach(k => {
+        const btn = document.getElementById('class-btn-' + k);
+        if (k === classKey) {
+          btn.className = 'class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-xs transition';
+        } else {
+          btn.className = 'class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+        }
+      });
+
+      const headerText = classKey === 'all' 
+        ? '全階級 総合レベル順位一覧 (100〜999)' 
+        : `規定階級: ${classKey}級 選手順位一覧`;
+      document.getElementById('ranking-table-header').textContent = headerText;
+
+      filterRankingList();
+    }
+
+    // ランキング種別切り替え (個人 / チーム)
+    function switchRankingType(type) {
+      const playerBtn = document.getElementById('rank-type-player');
+      const teamBtn = document.getElementById('rank-type-team');
+      const playerContainer = document.getElementById('player-ranking-container');
+      const teamContainer = document.getElementById('team-ranking-container');
+
+      if (type === 'player') {
+        playerBtn.className = 'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-xs transition';
+        teamBtn.className = 'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+        playerContainer.classList.remove('hidden');
+        teamContainer.classList.add('hidden');
+      } else {
+        teamBtn.className = 'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-xs transition';
+        playerBtn.className = 'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+        teamContainer.classList.remove('hidden');
+        playerContainer.classList.add('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    // 選手ランキングフィルタリング & 描画
+    function filterRankingList() {
+      const keyword = (document.getElementById('ranking-search-input').value || '').trim().toLowerCase();
+      
+      let filtered = rankingPlayersData;
+      if (currentClassFilter !== 'all') {
+        filtered = filtered.filter(p => p.classTier === currentClassFilter);
+      }
+      if (keyword) {
+        filtered = filtered.filter(p => p.name.toLowerCase().includes(keyword) || p.team.toLowerCase().includes(keyword));
+      }
+
+      renderPlayerRanking(filtered);
+    }
+
+    function renderPlayerRanking(players = rankingPlayersData) {
+      const tbody = document.getElementById('player-ranking-tbody');
+      if (players.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-400">該当する選手が見つかりませんでした</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = players.map(p => {
+        const isSelf = p.isUser;
+        const rowBg = isSelf ? 'bg-emerald-50/80 font-bold' : 'hover:bg-slate-50/80';
+        const rankIcon = p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : p.rank;
+        const classColor = p.classTier === 'A' ? 'bg-amber-100 text-amber-800' : p.classTier === 'B' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700';
+
+        return `
+          <tr class="${rowBg} transition" id="${isSelf ? 'my-rank-row' : ''}">
+            <td class="py-3 px-3.5 text-center font-black font-mono ${p.rank <= 3 ? 'text-base' : 'text-slate-600'}">
+              ${rankIcon}
+            </td>
+            <td class="py-3 px-3">
+              <div>
+                <span class="font-extrabold text-slate-900 ${isSelf ? 'text-emerald-800' : ''}">${p.name}</span>
+                <div class="text-[11px] text-slate-500 font-normal">${p.team}</div>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-center">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${classColor}">${p.classTier}級</span>
+            </td>
+            <td class="py-3 px-3 text-center font-black text-emerald-700 text-sm font-mono">${p.level}</td>
+            <td class="py-3 px-3 text-center text-slate-600 font-mono">${p.matches}</td>
+            <td class="py-3 px-3 text-center font-black font-mono ${parseFloat(p.winRate) >= 70 ? 'text-emerald-600' : 'text-slate-700'}">${p.winRate}</td>
+            <td class="py-3 px-3 text-right">
+              <button onclick="compareWithPlayer('${p.name}', ${p.level})" class="px-2 py-1 bg-white border border-slate-200 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 text-[11px] font-bold rounded-lg shadow-2xs transition">
+                VS比較
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderTeamRanking(teams = rankingTeamsData) {
+      const tbody = document.getElementById('team-ranking-tbody');
+      tbody.innerHTML = teams.map(t => {
+        const isSelf = t.isUserTeam;
+        const rowBg = isSelf ? 'bg-emerald-50/80 font-bold' : 'hover:bg-slate-50/80';
+        const rankIcon = t.rank === 1 ? '🥇' : t.rank === 2 ? '🥈' : t.rank === 3 ? '🥉' : t.rank;
+        return `
+          <tr class="${rowBg} transition">
+            <td class="py-3 px-3.5 text-center font-black font-mono ${t.rank <= 3 ? 'text-base' : 'text-slate-600'}">
+              ${rankIcon}
+            </td>
+            <td class="py-3 px-3">
+              <div>
+                <div class="font-extrabold text-slate-900 ${isSelf ? 'text-emerald-800' : ''}">${t.name}</div>
+                <div class="text-[11px] text-slate-500 font-normal">${t.region}</div>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-center text-slate-700 font-mono">${t.members}名</td>
+            <td class="py-3 px-3 text-center font-black text-emerald-700 text-sm font-mono">${t.avgLevel}</td>
+            <td class="py-3 px-3 text-center text-slate-600 font-mono">${t.matches}</td>
+            <td class="py-3 px-3 text-center font-black text-emerald-600 font-mono">${t.winRate}</td>
+            <td class="py-3 px-3 text-right">
+              <button onclick="showTeamMatchesDetail('${t.name}')" class="px-2 py-1 bg-white border border-slate-200 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 text-[11px] font-bold rounded-lg shadow-2xs transition">
+                対戦履歴
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 自分の順位へスクロール
+    function scrollToMyRank() {
+      switchRankingType('player');
+      filterByClass('B');
+      setTimeout(() => {
+        const row = document.getElementById('my-rank-row');
+        if (row) {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          row.classList.add('bg-emerald-200');
+          setTimeout(() => {
+            row.classList.remove('bg-emerald-200');
+          }, 1500);
+        }
+      }, 100);
+    }
+
+    // 出場履歴カード描画 (pre_gran_level / post_gran_level / gran_level_diff)
+    function renderMatchHistory(filterYear = '2026') {
+      const container = document.getElementById('match-history-cards-container');
+      const filtered = filterYear === 'all' ? matchHistoryData : matchHistoryData.filter(m => m.year === filterYear);
+
+      container.innerHTML = filtered.map(item => {
+        const matchesHtml = item.matches.map(m => {
+          const isWin = m.result === 'WIN';
+          const badgeClass = isWin ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
+          return `
+            <div class="flex items-center justify-between py-1.5 px-2.5 bg-slate-50 rounded-lg text-xs">
+              <div class="flex items-center gap-2 truncate">
+                <span class="font-bold text-slate-500 w-12 text-[11px] shrink-0">${m.round}</span>
+                <span class="text-slate-800 font-medium truncate">${m.opponent}</span>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="font-black text-slate-900 font-mono">${m.score}</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${badgeClass}">${m.result}</span>
+                <span class="text-[10px] font-mono font-bold text-emerald-600">${m.diff}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-400 font-mono">${item.date}</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.resultBadge}">${item.result}</span>
+                  <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-mono">
+                    Lv.${item.preLevel} $ightarrow$ Lv.${item.postLevel} (${item.levelDelta})
+                  </span>
+                </div>
+                <h4 class="text-sm sm:text-base font-extrabold text-slate-900 mt-1">${item.title}</h4>
+                <p class="text-[11px] text-slate-500">${item.category} ${item.partner ? '| ペア: ' + item.partner : ''}</p>
+              </div>
+              <div class="text-left sm:text-right bg-slate-50 sm:bg-transparent p-2 sm:p-0 rounded-xl">
+                <span class="text-[10px] text-slate-400 block">イロレーティング増減</span>
+                <span class="text-sm font-black text-emerald-700 font-mono">${item.levelDelta} Lv</span>
+              </div>
+            </div>
+
+            <!-- 各ラウンド対戦内訳 -->
+            <div class="space-y-1.5">
+              <span class="text-[11px] font-bold text-slate-500 block">公式戦スコア & レート増減ログ:</span>
+              ${matchesHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function filterMatchHistory() {
+      const year = document.getElementById('match-year-filter').value;
+      renderMatchHistory(year);
+    }
+
+    // チーム別対戦カード描画
+    function renderTeamMatchups() {
+      const container = document.getElementById('team-matchups-grid');
+      container.innerHTML = teamMatchupsData.map(t => {
+        return `
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="font-extrabold text-slate-900 text-sm">${t.teamName}</h4>
+                <span class="text-[10px] text-slate-500 font-mono">チーム平均 Lv.${t.avgLevel}</span>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${t.statusColor}">${t.statusBadge}</span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-center bg-slate-50 p-2 rounded-xl text-xs font-mono">
+              <div>
+                <span class="text-slate-400 block text-[10px] font-sans">通算成績</span>
+                <span class="font-black text-slate-800">${t.matchesCount}</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] font-sans">勝率</span>
+                <span class="font-black text-emerald-700">${t.winRate}</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] font-sans">得ゲーム率</span>
+                <span class="font-black text-slate-800">${t.gameRate}</span>
+              </div>
+            </div>
+
+            <div class="text-[11px] text-slate-500 space-y-0.5">
+              <div class="truncate">📅 ${t.recentLog}</div>
+              <div class="truncate text-slate-700 font-medium">🎯 主力ライバル: ${t.keyRival}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // ライバル比較描画
+    function renderRivalComparison() {
+      const select = document.getElementById('rival-select');
+      const rival = rivalProfiles[select.value] || rivalProfiles.kimura;
+      const container = document.getElementById('rival-comparison-container');
+
+      container.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+          <!-- 左右ステータス比較カード -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="text-center flex-1 bg-white p-3 rounded-xl border border-emerald-200 shadow-2xs">
+                <span class="text-[10px] text-emerald-600 font-bold block">あなた (GREEN STARS)</span>
+                <span class="text-sm font-black text-slate-900 block">佐藤 健太</span>
+                <span class="text-xs font-bold text-emerald-700 font-mono">Lv 580 (B級)</span>
+              </div>
+              <div class="px-2 text-rose-500 font-black text-xs">VS</div>
+              <div class="text-center flex-1 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                <span class="text-[10px] text-slate-400 font-bold block">${rival.team}</span>
+                <span class="text-sm font-black text-slate-900 block">${rival.name}</span>
+                <span class="text-xs font-bold text-slate-700 font-mono">Lv ${rival.level} (${rival.classTier})</span>
+              </div>
+            </div>
+
+            <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100 text-center">
+              <span class="text-[11px] text-emerald-800 font-bold block">過去直接対戦成績</span>
+              <span class="text-base font-black text-emerald-950 font-mono">${rival.directRecord}</span>
+            </div>
+
+            <p class="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-200">
+              💡 <strong>戦術アドバイス:</strong> ${rival.notes}
+            </p>
+          </div>
+
+          <!-- 各能力比較バー -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2.5 text-xs">
+            <span class="text-[11px] font-bold text-slate-500 block border-b border-slate-100 pb-1">能力スタッツ直接比較 (あなた / ライバル)</span>
+            
+            <div>
+              <div class="flex justify-between text-[11px] font-bold mb-0.5">
+                <span class="text-emerald-700 font-mono">サーブ力: 85</span>
+                <span class="text-slate-600 font-mono">${rival.skills.serve}</span>
+              </div>
+              <div class="flex h-2 rounded-full overflow-hidden bg-slate-100">
+                <div class="bg-emerald-500" style="width: ${(85 / (85 + rival.skills.serve)) * 100}%"></div>
+                <div class="bg-slate-400" style="width: ${(rival.skills.serve / (85 + rival.skills.serve)) * 100}%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] font-bold mb-0.5">
+                <span class="text-emerald-700 font-mono">リターン力: 78</span>
+                <span class="text-slate-600 font-mono">${rival.skills.return}</span>
+              </div>
+              <div class="flex h-2 rounded-full overflow-hidden bg-slate-100">
+                <div class="bg-emerald-500" style="width: ${(78 / (78 + rival.skills.return)) * 100}%"></div>
+                <div class="bg-slate-400" style="width: ${(rival.skills.return / (78 + rival.skills.return)) * 100}%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] font-bold mb-0.5">
+                <span class="text-emerald-700 font-mono">ラリー安定性: 88</span>
+                <span class="text-slate-600 font-mono">${rival.skills.rally}</span>
+              </div>
+              <div class="flex h-2 rounded-full overflow-hidden bg-slate-100">
+                <div class="bg-emerald-500" style="width: ${(88 / (88 + rival.skills.rally)) * 100}%"></div>
+                <div class="bg-slate-400" style="width: ${(rival.skills.rally / (88 + rival.skills.rally)) * 100}%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] font-bold mb-0.5">
+                <span class="text-emerald-700 font-mono">勝負強さ (クラッチ): 90</span>
+                <span class="text-slate-600 font-mono">${rival.skills.clutch}</span>
+              </div>
+              <div class="flex h-2 rounded-full overflow-hidden bg-slate-100">
+                <div class="bg-emerald-500" style="width: ${(90 / (90 + rival.skills.clutch)) * 100}%"></div>
+                <div class="bg-slate-400" style="width: ${(rival.skills.clutch / (90 + rival.skills.clutch)) * 100}%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function compareWithPlayer(name, level) {
+      switchTab('analysis');
+      showToast(`${name}選手 (Lv.${level}) との直接対決比較を開きました`, 'info');
+    }
+
+    function showTeamMatchesDetail(teamName) {
+      switchTab('teams');
+      showToast(`${teamName}との対戦成績一覧を表示中`, 'info');
+    }
+
+    // Chart.js 初期化
+    function initCharts() {
+      // 1. レベル推移折れ線グラフ (100〜999)
+      const ctxLevel = document.getElementById('levelHistoryChart').getContext('2d');
+      levelChartInstance = new Chart(ctxLevel, {
+        type: 'line',
+        data: {
+          labels: ['2025.10', '2025.11', '2025.12', '2026.01', '2026.02', '2026.03 (現在)'],
+          datasets: [
+            {
+              label: 'あなたのGRANレベル',
+              data: [545, 552, 560, 568, 585, 580],
+              borderColor: '#059669',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.35,
+              pointBackgroundColor: '#059669',
+              pointRadius: 5,
+              pointHoverRadius: 7
+            },
+            {
+              label: '全体平均レート (485)',
+              data: [485, 485, 485, 485, 485, 485],
+              borderColor: '#cbd5e1',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              fill: false,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ': Lv.' + context.parsed.y;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: 400,
+              max: 750,
+              ticks: { stepSize: 50, font: { size: 10 } },
+              grid: { color: 'rgba(226, 232, 240, 0.6)' }
+            },
+            x: {
+              ticks: { font: { size: 10 } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+
+      // 2. GRANレベル分布ヒストグラム (docs 5.1仕様)
+      const ctxDist = document.getElementById('levelDistributionChart').getContext('2d');
+      distributionChartInstance = new Chart(ctxDist, {
+        type: 'bar',
+        data: {
+          labels: ['E級 (100-249)', 'D級 (250-399)', 'C級 (400-549)', 'B級 (550-699)', 'A級 (700-999)'],
+          datasets: [
+            {
+              label: '登録選手数',
+              data: [410, 850, 1290, 680, 170],
+              backgroundColor: [
+                'rgba(148, 163, 184, 0.6)',
+                'rgba(148, 163, 184, 0.6)',
+                'rgba(59, 130, 246, 0.6)',
+                'rgba(16, 185, 129, 0.85)', // あなたがいるB級を強調
+                'rgba(245, 158, 11, 0.7)'
+              ],
+              borderColor: [
+                '#94a3b8',
+                '#94a3b8',
+                '#3b82f6',
+                '#059669',
+                '#d97706'
+              ],
+              borderWidth: 1.5,
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return '人数: ' + context.parsed.y + '名 (' + ((context.parsed.y / 3400) * 100).toFixed(1) + '%)';
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              ticks: { font: { size: 9 } },
+              grid: { color: 'rgba(226, 232, 240, 0.6)' }
+            },
+            x: {
+              ticks: { font: { size: 10, weight: 'bold' } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+
+      // 3. プレースタイル能力レーダーチャート
+      const ctxRadar = document.getElementById('skillsRadarChart').getContext('2d');
+      radarChartInstance = new Chart(ctxRadar, {
+        type: 'radar',
+        data: {
+          labels: ['サーブ力', 'リターン力', 'ラリー安定性', 'ネットプレー', 'フィジカル', '勝負強さ'],
+          datasets: [
+            {
+              label: 'あなたのスタッツ (Lv.580)',
+              data: [85, 78, 88, 65, 82, 90],
+              backgroundColor: 'rgba(16, 185, 129, 0.25)',
+              borderColor: '#059669',
+              pointBackgroundColor: '#059669',
+              pointBorderColor: '#fff',
+              borderWidth: 2
+            },
+            {
+              label: 'B級平均値',
+              data: [78, 76, 80, 72, 78, 75],
+              backgroundColor: 'rgba(148, 163, 184, 0.15)',
+              borderColor: '#94a3b8',
+              pointBackgroundColor: '#94a3b8',
+              borderDash: [3, 3],
+              borderWidth: 1.5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+              labels: { font: { size: 10 }, boxWidth: 12 }
+            }
+          },
+          scales: {
+            r: {
+              angleLines: { color: 'rgba(226, 232, 240, 0.8)' },
+              grid: { color: 'rgba(226, 232, 240, 0.8)' },
+              suggestedMin: 40,
+              suggestedMax: 100,
+              ticks: { display: false, stepSize: 20 },
+              pointLabels: { font: { size: 11, weight: 'bold' } }
+            }
+          }
+        }
+      });
+    }
+
+    function updateChartPeriod(period) {
+      ['6m', '1y', 'all'].forEach(p => {
+        const btn = document.getElementById('period-' + p);
+        if (p === period) {
+          btn.className = 'px-2.5 py-1 rounded-md bg-white text-emerald-700 shadow-xs';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900';
+        }
+      });
+
+      if (levelChartInstance) {
+        if (period === '6m') {
+          levelChartInstance.data.labels = ['2025.10', '2025.11', '2025.12', '2026.01', '2026.02', '2026.03'];
+          levelChartInstance.data.datasets[0].data = [545, 552, 560, 568, 585, 580];
+        } else if (period === '1y') {
+          levelChartInstance.data.labels = ['2025.04', '2025.07', '2025.10', '2026.01', '2026.03'];
+          levelChartInstance.data.datasets[0].data = [510, 530, 545, 568, 580];
+        } else {
+          levelChartInstance.data.labels = ['2024.04 (初期)', '2024.10', '2025.04', '2025.10', '2026.03'];
+          levelChartInstance.data.datasets[0].data = [500, 515, 530, 545, 580];
+        }
+        levelChartInstance.update();
+        showToast(`表示期間を「${period === '6m' ? '6ヶ月' : period === '1y' ? '1年間' : '全期間'}」に更新しました`, 'info');
+      }
+    }
+
+    // レポート共有
+    function shareStatsReport() {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText('【GRAN TENNIS 2026】佐藤 健太選手の公式戦績レポート\nGRAN Level: 580 (規定階級: B級)\n勝率: 73.8% (31勝11敗)\nhttps://gran-tennis.app/u/kenta_sato');
+        showToast('公式戦績サマリーURLをクリップボードにコピーしました！', 'success');
+      } else {
+        showToast('戦績レポートを共有しました', 'success');
+      }
+    }
+
+    // 最新レート再同期
+    function refreshDataStats() {
+      showToast('最新の公式大会対戦結果およびイロレーティングを再計算・同期しました', 'success');
+    }
+
+    // マイページモーダル
+    function openMyPageModal() {
+      document.getElementById('modal-mypage').classList.remove('hidden');
+      lucide.createIcons();
+    }
+    function closeMyPageModal() {
+      document.getElementById('modal-mypage').classList.add('hidden');
+    }
+
+    // トースト表示
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.textContent = message;
+      if (type === 'success') {
+        toastIcon.setAttribute('data-lucide', 'check-circle-2');
+        toastIcon.className = 'w-4 h-4 text-emerald-400';
+      } else if (type === 'info') {
+        toastIcon.setAttribute('data-lucide', 'info');
+        toastIcon.className = 'w-4 h-4 text-sky-400';
+      } else {
+        toastIcon.setAttribute('data-lucide', 'alert-circle');
+        toastIcon.className = 'w-4 h-4 text-rose-400';
+      }
+      lucide.createIcons();
+
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 3000);
+    }
+
+    // 初期化実行
+    window.addEventListener('DOMContentLoaded', () => {
+      filterByClass('B');
+      renderTeamRanking();
+      renderMatchHistory('2026');
+      renderTeamMatchups();
+      renderRivalComparison();
+      initCharts();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

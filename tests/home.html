@@ -119,38 +119,9 @@
       </div>
 
       <!-- ユーザー情報 & 操作 -->
-        <!-- 通知ボタン（概略ポップオーバー） -->
-        <div class="relative">
-          <button onclick="toggleQuickNotificationPopover(event)" id="header-notif-btn" title="通知の概略" class="relative w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition">
-            <i data-lucide="bell" class="w-4 h-4"></i>
-            <span class="notification-badge absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] flex items-center justify-center font-bold">3</span>
-          </button>
-
-          <!-- 通知概略ポップオーバー（タイトルのみの軽量表示） -->
-          <div id="quick-notification-popover" class="hidden absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden text-xs">
-            <div class="p-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-              <span class="font-bold text-slate-800 flex items-center gap-1.5">
-                <i data-lucide="bell" class="w-3.5 h-3.5 text-emerald-600"></i>
-                <span>通知の概略</span>
-              </span>
-              <span class="text-[10px] bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded-full" id="quick-notif-badge">未読 3件</span>
-            </div>
-            
-            <!-- タイトルのみのシンプルな一覧 -->
-            <div id="quick-notif-list" class="divide-y divide-slate-100 max-h-64 overflow-y-auto">
-              <!-- JSでタイトルのみレンダリング -->
-            </div>
-
-            <div class="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
-              <button onclick="closeQuickNotifPopover(); openNotificationModal();" class="text-[11px] font-bold text-emerald-600 hover:text-emerald-700">
-                すべての通知を見る &rarr;
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- ユーザープロフィールバッジ -->
-        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 py-1 px-2.5 rounded-full cursor-pointer hover:bg-slate-100 transition" onclick="openProfileModal()">
+      <div class="flex items-center gap-3">
+        <!-- ユーザープロフィールバッジ (マイページ表示専用) -->
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 py-1 px-2.5 rounded-full cursor-pointer hover:bg-slate-100 transition" onclick="openMyPageModal()" title="マイページを表示">
           <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold" id="user-avatar-text">
             佐
           </div>
@@ -168,29 +139,78 @@
   <!-- メインコンテンツエリア -->
   <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
 
-    <!-- ユーザーウェルカム & レーティングカード -->
-    <div id="welcome-card-banner" class="bg-gradient-to-r from-emerald-800 to-teal-900 rounded-2xl p-5 text-white shadow-md relative overflow-hidden transition-all duration-300">
-      <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/5 rounded-full blur-xl pointer-events-none"></div>
-      <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <!-- 要対応セクション -->
+    <div id="required-action-section" class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="alert-circle" class="w-5 h-5 text-rose-600"></i>
+          <span>要対応</span>
+        </h3>
         <div>
-          <div class="flex items-center gap-2 text-emerald-300 text-xs font-medium mb-1">
-            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            所属チーム: <span class="font-bold text-white" id="user-card-team">Team GRAN Apex</span>
-            <span class="bg-emerald-700/60 text-[10px] px-1.5 py-0.5 rounded border border-emerald-500/30" id="user-card-role-badge">代表者</span>
-          </div>
-          <h2 class="text-xl font-extrabold" id="user-card-welcome">佐藤 健太 さん、こんにちは！</h2>
+          <span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200 shadow-xs" id="action-page-indicator">1 / 1</span>
         </div>
+      </div>
 
-        <!-- GRANレベル・規定レベル内順位表示（均等バランス・数値表示） -->
-        <div class="grid grid-cols-2 divide-x divide-white/10 bg-black/25 backdrop-blur-sm py-3 px-2 rounded-xl border border-white/10 w-full sm:w-64 text-center">
-          <div class="px-3 flex flex-col items-center justify-center">
-            <div class="text-[10px] text-emerald-200 font-medium tracking-wide">GRANレベル</div>
-            <div class="text-2xl font-black font-mono text-white mt-0.5" id="user-card-rate">540</div>
+      <!-- 要対応通知カード (カラーバリエーション: 1週間以上=緑 / 3日以上=オレンジ / 3日未満=赤) -->
+      <!-- サンプルは残り2日（3日未満）のため【赤色 (Rose/Red)】スタイルを適用 -->
+      <div id="reminder-box" class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500/10 via-rose-50/70 to-red-50/50 border-2 border-rose-300/90 p-4 sm:p-5 shadow-md shadow-rose-500/5 transition-all hover:shadow-lg">
+        
+        <!-- 装飾バックグラウンド要素 -->
+        <div class="absolute -right-8 -top-8 w-32 h-32 bg-rose-400/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500 rounded-l-2xl"></div>
+
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          
+          <!-- 左側：要対応バッジ・タイムリミット・大会日・大会名・必要な対応 -->
+          <div class="space-y-2.5 flex-1 min-w-0">
+            
+            <!-- 上部ヘッダー：要対応バッジ ＆ 右上にタイムリミット（時計マーク＋残り時間、締切日は非記載） -->
+            <div class="flex items-center justify-between gap-2">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-500 text-white shadow-xs">
+                <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                <span>要対応</span>
+              </span>
+
+              <!-- 右上：対応までのタイムリミット（締切日は非記載、時計マークの右に残り時間を表示） -->
+              <div class="inline-flex items-center gap-1.5 text-xs font-extrabold text-rose-800 bg-rose-100/90 border border-rose-300/80 px-2.5 py-1 rounded-lg shadow-xs">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-rose-600"></i>
+                <span>残り 2日</span>
+              </div>
+            </div>
+
+            <!-- メイン情報：大会日 & 大会名（会場名は非表示） -->
+            <div class="space-y-1">
+              <div class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white/80 px-2.5 py-0.5 rounded-md border border-slate-200/80">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-500"></i>
+                <span>大会日: 2026/09/20 (日)</span>
+              </div>
+              <h4 class="text-base font-extrabold text-slate-900 leading-snug tracking-tight">
+                第14回 GRANカップ秋季ミックス団体戦
+              </h4>
+            </div>
+
+            <!-- 必要な対応：「未定枠があります」 -->
+            <div class="inline-flex items-center gap-2 text-xs text-rose-950 bg-white/95 border border-rose-200/90 rounded-xl px-3 py-1.5 shadow-xs">
+              <div class="w-4 h-4 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="alert-circle" class="w-3 h-3"></i>
+              </div>
+              <div class="font-bold text-slate-800">
+                <span class="text-rose-700 font-extrabold mr-1.5">必要な対応:</span>
+                <span>未定枠があります</span>
+              </div>
+            </div>
+
           </div>
-          <div class="px-3 flex flex-col items-center justify-center">
-            <div class="text-[10px] text-emerald-200 font-medium tracking-wide">規定レベル内順位</div>
-            <div class="text-2xl font-black font-mono text-amber-300 mt-0.5" id="user-card-class-rank">14<span class="text-xs font-normal text-white ml-0.5">位</span></div>
+
+          <!-- 右側：アクションボタン（「対応する」） -->
+          <div class="flex-shrink-0 flex items-center sm:self-center">
+            <button onclick="showToast('メンバー登録変更画面へ遷移します', 'info')"
+              class="w-full sm:w-auto h-11 px-6 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 group">
+              <span>対応する</span>
+              <i data-lucide="arrow-right" class="w-4 h-4 text-rose-200 group-hover:translate-x-0.5 transition-transform"></i>
+            </button>
           </div>
+
         </div>
       </div>
     </div>
@@ -200,11 +220,10 @@
       <div class="flex items-center justify-between">
         <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
           <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i>
-          <span>エントリー済みの大会 </span>
+          <span>エントリー済みの大会</span>
         </h3>
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200" id="entered-count-badge">2大会</span>
-          <span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200" id="tournament-page-indicator">1 / 2</span>
+        <div>
+          <span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200 shadow-xs" id="tournament-page-indicator">1 / 2</span>
         </div>
       </div>
 
@@ -240,25 +259,6 @@
       </div>
     </div>
 
-    <!-- 重要リマインド・通知バー -->
-    <div id="reminder-box" class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-3 shadow-sm">
-      <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <i data-lucide="alert-triangle" class="w-4 h-4"></i>
-      </div>
-      <div class="flex-1 text-xs">
-        <div class="font-bold text-amber-900 flex items-center gap-2">
-          <span>メンバー未定枠の登録リマインド (開催10日前)</span>
-          <span class="bg-amber-200 text-amber-800 text-[10px] px-1.5 py-0.5 rounded-full font-bold">要対応</span>
-        </div>
-        <p class="text-amber-800/90 mt-0.5">
-          【09/20 第14回 団体戦】の第3ペア選手が「未定枠」のままです。お早めに登録を完了してください。
-        </p>
-      </div>
-      <button onclick="showToast('メンバー登録変更画面へ遷移します', 'info')" class="text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium px-3 py-1.5 rounded-lg whitespace-nowrap shadow-sm transition">
-        メンバー指定
-      </button>
-    </div>
-
   </main>
 
   <!-- モバイルボトムナビゲーション -->
@@ -272,18 +272,18 @@
         <i data-lucide="calendar" class="w-5 h-5 mb-0.5"></i>
         <span>大会日程</span>
       </button>
-      <button onclick="showToast('マイスケジュール (U-05) へ遷移します', 'info')" class="flex flex-col items-center justify-center hover:text-slate-900">
-        <i data-lucide="clock" class="w-5 h-5 mb-0.5"></i>
-        <span>予定・履歴</span>
+      <button onclick="window.location.href='data.html'" class="flex flex-col items-center justify-center hover:text-slate-900">
+        <i data-lucide="bar-chart-2" class="w-5 h-5 mb-0.5"></i>
+        <span>データ</span>
       </button>
-      <button onclick="openNotificationModal()" class="flex flex-col items-center justify-center hover:text-slate-900 relative">
+      <button onclick="window.location.href='notifications.html'" class="flex flex-col items-center justify-center hover:text-slate-900 relative">
         <div class="relative">
           <i data-lucide="bell" class="w-5 h-5 mb-0.5"></i>
           <span class="notification-badge absolute -top-1 -right-2 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] flex items-center justify-center font-bold">3</span>
         </div>
         <span>通知</span>
       </button>
-      <button onclick="openProfileModal()" class="flex flex-col items-center justify-center hover:text-slate-900">
+      <button onclick="window.location.href='settings.html'" class="flex flex-col items-center justify-center hover:text-slate-900">
         <i data-lucide="settings" class="w-5 h-5 mb-0.5"></i>
         <span>設定</span>
       </button>
@@ -417,8 +417,105 @@
     </div>
   </div>
 
-  <!-- 設定・マイプロフィールモーダル (U-02) -->
-  <div id="modal-profile" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+  <!-- マイページ表示専用モーダル (表示のみ・設定機能なし) -->
+  <div id="modal-mypage" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-[90vh] shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- モーダルヘッダー -->
+      <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-xs">
+            <i data-lucide="user-check" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">マイページ</h3>
+            <p class="text-[11px] text-slate-500">選手登録情報・レーティング確認</p>
+          </div>
+        </div>
+        <button onclick="closeMyPageModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- モーダル本文 (表示専用) -->
+      <div class="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 text-xs text-slate-700">
+        
+        <!-- プロフィール基本カード -->
+        <div class="flex items-center gap-3.5 p-4 bg-gradient-to-br from-slate-50 to-slate-100/80 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div class="w-14 h-14 rounded-full bg-emerald-600 text-white text-xl font-bold flex items-center justify-center shadow-md flex-shrink-0" id="mypage-avatar">
+            佐
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[11px] text-slate-500" id="mypage-furigana">サトウ ケンタ</div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-lg font-extrabold text-slate-900 truncate" id="mypage-name">佐藤 健太</h4>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-300/60" id="mypage-role-badge">代表者</span>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+              <span>ニックネーム: <strong class="text-slate-700" id="mypage-nickname">ケンタ</strong></span>
+              <span class="text-slate-300">|</span>
+              <span class="font-mono text-slate-400" id="mypage-id">ID: 000101</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- レーティング & クラス順位カード -->
+        <div class="bg-gradient-to-r from-emerald-800 to-teal-900 rounded-2xl p-4 text-white shadow-md">
+          <div class="text-[10px] text-emerald-200 font-bold tracking-wider uppercase mb-2">GRAN Rating Status</div>
+          <div class="grid grid-cols-2 divide-x divide-white/10 text-center bg-black/20 rounded-xl py-3 px-1">
+            <div class="px-2">
+              <div class="text-[10px] text-emerald-200 font-medium">GRANレベル</div>
+              <div class="text-2xl font-black font-mono text-white mt-0.5" id="mypage-rate">540</div>
+            </div>
+            <div class="px-2">
+              <div class="text-[10px] text-emerald-200 font-medium">規定レベル内順位</div>
+              <div class="text-2xl font-black font-mono text-amber-300 mt-0.5" id="mypage-rank">14<span class="text-xs font-normal text-white ml-0.5">位</span></div>
+            </div>
+          </div>
+          <div class="mt-2.5 text-center text-xs text-emerald-100 font-medium bg-white/10 py-1.5 rounded-lg border border-white/10" id="mypage-class-desc">
+            規定クラス: B級 (中級)
+          </div>
+        </div>
+
+        <!-- 詳細情報リスト (表示専用) -->
+        <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden shadow-xs">
+          <div class="p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 text-slate-500">
+              <i data-lucide="shield" class="w-4 h-4 text-slate-400"></i>
+              <span class="font-medium">所属チーム</span>
+            </div>
+            <span class="font-bold text-slate-800" id="mypage-team">Team GRAN Apex</span>
+          </div>
+          <div class="p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 text-slate-500">
+              <i data-lucide="mail" class="w-4 h-4 text-slate-400"></i>
+              <span class="font-medium">メールアドレス</span>
+            </div>
+            <span class="font-medium text-slate-800 truncate max-w-[180px] sm:max-w-[220px]" id="mypage-email">sato.kenta@example.com</span>
+          </div>
+          <div class="p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 text-slate-500">
+              <i data-lucide="phone" class="w-4 h-4 text-slate-400"></i>
+              <span class="font-medium">電話番号</span>
+            </div>
+            <span class="font-medium text-slate-800" id="mypage-phone">090-3456-7890</span>
+          </div>
+          <div class="p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 text-slate-500">
+              <i data-lucide="award" class="w-4 h-4 text-slate-400"></i>
+              <span class="font-medium">アカウント種別</span>
+            </div>
+            <span class="font-bold text-emerald-700" id="mypage-role-name">チーム代表者 (LEADER)</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 設定モーダル (U-02 フッター「設定」ボタンから起動) -->
+  <div id="modal-settings" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
     <div class="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
       
       <!-- モーダルヘッダー -->
@@ -444,7 +541,7 @@
           <h4 class="text-xs font-bold text-slate-900" id="settings-sub-title">マイプロフィール</h4>
         </div>
 
-        <button onclick="closeProfileModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
+        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
@@ -1196,33 +1293,89 @@
     const currentUser = userProfiles[userRole] || userProfiles.leader;
 
     function updateProfileView() {
-      document.getElementById('user-header-name').textContent = currentUser.name;
-      document.getElementById('user-header-rate').textContent = currentUser.rate;
-      document.getElementById('user-avatar-text').textContent = currentUser.name.charAt(0);
-      document.getElementById('user-card-welcome').textContent = currentUser.name + ' さん、こんにちは！';
-      document.getElementById('user-card-team').textContent = currentUser.team;
-      document.getElementById('user-card-rate').textContent = currentUser.rate;
-      document.getElementById('user-card-role-badge').textContent = currentUser.isLeader ? '代表者' : '一般メンバー';
-      document.getElementById('user-card-class-rank').innerHTML = currentUser.classRankOrder + '<span class="text-xs font-normal text-white ml-0.5">位</span>';
+      // トップヘッダー
+      const headerName = document.getElementById('user-header-name');
+      if (headerName) headerName.textContent = currentUser.name;
+      const headerRate = document.getElementById('user-header-rate');
+      if (headerRate) headerRate.textContent = currentUser.rate;
+      const avatarText = document.getElementById('user-avatar-text');
+      if (avatarText) avatarText.textContent = currentUser.name.charAt(0);
+      const cardWelcome = document.getElementById('user-card-welcome');
+      if (cardWelcome) cardWelcome.textContent = currentUser.name + ' さん、こんにちは！';
+      const cardTeam = document.getElementById('user-card-team');
+      if (cardTeam) cardTeam.textContent = currentUser.team;
+      const cardRate = document.getElementById('user-card-rate');
+      if (cardRate) cardRate.textContent = currentUser.rate;
+      const cardRoleBadge = document.getElementById('user-card-role-badge');
+      if (cardRoleBadge) cardRoleBadge.textContent = currentUser.isLeader ? '代表者' : '一般メンバー';
+      const cardClassRank = document.getElementById('user-card-class-rank');
+      if (cardClassRank) cardClassRank.innerHTML = currentUser.classRankOrder + '<span class="text-xs font-normal text-white ml-0.5">位</span>';
 
-      document.getElementById('profile-view-avatar').textContent = currentUser.name.charAt(0);
-      document.getElementById('profile-view-name').textContent = currentUser.name;
-      document.getElementById('profile-view-nickname').textContent = currentUser.nickname;
-      document.getElementById('profile-view-role-tag').textContent = currentUser.isLeader ? '代表者' : '一般メンバー';
-      document.getElementById('profile-view-id').textContent = 'ID: ' + userId;
-      document.getElementById('profile-view-team').textContent = currentUser.team;
-      document.getElementById('profile-view-rate').textContent = currentUser.rate;
-      document.getElementById('profile-view-class').textContent = currentUser.classRank;
-      document.getElementById('profile-view-email').textContent = currentUser.email;
-      document.getElementById('profile-view-phone').textContent = currentUser.phone;
+      // マイページモーダル (表示専用)
+      const mypageAvatar = document.getElementById('mypage-avatar');
+      if (mypageAvatar) mypageAvatar.textContent = currentUser.name.charAt(0);
+      const mypageName = document.getElementById('mypage-name');
+      if (mypageName) mypageName.textContent = currentUser.name;
+      const mypageFurigana = document.getElementById('mypage-furigana');
+      if (mypageFurigana) mypageFurigana.textContent = currentUser.furigana || currentUser.name;
+      const mypageNickname = document.getElementById('mypage-nickname');
+      if (mypageNickname) mypageNickname.textContent = currentUser.nickname;
+      const mypageRoleBadge = document.getElementById('mypage-role-badge');
+      if (mypageRoleBadge) mypageRoleBadge.textContent = currentUser.isLeader ? '代表者' : '一般メンバー';
+      const mypageRoleName = document.getElementById('mypage-role-name');
+      if (mypageRoleName) mypageRoleName.textContent = currentUser.roleName;
+      const mypageId = document.getElementById('mypage-id');
+      if (mypageId) mypageId.textContent = 'ID: ' + userId;
+      const mypageTeam = document.getElementById('mypage-team');
+      if (mypageTeam) mypageTeam.textContent = currentUser.team;
+      const mypageRate = document.getElementById('mypage-rate');
+      if (mypageRate) mypageRate.textContent = currentUser.rate;
+      const mypageRank = document.getElementById('mypage-rank');
+      if (mypageRank) mypageRank.innerHTML = currentUser.classRankOrder + '<span class="text-xs font-normal text-white ml-0.5">位</span>';
+      const mypageClassDesc = document.getElementById('mypage-class-desc');
+      if (mypageClassDesc) mypageClassDesc.textContent = '規定クラス: ' + currentUser.classDesc;
+      const mypageEmail = document.getElementById('mypage-email');
+      if (mypageEmail) mypageEmail.textContent = currentUser.email;
+      const mypagePhone = document.getElementById('mypage-phone');
+      if (mypagePhone) mypagePhone.textContent = currentUser.phone;
 
-      document.getElementById('edit-profile-name').value = currentUser.name;
-      document.getElementById('edit-profile-furigana').value = currentUser.furigana;
-      document.getElementById('edit-profile-nickname').value = currentUser.nickname;
-      document.getElementById('edit-profile-team').value = currentUser.team;
-      document.getElementById('edit-profile-email').value = currentUser.email;
-      document.getElementById('edit-profile-phone').value = currentUser.phone;
+      // 設定モーダル内のプロフィールビュー
+      const profileAvatar = document.getElementById('profile-view-avatar');
+      if (profileAvatar) profileAvatar.textContent = currentUser.name.charAt(0);
+      const profileName = document.getElementById('profile-view-name');
+      if (profileName) profileName.textContent = currentUser.name;
+      const profileNick = document.getElementById('profile-view-nickname');
+      if (profileNick) profileNick.textContent = currentUser.nickname;
+      const profileRoleTag = document.getElementById('profile-view-role-tag');
+      if (profileRoleTag) profileRoleTag.textContent = currentUser.isLeader ? '代表者' : '一般メンバー';
+      const profileId = document.getElementById('profile-view-id');
+      if (profileId) profileId.textContent = 'ID: ' + userId;
+      const profileTeam = document.getElementById('profile-view-team');
+      if (profileTeam) profileTeam.textContent = currentUser.team;
+      const profileRate = document.getElementById('profile-view-rate');
+      if (profileRate) profileRate.textContent = currentUser.rate;
+      const profileClass = document.getElementById('profile-view-class');
+      if (profileClass) profileClass.textContent = currentUser.classRank;
+      const profileEmail = document.getElementById('profile-view-email');
+      if (profileEmail) profileEmail.textContent = currentUser.email;
+      const profilePhone = document.getElementById('profile-view-phone');
+      if (profilePhone) profilePhone.textContent = currentUser.phone;
 
+      // 編集フォームの初期値
+      const editName = document.getElementById('edit-profile-name');
+      if (editName) editName.value = currentUser.name;
+      const editFurigana = document.getElementById('edit-profile-furigana');
+      if (editFurigana) editFurigana.value = currentUser.furigana;
+      const editNick = document.getElementById('edit-profile-nickname');
+      if (editNick) editNick.value = currentUser.nickname;
+      const editTeam = document.getElementById('edit-profile-team');
+      if (editTeam) editTeam.value = currentUser.team;
+      const editEmail = document.getElementById('edit-profile-email');
+      if (editEmail) editEmail.value = currentUser.email;
+      const editPhone = document.getElementById('edit-profile-phone');
+      if (editPhone) editPhone.value = currentUser.phone;
+
+      // 設定メニューの概要カード
       const menuAvatar = document.getElementById('settings-menu-avatar');
       if (menuAvatar) menuAvatar.textContent = currentUser.name.charAt(0);
       const menuName = document.getElementById('settings-menu-name');
@@ -1383,8 +1536,7 @@
     let currentNotifFilter = 'ALL';
 
     function openNotificationModal() {
-      renderNotifications();
-      document.getElementById('modal-notification').classList.remove('hidden');
+      window.location.href = 'notifications.html';
     }
 
     function closeNotificationModal() {
@@ -1532,15 +1684,34 @@
       }
     }
 
-    function openProfileModal() {
-      showSettingsMenu();
-      document.getElementById('modal-profile').classList.remove('hidden');
+    // マイページモーダル (表示専用・設定機能なし)
+    function openMyPageModal() {
       updateProfileView();
+      document.getElementById('modal-mypage').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeMyPageModal() {
+      document.getElementById('modal-mypage').classList.add('hidden');
+    }
+
+    // 設定画面へページ遷移
+    function openSettingsModal() {
+      window.location.href = 'settings.html';
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('modal-settings').classList.add('hidden');
+      toggleProfileEdit(false);
+    }
+
+    // 互換性エイリアス
+    function openProfileModal() {
+      openMyPageModal();
     }
 
     function closeProfileModal() {
-      document.getElementById('modal-profile').classList.add('hidden');
-      toggleProfileEdit(false);
+      closeSettingsModal();
     }
 
     // 設定メニュー（トップ一覧）を表示
@@ -1549,7 +1720,8 @@
       document.getElementById('settings-view-detail').classList.add('hidden');
       document.getElementById('settings-header-main').classList.remove('hidden');
       document.getElementById('settings-header-sub').classList.add('hidden');
-      document.getElementById('settings-back-btn').classList.add('hidden');
+      const backBtn = document.getElementById('settings-back-btn');
+      if (backBtn) backBtn.classList.add('hidden');
       toggleProfileEdit(false);
       lucide.createIcons();
     }
@@ -1569,7 +1741,8 @@
       document.getElementById('settings-view-detail').classList.remove('hidden');
       document.getElementById('settings-header-main').classList.add('hidden');
       document.getElementById('settings-header-sub').classList.remove('hidden');
-      document.getElementById('settings-back-btn').classList.remove('hidden');
+      const backBtn = document.getElementById('settings-back-btn');
+      if (backBtn) backBtn.classList.remove('hidden');
 
       // 全パネル非表示にして対象のみ表示
       document.querySelectorAll('.settings-panel').forEach(p => p.classList.add('hidden'));
@@ -1746,77 +1919,9 @@
       }, 3000);
     }
 
-    // ヘッダー通知ポップオーバー開閉（概略・タイトルのみ表示）
-    function toggleQuickNotificationPopover(event) {
-      if (event) event.stopPropagation();
-      const popover = document.getElementById('quick-notification-popover');
-      if (!popover) return;
-      const isHidden = popover.classList.contains('hidden');
-      if (isHidden) {
-        renderQuickNotifications();
-        popover.classList.remove('hidden');
-      } else {
-        popover.classList.add('hidden');
-      }
-      lucide.createIcons();
-    }
-
-    function closeQuickNotifPopover() {
-      const popover = document.getElementById('quick-notification-popover');
-      if (popover) popover.classList.add('hidden');
-    }
-
-    function renderQuickNotifications() {
-      const list = document.getElementById('quick-notif-list');
-      if (!list) return;
-
-      const unreadCount = notifications.filter(n => n.unread).length;
-      const badge = document.getElementById('quick-notif-badge');
-      if (badge) {
-        badge.textContent = `未読 ${unreadCount}件`;
-      }
-
-      list.innerHTML = notifications.map(n => {
-        const catLabels = {
-          ACTION: '<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[9px] font-bold flex-shrink-0">要対応</span>',
-          ENTRY: '<span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold flex-shrink-0">大会</span>',
-          INFO: '<span class="px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 text-[9px] font-bold flex-shrink-0">速報</span>'
-        };
-        const catBadge = catLabels[n.category] || '<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[9px] font-bold flex-shrink-0">案内</span>';
-
-        return `
-          <div onclick="closeQuickNotifPopover(); openNotificationModal();" class="p-3 hover:bg-slate-50 cursor-pointer transition flex items-start gap-2.5">
-            ${n.unread ? '<span class="w-2 h-2 rounded-full bg-rose-500 mt-1 flex-shrink-0"></span>' : '<span class="w-2 h-2 rounded-full bg-transparent mt-1 flex-shrink-0"></span>'}
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-1.5 mb-0.5">
-                ${catBadge}
-                <span class="text-[10px] text-slate-400 font-medium">${n.date.split(' ')[0]}</span>
-              </div>
-              <div class="text-xs font-bold text-slate-900 leading-snug line-clamp-2 ${n.unread ? 'font-extrabold text-emerald-950' : ''}">
-                ${n.title}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-      lucide.createIcons();
-    }
-
-    // 画面外クリックでポップオーバーを閉じる
-    document.addEventListener('click', (e) => {
-      const popover = document.getElementById('quick-notification-popover');
-      const btn = document.getElementById('header-notif-btn');
-      if (popover && !popover.classList.contains('hidden')) {
-        if (!popover.contains(e.target) && (!btn || !btn.contains(e.target))) {
-          popover.classList.add('hidden');
-        }
-      }
-    });
-
     // 初期描画実行
     renderEnteredTournaments();
     renderNotifications();
-    renderQuickNotifications();
     renderThemeColorGrid();
     lucide.createIcons();
   </script>

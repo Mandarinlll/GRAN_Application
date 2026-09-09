@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GRAN テニス大会 - 通知一覧</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .fade-enter { animation: fadeIn 0.2s ease-out forwards; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col justify-between font-sans antialiased pb-20 sm:pb-8">
+
+  <!-- トップヘッダー (共通デザイン) -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+      
+      <!-- ロゴ & アプリ名 (タップでホームへ) -->
+      <a href="home.html" class="flex items-center gap-2.5 hover:opacity-90 transition" title="ホームへ戻る">
+        <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+          <i data-lucide="trophy" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-base tracking-tight text-slate-900">GRAN TENNIS</span>
+          <span class="text-[10px] text-emerald-600 font-bold ml-1 px-1.5 py-0.5 bg-emerald-50 rounded">2026 Season</span>
+        </div>
+      </a>
+
+      <!-- ユーザー情報 & 操作 (マイページ表示専用) -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 py-1 px-2.5 rounded-full cursor-pointer hover:bg-slate-100 transition" onclick="openMyPageModal()" title="マイページを表示">
+          <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold" id="user-avatar-text">
+            佐
+          </div>
+          <div class="text-left hidden sm:block">
+            <div class="text-xs font-bold leading-none text-slate-800" id="user-header-name">佐藤 健太</div>
+            <div class="text-[10px] text-slate-500 leading-tight">Rate: <span class="font-bold text-emerald-600 font-mono" id="user-header-rate">540</span> (B級)</div>
+          </div>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- トースト通知コンテナ -->
+  <div id="toast" class="fixed top-16 right-4 z-50 transform -translate-y-4 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 text-xs">
+    <i data-lucide="info" class="w-4 h-4 text-emerald-400" id="toast-icon"></i>
+    <span id="toast-message">通知を更新しました</span>
+  </div>
+
+  <!-- メインコンテンツエリア -->
+  <main class="max-w-2xl mx-auto px-4 py-6 w-full flex-1">
+
+    <!-- 統合通知カード (単一オブジェクト) -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+      
+      <!-- カード上部ヘッダー (タイトル・絞り込みボタン・一括既読ボタン) -->
+      <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h1 class="text-base font-bold text-slate-900">通知・お知らせ</h1>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 絞り込みボタン -->
+          <button type="button" onclick="toggleFilterPanel()" id="filter-toggle-btn"
+            class="h-8 px-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition shadow-xs">
+            <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-slate-500"></i>
+            <span>絞り込み</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" id="filter-chevron-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 絞り込みチェックボックスパネル (ドロップダウン展開) -->
+      <div id="filter-panel" class="hidden bg-slate-50/90 border-b border-slate-200/80 p-4 sm:p-5 space-y-3 transition-all">
+        
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+            <i data-lucide="filter" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>表示カテゴリの選択</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <button type="button" onclick="selectAllFilters(true)" class="text-emerald-700 hover:underline font-semibold text-[11px]">
+              すべて選択
+            </button>
+            <span class="text-slate-300">|</span>
+            <button type="button" onclick="selectAllFilters(false)" class="text-slate-500 hover:underline font-medium text-[11px]">
+              クリア
+            </button>
+          </div>
+        </div>
+
+        <!-- チェックボックスリスト (今後の項目追加にも対応しやすい横並びの一覧形式) -->
+        <div class="space-y-2 pt-1">
+          
+          <!-- 1: 要対応 -->
+          <label class="filter-card flex items-center justify-between gap-2.5 p-3 rounded-xl bg-white border border-slate-200 hover:border-emerald-500/50 cursor-pointer shadow-2xs transition select-none">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <input type="checkbox" value="ACTION" checked onchange="handleFilterCheckboxChange()"
+                class="filter-checkbox w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 accent-emerald-600 cursor-pointer" />
+              <span class="font-bold text-slate-800 text-xs truncate">要対応</span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-mono whitespace-nowrap"><span id="filter-count-action">1</span>件</span>
+          </label>
+
+          <!-- 2: エントリー -->
+          <label class="filter-card flex items-center justify-between gap-2.5 p-3 rounded-xl bg-white border border-slate-200 hover:border-emerald-500/50 cursor-pointer shadow-2xs transition select-none">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <input type="checkbox" value="ENTRY" checked onchange="handleFilterCheckboxChange()"
+                class="filter-checkbox w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 accent-emerald-600 cursor-pointer" />
+              <span class="font-bold text-slate-800 text-xs truncate">エントリー</span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-mono whitespace-nowrap"><span id="filter-count-entry">1</span>件</span>
+          </label>
+
+          <!-- 3: GRANレベル -->
+          <label class="filter-card flex items-center justify-between gap-2.5 p-3 rounded-xl bg-white border border-slate-200 hover:border-emerald-500/50 cursor-pointer shadow-2xs transition select-none">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <input type="checkbox" value="LEVEL" checked onchange="handleFilterCheckboxChange()"
+                class="filter-checkbox w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 accent-emerald-600 cursor-pointer" />
+              <span class="font-bold text-slate-800 text-xs truncate">GRANレベル</span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-mono whitespace-nowrap"><span id="filter-count-level">1</span>件</span>
+          </label>
+
+          <!-- 4: その他 -->
+          <label class="filter-card flex items-center justify-between gap-2.5 p-3 rounded-xl bg-white border border-slate-200 hover:border-emerald-500/50 cursor-pointer shadow-2xs transition select-none">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <input type="checkbox" value="OTHER" checked onchange="handleFilterCheckboxChange()"
+                class="filter-checkbox w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 accent-emerald-600 cursor-pointer" />
+              <span class="font-bold text-slate-800 text-xs truncate">その他</span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-mono whitespace-nowrap"><span id="filter-count-other">1</span>件</span>
+          </label>
+
+        </div>
+
+      </div>
+
+      <!-- 通知アイテムリスト -->
+      <div class="p-4 sm:p-5">
+        <div id="notification-list" class="space-y-3 divide-y divide-slate-100 text-xs">
+          <!-- JSで動的レンダリング -->
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- マイページモーダル (表示専用・共通) -->
+  <div id="modal-mypage" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-[90vh] shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- モーダルヘッダー -->
+      <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <i data-lucide="user" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">マイページ</h3>
+            <p class="text-[11px] text-slate-500">選手登録情報・レーティング確認</p>
+          </div>
+        </div>
+        <button onclick="closeMyPageModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- モーダル本文 (表示専用) -->
+      <div class="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 text-xs text-slate-700">
+        
+        <!-- プロフィール基本カード -->
+        <div class="flex items-center gap-3.5 p-4 bg-gradient-to-br from-slate-50 to-slate-100/80 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div class="w-14 h-14 rounded-full bg-emerald-600 text-white text-xl font-bold flex items-center justify-center shadow-md flex-shrink-0" id="mypage-avatar">
+            佐
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[11px] text-slate-500" id="mypage-furigana">サトウ ケンタ</div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-lg font-extrabold text-slate-900 truncate" id="mypage-name">佐藤 健太</h4>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-300/60" id="mypage-role-badge">代表者</span>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+              <span>ニックネーム: <strong class="text-slate-700" id="mypage-nickname">ケンタ</strong></span>
+              <span class="text-slate-300">|</span>
+              <span class="font-mono text-slate-400" id="mypage-id">ID: 000101</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- レーティング & クラス順位カード -->
+        <div class="bg-gradient-to-r from-emerald-800 to-teal-900 rounded-2xl p-4 text-white shadow-md">
+          <div class="text-[10px] text-emerald-200 font-bold tracking-wider uppercase mb-2">GRAN Rating Status</div>
+          <div class="grid grid-cols-2 divide-x divide-white/10 text-center bg-black/20 rounded-xl py-3 px-1">
+            <div class="px-2">
+              <div class="text-[10px] text-emerald-200 font-medium">GRANレベル</div>
+              <div class="text-2xl font-black font-mono text-white mt-0.5" id="mypage-rate">540</div>
+            </div>
+            <div class="px-2">
+              <div class="text-[10px] text-emerald-200 font-medium">規定レベル内順位</div>
+              <div class="text-2xl font-black font-mono text-amber-300 mt-0.5" id="mypage-rank">14<span class="text-xs font-normal text-white ml-0.5">位</span></div>
+            </div>
+          </div>
+          <div class="mt-2.5 text-center text-xs text-emerald-100 font-medium bg-white/10 py-1.5 rounded-lg border border-white/10" id="mypage-class-desc">
+            規定クラス: B級 (中級)
+          </div>
+        </div>
+
+        <!-- 詳細情報リスト (表示専用) -->
+        <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden shadow-xs">
+          <div class="p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 text-slate-500">
+              <i data-lucide="shield" class="w-4 h-4 text-slate-400"></i>
+              <span class="font-medium">所属チーム</span>
+            </div>
+            <span class="font-bold text-slate-800" id="mypage-team">Team GRAN Apex</span>
+          </div>
+          <div class="p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 text-slate-500">
+              <i data-lucide="mail" class="w-4 h-4 text-slate-400"></i>
+              <span class="font-medium">メールアドレス</span>
+            </div>
+            <span class="font-medium text-slate-800 truncate max-w-[180px] sm:max-w-[220px]" id="mypage-email">sato.kenta@example.com</span>
+          </div>
+          <div class="p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 text-slate-500">
+              <i data-lucide="phone" class="w-4 h-4 text-slate-400"></i>
+              <span class="font-medium">電話番号</span>
+            </div>
+            <span class="font-medium text-slate-800" id="mypage-phone">090-3456-7890</span>
+          </div>
+          <div class="p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 text-slate-500">
+              <i data-lucide="award" class="w-4 h-4 text-slate-400"></i>
+              <span class="font-medium">アカウント種別</span>
+            </div>
+            <span class="font-bold text-emerald-700" id="mypage-role-name">チーム代表者 (LEADER)</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- モバイルボトムナビゲーション -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 sm:hidden">
+    <div class="grid grid-cols-5 h-14 text-[10px] font-medium text-slate-500">
+      <button onclick="window.location.href='home.html'" class="flex flex-col items-center justify-center hover:text-slate-900">
+        <i data-lucide="home" class="w-5 h-5 mb-0.5"></i>
+        <span>ホーム</span>
+      </button>
+      <button onclick="showToast('大会日程・エントリー画面へ遷移します', 'info')" class="flex flex-col items-center justify-center hover:text-slate-900">
+        <i data-lucide="calendar" class="w-5 h-5 mb-0.5"></i>
+        <span>大会日程</span>
+      </button>
+      <button onclick="window.location.href='data.html'" class="flex flex-col items-center justify-center hover:text-slate-900">
+        <i data-lucide="bar-chart-2" class="w-5 h-5 mb-0.5"></i>
+        <span>データ</span>
+      </button>
+      <button class="flex flex-col items-center justify-center text-emerald-600 font-bold relative">
+        <div class="relative">
+          <i data-lucide="bell" class="w-5 h-5 mb-0.5"></i>
+          <span class="notification-badge absolute -top-1 -right-2 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] flex items-center justify-center font-bold">3</span>
+        </div>
+        <span>通知</span>
+      </button>
+      <button onclick="window.location.href='settings.html'" class="flex flex-col items-center justify-center hover:text-slate-900">
+        <i data-lucide="settings" class="w-5 h-5 mb-0.5"></i>
+        <span>設定</span>
+      </button>
+    </div>
+  </nav>
+
+  <script>
+    // ユーザー情報データ
+    const userProfiles = {
+      leader: {
+        name: '佐藤 健太',
+        furigana: 'サトウ ケンタ',
+        nickname: 'ケンタ',
+        roleName: 'チーム代表者 (LEADER)',
+        rate: 540,
+        classRank: 'B級',
+        classDesc: 'B級 (中級)',
+        classRankOrder: 14,
+        team: 'Team GRAN Apex',
+        email: 'sato.kenta@example.com',
+        phone: '090-3456-7890',
+        isLeader: true
+      }
+    };
+
+    const currentUser = userProfiles.leader;
+
+    // 通知データ (要対応 / エントリー / GRANレベル / その他)
+    const notifications = [
+      {
+        id: 1,
+        category: 'ACTION',
+        title: '【要対応】メンバー未定 ',
+        desc: '【09/20 第14回 GRANカップ秋季ミックス団体戦】の第3ペア選手が「未定枠」のままです。お早めに選手登録を完了してください。',
+        date: '2026/09/10 10:00',
+        unread: true,
+        action: 'メンバー指定',
+        icon: 'alert-triangle',
+        iconBg: 'bg-amber-100 text-amber-700'
+      },
+      {
+        id: 2,
+        category: 'ENTRY',
+        title: '【エントリー完了】',
+        desc: '10/04開催の男子団体戦へのエントリーが正常に確定しました。登録完了メールをご確認ください。',
+        date: '2026/09/08 15:30',
+        unread: true,
+        action: 'エントリー確認',
+        icon: 'check-circle-2',
+        iconBg: 'bg-emerald-100 text-emerald-700'
+      },
+      {
+        id: 3,
+        category: 'LEVEL',
+        title: '【レーティング更新】公式戦結果反映＆GRANレベル更新',
+        desc: '直近の公式戦消化に伴い、レーティングが【532 → 540 (+8)】に上昇しました。現在のB級内順位は14位です。',
+        date: '2026/09/01 18:00',
+        unread: true,
+        action: 'レベル順位確認',
+        icon: 'trending-up',
+        iconBg: 'bg-sky-100 text-sky-700'
+      },
+      {
+        id: 4,
+        category: 'OTHER',
+        title: '【お知らせ】2026年秋季シーズン大会規約改定',
+        desc: '団体戦における未定枠の登録期限および荒天時の中止規定が一部改定されました。参加前にご確認ください。',
+        date: '2026/08/25 12:00',
+        unread: false,
+        action: '',
+        icon: 'bell',
+        iconBg: 'bg-slate-100 text-slate-600'
+      }
+    ];
+
+    // 選択中カテゴリ（初期状態は全4カテゴリすべて選択）
+    let activeCategories = new Set(['ACTION', 'ENTRY', 'LEVEL', 'OTHER']);
+
+    function initNotificationView() {
+      // ヘッダー
+      const userHeaderName = document.getElementById('user-header-name');
+      if (userHeaderName) userHeaderName.textContent = currentUser.name;
+      const userHeaderRate = document.getElementById('user-header-rate');
+      if (userHeaderRate) userHeaderRate.textContent = currentUser.rate;
+      const userAvatarText = document.getElementById('user-avatar-text');
+      if (userAvatarText) userAvatarText.textContent = currentUser.name.charAt(0);
+
+      // マイページ
+      const mypageAvatar = document.getElementById('mypage-avatar');
+      if (mypageAvatar) mypageAvatar.textContent = currentUser.name.charAt(0);
+      const mypageName = document.getElementById('mypage-name');
+      if (mypageName) mypageName.textContent = currentUser.name;
+      const mypageFurigana = document.getElementById('mypage-furigana');
+      if (mypageFurigana) mypageFurigana.textContent = currentUser.furigana;
+      const mypageNickname = document.getElementById('mypage-nickname');
+      if (mypageNickname) mypageNickname.textContent = currentUser.nickname;
+      const mypageTeam = document.getElementById('mypage-team');
+      if (mypageTeam) mypageTeam.textContent = currentUser.team;
+      const mypageRate = document.getElementById('mypage-rate');
+      if (mypageRate) mypageRate.textContent = currentUser.rate;
+      const mypageRank = document.getElementById('mypage-rank');
+      if (mypageRank) mypageRank.innerHTML = currentUser.classRankOrder + '<span class="text-xs font-normal text-white ml-0.5">位</span>';
+      const mypageClassDesc = document.getElementById('mypage-class-desc');
+      if (mypageClassDesc) mypageClassDesc.textContent = '規定クラス: ' + currentUser.classDesc;
+      const mypageEmail = document.getElementById('mypage-email');
+      if (mypageEmail) mypageEmail.textContent = currentUser.email;
+      const mypagePhone = document.getElementById('mypage-phone');
+      if (mypagePhone) mypagePhone.textContent = currentUser.phone;
+
+      // 各カテゴリ件数の更新
+      document.getElementById('filter-count-action').textContent = notifications.filter(n => n.category === 'ACTION').length;
+      document.getElementById('filter-count-entry').textContent = notifications.filter(n => n.category === 'ENTRY').length;
+      document.getElementById('filter-count-level').textContent = notifications.filter(n => n.category === 'LEVEL').length;
+      document.getElementById('filter-count-other').textContent = notifications.filter(n => n.category === 'OTHER').length;
+
+      renderNotifications();
+      lucide.createIcons();
+    }
+
+    // 絞り込みパネルの開閉トグル
+    let isFilterOpen = false;
+    function toggleFilterPanel() {
+      isFilterOpen = !isFilterOpen;
+      const panel = document.getElementById('filter-panel');
+      const chevron = document.getElementById('filter-chevron-icon');
+      const toggleBtn = document.getElementById('filter-toggle-btn');
+
+      if (isFilterOpen) {
+        panel.classList.remove('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+        toggleBtn.classList.add('bg-emerald-50', 'border-emerald-300', 'text-emerald-800');
+      } else {
+        panel.classList.add('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+        toggleBtn.classList.remove('bg-emerald-50', 'border-emerald-300', 'text-emerald-800');
+      }
+      lucide.createIcons();
+    }
+
+    // チェックボックス変更イベント
+    function handleFilterCheckboxChange() {
+      const checkedBoxes = document.querySelectorAll('.filter-checkbox:checked');
+      activeCategories.clear();
+      checkedBoxes.forEach(cb => activeCategories.add(cb.value));
+
+      updateFilterBadge();
+      renderNotifications();
+    }
+
+    // 全選択 / クリア
+    function selectAllFilters(isSelectAll) {
+      document.querySelectorAll('.filter-checkbox').forEach(cb => {
+        cb.checked = isSelectAll;
+      });
+      activeCategories.clear();
+      if (isSelectAll) {
+        ['ACTION', 'ENTRY', 'LEVEL', 'OTHER'].forEach(c => activeCategories.add(c));
+      }
+      updateFilterBadge();
+      renderNotifications();
+    }
+
+    // 絞り込みバッジの表記更新
+    function updateFilterBadge() {
+      const badge = document.getElementById('filter-selected-badge');
+      if (activeCategories.size === 4) {
+        badge.textContent = '全件';
+        badge.className = 'px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold';
+      } else if (activeCategories.size === 0) {
+        badge.textContent = '0件選択';
+        badge.className = 'px-1.5 py-0.2 rounded-full bg-rose-100 text-rose-800 text-[10px] font-extrabold';
+      } else {
+        badge.textContent = activeCategories.size + '種選択中';
+        badge.className = 'px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold';
+      }
+    }
+
+    function renderNotifications() {
+      const list = document.getElementById('notification-list');
+      const filtered = notifications.filter(n => activeCategories.has(n.category));
+
+      // 未読バッジの更新
+      const unreadCount = notifications.filter(n => n.unread).length;
+      document.querySelectorAll('.notification-badge').forEach(badge => {
+        if (unreadCount > 0) {
+          badge.textContent = unreadCount;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      });
+
+      if (filtered.length === 0) {
+        list.innerHTML = `
+          <div class="py-12 text-center text-slate-400">
+            <i data-lucide="filter-x" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+            <p class="font-bold text-slate-600">該当する通知はありません</p>
+            <p class="text-[11px] text-slate-400 mt-1">「絞り込み」ボタンからカテゴリを選択してください</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      list.innerHTML = filtered.map(n => `
+        <div class="pt-3 first:pt-0 pb-3 flex items-start gap-3.5 ${n.unread ? 'bg-emerald-50/40 -mx-4 sm:-mx-5 px-4 sm:px-5 rounded-xl' : ''} ${n.action ? 'cursor-pointer hover:bg-slate-50 transition' : 'cursor-pointer hover:bg-slate-50 transition'}" onclick="${n.action ? `handleNotificationAction('${n.action}')` : "showToast('通知詳細を表示します', 'info')"}">
+          <div class="w-9 h-9 rounded-xl ${n.iconBg} flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
+            <i data-lucide="${n.icon}" class="w-4 h-4"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-bold text-slate-900 truncate ${n.unread ? 'text-emerald-950 font-extrabold' : ''}">${n.title}</span>
+              ${n.unread ? '<span class="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span>' : ''}
+            </div>
+            <p class="text-slate-600 mt-1 leading-relaxed text-[11px] sm:text-xs">${n.desc}</p>
+            <div class="flex items-center justify-between mt-2.5 pt-1.5 border-t border-slate-100">
+              <span class="text-[10px] text-slate-400">${n.date}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function markAllNotificationsAsRead() {
+      notifications.forEach(n => n.unread = false);
+      renderNotifications();
+      showToast('すべての通知を既読にしました', 'success');
+    }
+
+    function handleNotificationAction(actionName) {
+      showToast(`${actionName}画面へ遷移します`, 'info');
+    }
+
+    // マイページモーダル開閉
+    function openMyPageModal() {
+      initNotificationView();
+      document.getElementById('modal-mypage').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeMyPageModal() {
+      document.getElementById('modal-mypage').classList.add('hidden');
+    }
+
+    // トースト表示
+    let toastTimeout = null;
+    function showToast(msg, type = 'info') {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-message');
+      const icon = document.getElementById('toast-icon');
+      if (!toast) return;
+
+      text.textContent = msg;
+      if (type === 'success') {
+        icon.setAttribute('data-lucide', 'check-circle-2');
+        icon.className = 'w-4 h-4 text-emerald-400';
+      } else {
+        icon.setAttribute('data-lucide', 'info');
+        icon.className = 'w-4 h-4 text-sky-400';
+      }
+      lucide.createIcons();
+
+      toast.classList.remove('opacity-0', '-translate-y-4', 'pointer-events-none');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-4', 'pointer-events-none');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 3000);
+    }
+
+    // 初期実行
+    window.addEventListener('DOMContentLoaded', () => {
+      initNotificationView();
+    });
+  </script>
+</body>
+</html>
