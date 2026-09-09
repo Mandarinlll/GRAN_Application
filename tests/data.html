@@ -139,11 +139,22 @@
             <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
           </span>
           <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">データ & レベル分析</h1>
-          
+          <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-full">イロレーティング公式査定</span>
         </div>
-        
+        <p class="text-xs text-slate-500 mt-1">GRANレベル（100〜999）、規定階級（A〜E級）内順位、推移レポート、対戦履歴</p>
       </div>
 
+      <!-- アクションボタン群 -->
+      <div class="flex items-center gap-2">
+        <button onclick="openCertificateModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl shadow-sm transition">
+          <i data-lucide="award" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>公式認定証</span>
+        </button>
+        <button onclick="refreshDataStats()" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>データ再同期</span>
+        </button>
+      </div>
     </div>
 
     <!-- メインナビゲーションタブ (スクロール可能) -->
@@ -177,66 +188,123 @@
     <!-- ======================================================== -->
     <div id="tab-content-my-level" class="tab-content space-y-5 fade-in">
       
-      <!-- ユーザGRANレベル ハイライトカード (イロレーティング公式仕様 100〜999) -->
-      <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl p-5 sm:p-6 shadow-md relative overflow-hidden">
-        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
-        <div class="absolute right-6 top-6 opacity-10 hidden sm:block">
-          <i data-lucide="activity" class="w-32 h-32"></i>
+      <!-- ユーザGRANレベル & 推移グラフ統合ハイライトカード (青黒基調のプレミアムヒーローカード) -->
+      <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl p-5 sm:p-6 shadow-lg border border-slate-700/60 relative overflow-hidden space-y-6">
+        <!-- 背景装飾アンビエントグロー & アイコンウォーターマーク -->
+        <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-10 -top-10 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute right-6 top-6 opacity-5 hidden sm:block pointer-events-none">
+          <i data-lucide="activity" class="w-40 h-40 text-emerald-400"></i>
         </div>
 
-        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <!-- 左側: レベル数値 (3桁整数) & 規定階級バッジ -->
-          <div class="space-y-2">
-            <div class="flex items-center gap-2.5">
-             
-              </span>
-              
+        <!-- タイトル・ヘッダーエリア (洗練されたアイコン・LIVEバッジ・共有アクション) -->
+        <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/15">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 flex items-center justify-center shadow-sm shrink-0">
+              <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
             </div>
-            
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="text-lg sm:text-xl font-black text-white tracking-tight">データレポート</h2>
+              </div>
+              <p class="text-[11px] text-slate-300 mt-0.5">イロレーティング公式査定・パフォーマンス総合解析</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 上段: レベル数値・規定階級・昇級メーター -->
+        <div class="relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
+          <!-- 左側: レベル数値 (3桁整数) & 規定階級バッジ -->
+          <div class="space-y-3 flex-1">
             <div class="flex items-baseline gap-3">
-              <span class="text-xs text-slate-300 font-bold">GRAN LEVEL</span>
-              <span class="text-4xl sm:text-5xl font-black tracking-tight text-white font-mono">580</span>
-            </span>
+              <span class="text-xs text-slate-400 font-extrabold tracking-wider font-mono">GRAN LEVEL</span>
+              <span class="text-4xl sm:text-5xl font-black text-white font-mono tracking-tight">580</span>
+              <span class="px-2.5 py-1 bg-emerald-400 text-slate-950 text-xs font-black rounded-full flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="shield" class="w-3.5 h-3.5 fill-current"></i>
+                規定階級: B級
+              </span>
             </div>
 
-            <p class="text-xs text-slate-300 max-w-md">
-              対戦相手の実力差と勝敗結果に基づく「イロレーティング計算」により算出。B級（Lv.550〜699）の上位帯に位置し、A級昇級圏内に到達しています。
+            <p class="text-xs text-slate-300 leading-relaxed max-w-lg">
+              対戦相手の実力差と勝敗結果に基づく「イロレーティング計算」により算出。B級（Lv.550〜699）の上位帯に位置し、<strong class="text-amber-300 font-bold">A級昇級圏内</strong>に到達しています。
             </p>
           </div>
 
           <!-- 右側: 規定階級ゲージ & 上位昇級メーター -->
-          <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/15 min-w-[280px] space-y-3">
-            <div class="flex justify-between items-center text-xs">
-              <span class="text-slate-300">現在所属階級</span>
-              <span class="font-extrabold text-emerald-300 text-sm">B級 (550〜699)</span>
-            </div>
+          <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/15 min-w-[280px] space-y-3 shrink-0 shadow-inner">
             
             
-            <hr class="border-white/10" />
+            
             
             <div class="space-y-1.5">
-              <div class="flex justify-between text-[11px]">
-                <span class="text-slate-300">最上位「A級 (700〜)」昇級まで</span>
-                <span class="font-bold text-amber-300 font-mono">あと 120 (60%)</span>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-200 font-bold flex items-center gap-1">
+                  <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
+                  昇級まで
+                </span>
+                <span class="font-bold text-amber-300 font-mono bg-amber-400/20 px-2 py-0.5 rounded border border-amber-400/30 text-xs">
+                  あと 120
+                </span>
               </div>
-              <div class="w-full bg-slate-700/80 rounded-full h-2.5 overflow-hidden">
-                <div class="bg-gradient-to-r from-emerald-400 to-amber-400 h-full rounded-full" style="width: 60%"></div>
+              <div class="w-full bg-slate-950/60 rounded-full h-2.5 overflow-hidden border border-white/10">
+                <div class="bg-gradient-to-r from-emerald-400 to-amber-400 h-full rounded-full transition-all duration-500" style="width: 60%"></div>
               </div>
-              <div class="flex justify-between text-[9px] text-slate-400">
+              <div class="flex justify-between text-[10px] font-mono text-slate-400">
                 <span>B級下限: 550</span>
-                <span>A級昇級: 700</span>
+                <span class="text-amber-300 font-bold flex items-center gap-0.5">A級昇級: 700 <i data-lucide="arrow-up-right" class="w-3 h-3"></i></span>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- 下段 (同div内): GRANレベルの推移グラフ組み込み -->
+        <div class="relative z-10 pt-4 border-t border-white/15 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="p-1.5 bg-emerald-500/20 text-emerald-300 rounded-lg">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+              </span>
+              <div>
+                <h3 class="text-xs sm:text-sm font-extrabold text-white">GRANレベル (イロレーティング) 推移ログ</h3>
+                <p class="text-[11px] text-slate-300">大会対戦ごとの実力レート変動推移 (100〜999)</p>
+              </div>
+            </div>
+
+            <!-- 期間切り替えボタン群 -->
+            <div class="flex items-center gap-1 bg-white/10 backdrop-blur-md p-1 rounded-xl text-xs font-bold self-start sm:self-auto">
+              <button onclick="updateChartPeriod('6m')" id="period-6m" class="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-black shadow-xs transition">6ヶ月</button>
+              <button onclick="updateChartPeriod('1y')" id="period-1y" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white transition">1年</button>
+              <button onclick="updateChartPeriod('all')" id="period-all" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white transition">全期間</button>
+            </div>
+          </div>
+
+          <!-- 折れ線グラフ描画エリア -->
+          <div class="h-52 sm:h-60 w-full relative">
+            <canvas id="levelHistoryChart"></canvas>
+          </div>
+
+          <!-- グラフフッター凡例 & サマリー -->
+          <div class="flex flex-wrap items-center justify-between text-[11px] text-slate-300 pt-2 border-t border-white/10 gap-2">
+            <div class="flex flex-wrap items-center gap-3">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block shadow-xs"></span> あなたのレート (現在: <strong class="text-white font-mono">580</strong>)</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block"></span> 全体平均 (<strong class="text-slate-200 font-mono">485</strong>)</span>
+            </div>
+            <div class="flex items-center gap-1 font-bold text-amber-300 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
+              <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>過去最高レート: 585 (2026.02)</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- 規定階級内順位 & 分布 KPIグリッド -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <!-- 規定階級内順位 -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-emerald-500/50 transition">
           <div class="flex items-center justify-between text-slate-500 text-xs">
-            <span>B級内 順位</span>
+            <span class="font-medium text-slate-600">B級内 順位</span>
             <span class="p-1 bg-emerald-50 text-emerald-600 rounded-lg"><i data-lucide="award" class="w-3.5 h-3.5"></i></span>
           </div>
           <div class="my-2">
@@ -250,9 +318,9 @@
         </div>
 
         <!-- 所属チーム内順位 -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-emerald-500/50 transition">
           <div class="flex items-center justify-between text-slate-500 text-xs">
-            <span>所属チーム内</span>
+            <span class="font-medium text-slate-600">所属チーム内</span>
             <span class="p-1 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="users" class="w-3.5 h-3.5"></i></span>
           </div>
           <div class="my-2">
@@ -265,26 +333,26 @@
           <div class="text-[10px] text-slate-400">チーム: GREEN STARS</div>
         </div>
 
-        <!-- 地域エリア順位 -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <!-- 属性別順位 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-emerald-500/50 transition">
           <div class="flex items-center justify-between text-slate-500 text-xs">
-            <span>神奈川・湘南エリア</span>
-            <span class="p-1 bg-amber-50 text-amber-600 rounded-lg"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i></span>
+            <span class="font-medium text-slate-600">属性別順位</span>
+            <span class="p-1 bg-amber-50 text-amber-600 rounded-lg"><i data-lucide="activity" class="w-3.5 h-3.5"></i></span>
           </div>
           <div class="my-2">
             <div class="flex items-baseline gap-1">
               <span class="text-2xl sm:text-3xl font-black text-slate-900 font-mono">48</span>
-              <span class="text-xs text-slate-400 font-bold">/ 1,250 名</span>
+              <span class="text-xs text-slate-400 font-bold">/ 320 名</span>
             </div>
-            <span class="text-[11px] text-amber-600 font-bold">地域上位 3.8%</span>
+            <span class="text-[11px] text-amber-600 font-bold">属性内上位 15.0%</span>
           </div>
-          <div class="text-[10px] text-slate-400">前月比: +4位上昇 ↗</div>
+          <div class="text-[10px] text-slate-400">30代・男性</div>
         </div>
 
         <!-- 全階級総合順位 -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-emerald-500/50 transition">
           <div class="flex items-center justify-between text-slate-500 text-xs">
-            <span>全階級総合順位</span>
+            <span class="font-medium text-slate-600">全階級総合順位</span>
             <span class="p-1 bg-purple-50 text-purple-600 rounded-lg"><i data-lucide="globe" class="w-3.5 h-3.5"></i></span>
           </div>
           <div class="my-2">
@@ -298,80 +366,50 @@
         </div>
       </div>
 
-      <!-- レベル推移グラフ & 全体・階級別レベル分布ヒストグラム -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        
-        <!-- 1. GRANレベル推移グラフ -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
-                <i data-lucide="trending-up" class="w-4 h-4 text-emerald-600"></i>
-                GRANレベル (イロレーティング) 推移
-              </h3>
-              <p class="text-[11px] text-slate-500">大会対戦ごとのレート変動推移 (100〜999)</p>
-            </div>
-
-            <!-- 期間切り替え -->
-            <div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[11px] font-bold">
-              <button onclick="updateChartPeriod('6m')" id="period-6m" class="px-2.5 py-1 rounded-md bg-white text-emerald-700 shadow-xs">6ヶ月</button>
-              <button onclick="updateChartPeriod('1y')" id="period-1y" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">1年</button>
-              <button onclick="updateChartPeriod('all')" id="period-all" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">全期間</button>
-            </div>
+      <!-- 全体 & 階級別 GRANレベル分布グラフ (ヒストグラム) -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-600"></i>
+              GRANレベル分布 & 階級ボリューム
+            </h3>
+            <p class="text-[11px] text-slate-500">リーグ全登録者（3,400名）のイロレーティング分布と所属比率</p>
           </div>
-
-          <div class="h-64 w-full relative">
-            <canvas id="levelHistoryChart"></canvas>
-          </div>
-
-          <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
-            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> あなたのレート (現在 580)</span>
-            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block"></span> 全体平均レート (485)</span>
-            <span class="text-[11px] text-emerald-600 font-bold">最高レート: 585 (2026.02)</span>
-          </div>
+          <span class="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-full">現在位置: B級 (580)</span>
         </div>
 
-        <!-- 2. 全体 & 階級別 GRANレベル分布グラフ -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
-                <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-600"></i>
-                GRANレベル分布 & 階級ボリューム
-              </h3>
-              <p class="text-[11px] text-slate-500">リーグ全登録者のレート分布</p>
-            </div>
-            <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-full">現在位置: B級 (580)</span>
-          </div>
-
-          <div class="h-64 w-full relative">
-            <canvas id="levelDistributionChart"></canvas>
-          </div>
-
-          <div class="grid grid-cols-5 gap-1 text-center text-[10px] pt-2 border-t border-slate-100">
-            <div class="bg-slate-50 p-1.5 rounded-lg">
-              <span class="text-slate-400 block">E級</span>
-              <span class="font-bold text-slate-600">100-249</span>
-            </div>
-            <div class="bg-slate-50 p-1.5 rounded-lg">
-              <span class="text-slate-400 block">D級</span>
-              <span class="font-bold text-slate-600">250-399</span>
-            </div>
-            <div class="bg-slate-50 p-1.5 rounded-lg">
-              <span class="text-slate-400 block">C級 (最多)</span>
-              <span class="font-bold text-slate-600">400-549</span>
-            </div>
-            <div class="bg-emerald-50 border border-emerald-200 p-1.5 rounded-lg">
-              <span class="text-emerald-700 font-bold block">B級 (あなた)</span>
-              <span class="font-extrabold text-emerald-800">550-699</span>
-            </div>
-            <div class="bg-amber-50 p-1.5 rounded-lg">
-              <span class="text-amber-700 block">A級</span>
-              <span class="font-bold text-amber-800">700-999</span>
-            </div>
-          </div>
+        <div class="h-60 w-full relative">
+          <canvas id="levelDistributionChart"></canvas>
         </div>
 
+        <div class="grid grid-cols-5 gap-1.5 text-center text-[10px] pt-2 border-t border-slate-100">
+          <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
+            <span class="text-slate-400 block">E級</span>
+            <span class="font-bold text-slate-700 font-mono">100-249</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5">約12%</span>
+          </div>
+          <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
+            <span class="text-slate-400 block">D級</span>
+            <span class="font-bold text-slate-700 font-mono">250-399</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5">約25%</span>
+          </div>
+          <div class="bg-blue-50/50 p-2 rounded-xl border border-blue-100">
+            <span class="text-blue-600 font-bold block">C級 (最多)</span>
+            <span class="font-bold text-blue-800 font-mono">400-549</span>
+            <span class="text-[9px] text-blue-500 block mt-0.5">約38%</span>
+          </div>
+          <div class="bg-emerald-50 p-2 rounded-xl border border-emerald-200">
+            <span class="text-emerald-700 font-black block">B級 ★あなた</span>
+            <span class="font-extrabold text-emerald-900 font-mono">550-699</span>
+            <span class="text-[9px] text-emerald-600 font-bold block mt-0.5">約20%</span>
+          </div>
+          <div class="bg-amber-50/60 p-2 rounded-xl border border-amber-100">
+            <span class="text-amber-700 font-bold block">A級</span>
+            <span class="font-bold text-amber-900 font-mono">700-999</span>
+            <span class="text-[9px] text-amber-600 block mt-0.5">約5%</span>
+          </div>
+        </div>
       </div>
 
       <!-- 規定階級（A〜E級）定義一覧テーブル -->
@@ -441,49 +479,49 @@
     <!-- ======================================================== -->
     <!-- TAB 2: 順位・ランキング (Rankings in Classes & Teams) -->
     <!-- ======================================================== -->
-    <div id="tab-content-rankings" class="tab-content space-y-5 hidden fade-in">
+    <div id="tab-content-rankings" class="tab-content space-y-4 sm:space-y-5 hidden fade-in">
       
       <!-- 階級別切り替えフィルター & 検索バー -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+      <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
         
         <!-- 規定階級タブ (A級〜E級切り替え) -->
         <div>
           <div class="text-[11px] font-bold text-slate-500 mb-1.5 flex items-center justify-between">
-            <span>規定階級フィルター (A〜E級):</span>
-            <span class="text-[10px] text-emerald-600 font-semibold">※同率時は消化試合数・勝率で判定</span>
+            <span class="flex items-center gap-1.5"><i data-lucide="filter" class="w-3.5 h-3.5 text-emerald-600"></i>規定階級フィルター (A〜E級):</span>
+            <span class="text-[10px] text-emerald-600 font-semibold hidden sm:inline">※同率時は消化試合数・勝率で判定</span>
           </div>
-          <div class="grid grid-cols-3 sm:grid-cols-6 gap-1 bg-slate-100 p-1 rounded-xl" id="class-filter-container">
-            <button onclick="filterByClass('all')" id="class-btn-all" class="class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">総合 (全階級)</button>
-            <button onclick="filterByClass('A')" id="class-btn-A" class="class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">A級 (700+)</button>
-            <button onclick="filterByClass('B')" id="class-btn-B" class="class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-xs transition">B級 (550〜) ★</button>
-            <button onclick="filterByClass('C')" id="class-btn-C" class="class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">C級 (400〜)</button>
-            <button onclick="filterByClass('D')" id="class-btn-D" class="class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">D級 (250〜)</button>
-            <button onclick="filterByClass('E')" id="class-btn-E" class="class-filter-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">E級 (100〜)</button>
+          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 bg-slate-100 p-1 rounded-xl" id="class-filter-container">
+            <button onclick="filterByClass('all')" id="class-btn-all" class="class-filter-btn flex-1 min-w-[72px] py-1.5 px-2.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition text-center whitespace-nowrap">全階級</button>
+            <button onclick="filterByClass('A')" id="class-btn-A" class="class-filter-btn flex-1 min-w-[72px] py-1.5 px-2.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition text-center whitespace-nowrap">A級 (700+)</button>
+            <button onclick="filterByClass('B')" id="class-btn-B" class="class-filter-btn flex-1 min-w-[72px] py-1.5 px-2.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-xs transition text-center whitespace-nowrap">B級 (550〜) ★</button>
+            <button onclick="filterByClass('C')" id="class-btn-C" class="class-filter-btn flex-1 min-w-[72px] py-1.5 px-2.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition text-center whitespace-nowrap">C級 (400〜)</button>
+            <button onclick="filterByClass('D')" id="class-btn-D" class="class-filter-btn flex-1 min-w-[72px] py-1.5 px-2.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition text-center whitespace-nowrap">D級 (250〜)</button>
+            <button onclick="filterByClass('E')" id="class-btn-E" class="class-filter-btn flex-1 min-w-[72px] py-1.5 px-2.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition text-center whitespace-nowrap">E級 (100〜)</button>
           </div>
         </div>
 
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-100 items-center">
           <!-- 選手 / チーム切り替え -->
-          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-            <button onclick="switchRankingType('player')" id="rank-type-player" class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-xs transition">
+          <div class="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
+            <button onclick="switchRankingType('player')" id="rank-type-player" class="flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-xs transition">
               <i data-lucide="user" class="w-3.5 h-3.5"></i>
               <span>個人レベル順位</span>
             </button>
-            <button onclick="switchRankingType('team')" id="rank-type-team" class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">
+            <button onclick="switchRankingType('team')" id="rank-type-team" class="flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">
               <i data-lucide="shield" class="w-3.5 h-3.5"></i>
-              <span>チーム平均レート順位</span>
+              <span>チーム平均順位</span>
             </button>
           </div>
 
           <!-- 検索 & ジャンプ -->
           <div class="flex items-center gap-2">
-            <div class="relative w-full sm:w-48">
+            <div class="relative flex-1">
               <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
               <input type="text" id="ranking-search-input" onkeyup="filterRankingList()" placeholder="選手・チーム検索..." class="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
 
-            <button onclick="scrollToMyRank()" class="flex items-center gap-1 text-[11px] text-emerald-600 hover:text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200 transition shrink-0">
-              <i data-lucide="navigation" class="w-3 h-3"></i>
+            <button onclick="scrollToMyRank()" class="flex items-center gap-1 text-[11px] text-emerald-700 hover:text-emerald-800 font-bold bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-200 transition shrink-0 shadow-2xs">
+              <i data-lucide="navigation" class="w-3 h-3 text-emerald-600"></i>
               <span>自分の順位</span>
             </button>
           </div>
@@ -492,12 +530,16 @@
 
       <!-- 選手ランキング表示コンテナ -->
       <div id="player-ranking-container" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-          <span class="text-xs font-bold text-slate-700" id="ranking-table-header">規定階級: B級 選手順位一覧</span>
-          <span class="text-[11px] text-slate-400">公式戦消化数・直近勝率を考慮してソート</span>
+        <div class="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+          <div class="flex items-center gap-2">
+            <i data-lucide="award" class="w-4 h-4 text-emerald-600"></i>
+            <span class="text-xs sm:text-sm font-bold text-slate-800" id="ranking-table-header">規定階級: B級 選手順位一覧</span>
+          </div>
+          <span class="text-[11px] text-slate-400 hidden sm:inline">公式戦消化数・直近勝率を考慮してソート</span>
         </div>
 
-        <div class="overflow-x-auto">
+        <!-- PC / タブレット用テーブル (sm以上で表示) -->
+        <div class="hidden sm:block overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
               <tr>
@@ -515,16 +557,25 @@
             </tbody>
           </table>
         </div>
+
+        <!-- スマホ専用カード型リスト (sm未満で表示) -->
+        <div id="player-ranking-mobile-list" class="block sm:hidden divide-y divide-slate-100">
+          <!-- JSで動的生成 -->
+        </div>
       </div>
 
       <!-- チームランキング表示コンテナ -->
       <div id="team-ranking-container" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hidden">
-        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-          <span class="text-xs font-bold text-slate-700">登録チーム 平均GRANレベル順位</span>
-          <span class="text-[11px] text-slate-400">チーム所属選手の平均イロレーティング</span>
+        <div class="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+          <div class="flex items-center gap-2">
+            <i data-lucide="shield" class="w-4 h-4 text-blue-600"></i>
+            <span class="text-xs sm:text-sm font-bold text-slate-800">登録チーム 平均GRANレベル順位</span>
+          </div>
+          <span class="text-[11px] text-slate-400 hidden sm:inline">チーム所属選手の平均イロレーティング</span>
         </div>
 
-        <div class="overflow-x-auto">
+        <!-- PC / タブレット用テーブル (sm以上で表示) -->
+        <div class="hidden sm:block overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
               <tr>
@@ -541,6 +592,11 @@
               <!-- JSで動的生成 -->
             </tbody>
           </table>
+        </div>
+
+        <!-- スマホ専用カード型リスト (sm未満で表示) -->
+        <div id="team-ranking-mobile-list" class="block sm:hidden divide-y divide-slate-100">
+          <!-- JSで動的生成 -->
         </div>
       </div>
 
@@ -880,6 +936,74 @@
     </div>
   </nav>
 
+  <!-- 公式戦績認定証モーダル (おすすめ機能 4) -->
+  <div id="modal-certificate" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden fade-in">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+            <i data-lucide="award" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">公式戦績認定書</h3>
+            <p class="text-[10px] text-slate-500">GRAN TENNIS 2026 Season 公式イロレート認証</p>
+          </div>
+        </div>
+        <button onclick="closeCertificateModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <!-- 認定証カードグラフィック -->
+        <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white p-5 rounded-2xl border border-emerald-500/30 shadow-md relative overflow-hidden space-y-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[9px] text-emerald-400 font-bold uppercase tracking-wider block">Official Certificate</span>
+              <span class="text-xs font-black tracking-tight text-white">GRAN TENNIS ASSOCIATION</span>
+            </div>
+            <span class="px-2 py-0.5 bg-emerald-400/20 border border-emerald-400/50 text-emerald-300 text-[10px] font-bold rounded-full">B級 公認</span>
+          </div>
+
+          <div class="py-2 border-y border-white/10 flex items-center justify-between">
+            <div>
+              <div class="text-base font-extrabold text-white">佐藤 健太 <span class="text-xs font-normal text-slate-300">選手</span></div>
+              <div class="text-[10px] text-slate-400">所属: GREEN STARS / JTA登録 GR-2026-8819</div>
+            </div>
+            <div class="text-right">
+              <span class="text-[9px] text-slate-400 block font-bold">GRAN LEVEL</span>
+              <span class="text-3xl font-black text-emerald-400 font-mono">580</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center text-[10px] font-mono">
+            <div class="bg-white/5 p-1.5 rounded">
+              <span class="text-slate-400 block font-sans">通算勝率</span>
+              <span class="font-bold text-white">73.8%</span>
+            </div>
+            <div class="bg-white/5 p-1.5 rounded">
+              <span class="text-slate-400 block font-sans">規定階級順位</span>
+              <span class="font-bold text-white">14位 / 320名</span>
+            </div>
+            <div class="bg-white/5 p-1.5 rounded">
+              <span class="text-slate-400 block font-sans">優勝回数</span>
+              <span class="font-bold text-amber-300">3 回</span>
+            </div>
+          </div>
+
+          <div class="text-[9px] text-slate-400 text-right">発行日: 2026.03.15 (第14回湘南オープン終了時点)</div>
+        </div>
+
+        <div class="pt-1">
+          <button onclick="downloadCertificate()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>画像で保存</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- マイページモーダル -->
   <div id="modal-mypage" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden fade-in">
@@ -916,7 +1040,6 @@
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-2">
           <div class="flex justify-between"><span class="text-slate-500">登録メール</span><span class="font-medium text-slate-800">kenta.sato@example.com</span></div>
           <div class="flex justify-between"><span class="text-slate-500">所属クラブ</span><span class="font-medium text-slate-800">GREEN STARS (代表)</span></div>
-          <div class="flex justify-between"><span class="text-slate-500">初期査定レート</span><span class="font-mono text-slate-800 font-bold">500</span></div>
           <div class="flex justify-between"><span class="text-slate-500">JTA登録番号</span><span class="font-medium text-slate-800 font-mono">GR-2026-8819</span></div>
         </div>
 
@@ -1234,11 +1357,15 @@
 
     function renderPlayerRanking(players = rankingPlayersData) {
       const tbody = document.getElementById('player-ranking-tbody');
+      const mobileList = document.getElementById('player-ranking-mobile-list');
+
       if (players.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-400">該当する選手が見つかりませんでした</td></tr>';
+        mobileList.innerHTML = '<div class="py-8 text-center text-slate-400 text-xs">該当する選手が見つかりませんでした</div>';
         return;
       }
 
+      // PC / タブレット用テーブル描画
       tbody.innerHTML = players.map(p => {
         const isSelf = p.isUser;
         const rowBg = isSelf ? 'bg-emerald-50/80 font-bold' : 'hover:bg-slate-50/80';
@@ -1251,10 +1378,11 @@
               ${rankIcon}
             </td>
             <td class="py-3 px-3">
-              <div>
+              <div class="flex items-center gap-1.5">
                 <span class="font-extrabold text-slate-900 ${isSelf ? 'text-emerald-800' : ''}">${p.name}</span>
-                <div class="text-[11px] text-slate-500 font-normal">${p.team}</div>
+                ${isSelf ? '<span class="px-1.5 py-0.2 text-[9px] font-black bg-emerald-600 text-white rounded">あなた</span>' : ''}
               </div>
+              <div class="text-[11px] text-slate-500 font-normal">${p.team}</div>
             </td>
             <td class="py-3 px-3 text-center">
               <span class="px-2 py-0.5 rounded text-[10px] font-bold ${classColor}">${p.classTier}級</span>
@@ -1263,17 +1391,73 @@
             <td class="py-3 px-3 text-center text-slate-600 font-mono">${p.matches}</td>
             <td class="py-3 px-3 text-center font-black font-mono ${parseFloat(p.winRate) >= 70 ? 'text-emerald-600' : 'text-slate-700'}">${p.winRate}</td>
             <td class="py-3 px-3 text-right">
-              <button onclick="compareWithPlayer('${p.name}', ${p.level})" class="px-2 py-1 bg-white border border-slate-200 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 text-[11px] font-bold rounded-lg shadow-2xs transition">
+              <button onclick="compareWithPlayer('${p.name}', ${p.level})" class="px-2.5 py-1 bg-white border border-slate-200 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 text-[11px] font-bold rounded-lg shadow-2xs transition">
                 VS比較
               </button>
             </td>
           </tr>
         `;
       }).join('');
+
+      // スマホ用カードリスト描画
+      mobileList.innerHTML = players.map(p => {
+        const isSelf = p.isUser;
+        const cardBg = isSelf ? 'bg-emerald-50/90 border-l-4 border-l-emerald-500 font-bold' : 'hover:bg-slate-50';
+        const rankIcon = p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : `#${p.rank}`;
+        const rankBadgeStyle = p.rank === 1 ? 'bg-amber-100 text-amber-900 border border-amber-300' 
+                             : p.rank === 2 ? 'bg-slate-200 text-slate-800 border border-slate-300'
+                             : p.rank === 3 ? 'bg-amber-800/15 text-amber-900 border border-amber-700/30'
+                             : 'bg-slate-100 text-slate-600 border border-slate-200';
+        const classColor = p.classTier === 'A' ? 'bg-amber-100 text-amber-800 border border-amber-200' 
+                         : p.classTier === 'B' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                         : 'bg-slate-100 text-slate-700 border border-slate-200';
+
+        return `
+          <div class="p-3 sm:p-3.5 flex items-center justify-between gap-3 ${cardBg} transition" id="${isSelf ? 'my-rank-card-mobile' : ''}">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <!-- 順位バッジ -->
+              <div class="w-8 h-8 rounded-xl flex items-center justify-center font-black font-mono shrink-0 text-xs ${rankBadgeStyle} shadow-2xs">
+                ${rankIcon}
+              </div>
+              
+              <!-- 選手情報 -->
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-extrabold text-slate-900 text-xs sm:text-sm truncate ${isSelf ? 'text-emerald-900' : ''}">${p.name}</span>
+                  <span class="px-1.5 py-0.2 text-[9px] font-bold rounded ${classColor}">${p.classTier}級</span>
+                  ${isSelf ? '<span class="px-1.5 py-0.2 text-[9px] font-black bg-emerald-600 text-white rounded">あなた</span>' : ''}
+                </div>
+                <div class="text-[11px] text-slate-500 truncate mt-0.5 flex items-center gap-1.5 flex-wrap">
+                  <span class="truncate">${p.team}</span>
+                  <span class="text-slate-300">•</span>
+                  <span class="font-mono text-slate-700 font-medium">${p.matches} (${p.winRate})</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- レベル数値 & アクションボタン -->
+            <div class="flex items-center gap-2 shrink-0">
+              <div class="text-right">
+                <div class="text-[10px] text-slate-400 font-mono font-bold leading-none">LEVEL</div>
+                <div class="text-base font-black text-emerald-700 font-mono leading-tight">${p.level}</div>
+              </div>
+              <button onclick="compareWithPlayer('${p.name}', ${p.level})" class="px-2 py-1.5 bg-white border border-slate-200 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 rounded-lg text-xs font-bold transition shadow-2xs flex items-center gap-1">
+                <i data-lucide="crosshair" class="w-3 h-3 text-emerald-600"></i>
+                <span class="hidden xs:inline text-[11px]">比較</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
     }
 
     function renderTeamRanking(teams = rankingTeamsData) {
       const tbody = document.getElementById('team-ranking-tbody');
+      const mobileList = document.getElementById('team-ranking-mobile-list');
+
+      // PC / タブレット用テーブル描画
       tbody.innerHTML = teams.map(t => {
         const isSelf = t.isUserTeam;
         const rowBg = isSelf ? 'bg-emerald-50/80 font-bold' : 'hover:bg-slate-50/80';
@@ -1284,230 +1468,94 @@
               ${rankIcon}
             </td>
             <td class="py-3 px-3">
-              <div>
+              <div class="flex items-center gap-1.5">
                 <div class="font-extrabold text-slate-900 ${isSelf ? 'text-emerald-800' : ''}">${t.name}</div>
-                <div class="text-[11px] text-slate-500 font-normal">${t.region}</div>
+                ${isSelf ? '<span class="px-1.5 py-0.2 text-[9px] font-black bg-emerald-600 text-white rounded">所属</span>' : ''}
               </div>
+              <div class="text-[11px] text-slate-500 font-normal">${t.region}</div>
             </td>
             <td class="py-3 px-3 text-center text-slate-700 font-mono">${t.members}名</td>
             <td class="py-3 px-3 text-center font-black text-emerald-700 text-sm font-mono">${t.avgLevel}</td>
             <td class="py-3 px-3 text-center text-slate-600 font-mono">${t.matches}</td>
             <td class="py-3 px-3 text-center font-black text-emerald-600 font-mono">${t.winRate}</td>
             <td class="py-3 px-3 text-right">
-              <button onclick="showTeamMatchesDetail('${t.name}')" class="px-2 py-1 bg-white border border-slate-200 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 text-[11px] font-bold rounded-lg shadow-2xs transition">
+              <button onclick="showTeamMatchesDetail('${t.name}')" class="px-2.5 py-1 bg-white border border-slate-200 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 text-[11px] font-bold rounded-lg shadow-2xs transition">
                 対戦履歴
               </button>
             </td>
           </tr>
         `;
       }).join('');
+
+      // スマホ用カードリスト描画
+      mobileList.innerHTML = teams.map(t => {
+        const isSelf = t.isUserTeam;
+        const cardBg = isSelf ? 'bg-emerald-50/90 border-l-4 border-l-emerald-500 font-bold' : 'hover:bg-slate-50';
+        const rankIcon = t.rank === 1 ? '🥇' : t.rank === 2 ? '🥈' : t.rank === 3 ? '🥉' : `#${t.rank}`;
+        const rankBadgeStyle = t.rank === 1 ? 'bg-amber-100 text-amber-900 border border-amber-300' 
+                             : t.rank === 2 ? 'bg-slate-200 text-slate-800 border border-slate-300'
+                             : t.rank === 3 ? 'bg-amber-800/15 text-amber-900 border border-amber-700/30'
+                             : 'bg-slate-100 text-slate-600 border border-slate-200';
+
+        return `
+          <div class="p-3 sm:p-3.5 flex items-center justify-between gap-3 ${cardBg} transition">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <!-- 順位バッジ -->
+              <div class="w-8 h-8 rounded-xl flex items-center justify-center font-black font-mono shrink-0 text-xs ${rankBadgeStyle} shadow-2xs">
+                ${rankIcon}
+              </div>
+              
+              <!-- チーム情報 -->
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-extrabold text-slate-900 text-xs sm:text-sm truncate ${isSelf ? 'text-emerald-900' : ''}">${t.name}</span>
+                  ${isSelf ? '<span class="px-1.5 py-0.2 text-[9px] font-black bg-emerald-600 text-white rounded">所属</span>' : ''}
+                </div>
+                <div class="text-[11px] text-slate-500 truncate mt-0.5 flex items-center gap-1.5 flex-wrap">
+                  <span>${t.region}</span>
+                  <span class="text-slate-300">•</span>
+                  <span>${t.members}名</span>
+                  <span class="text-slate-300">•</span>
+                  <span class="font-mono text-slate-700 font-medium">${t.matches} (${t.winRate})</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 平均レベル & 詳細ボタン -->
+            <div class="flex items-center gap-2 shrink-0">
+              <div class="text-right">
+                <div class="text-[10px] text-slate-400 font-mono font-bold leading-none">AVG</div>
+                <div class="text-base font-black text-emerald-700 font-mono leading-tight">${t.avgLevel}</div>
+              </div>
+              <button onclick="showTeamMatchesDetail('${t.name}')" class="px-2.5 py-1.5 bg-white border border-slate-200 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 rounded-lg text-xs font-bold transition shadow-2xs">
+                詳細
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
     }
 
-    // 自分の順位へスクロール
+    // 自分の順位へスクロール (スマホ・PC対応)
     function scrollToMyRank() {
       switchRankingType('player');
       filterByClass('B');
       setTimeout(() => {
-        const row = document.getElementById('my-rank-row');
-        if (row) {
-          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          row.classList.add('bg-emerald-200');
+        const desktopRow = document.getElementById('my-rank-row');
+        const mobileCard = document.getElementById('my-rank-card-mobile');
+        const target = (window.innerWidth < 640 && mobileCard) ? mobileCard : desktopRow;
+        
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          target.classList.add('ring-2', 'ring-emerald-500', 'bg-emerald-100');
           setTimeout(() => {
-            row.classList.remove('bg-emerald-200');
-          }, 1500);
+            target.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-100');
+          }, 2000);
+          showToast('あなたの順位位置（B級 14位）を表示しました', 'info');
         }
-      }, 100);
-    }
-
-    // 出場履歴カード描画
-    function renderMatchHistory(filterYear = '2026') {
-      const container = document.getElementById('match-history-cards-container');
-      const filtered = filterYear === 'all' ? matchHistoryData : matchHistoryData.filter(m => m.year === filterYear);
-
-      container.innerHTML = filtered.map(item => {
-        const matchesHtml = item.matches.map(m => {
-          const isWin = m.result === 'WIN';
-          const badgeClass = isWin ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
-          return `
-            <div class="flex items-center justify-between py-1.5 px-2.5 bg-slate-50 rounded-lg text-xs">
-              <div class="flex items-center gap-2 truncate">
-                <span class="font-bold text-slate-500 w-12 text-[11px] shrink-0">${m.round}</span>
-                <span class="text-slate-800 font-medium truncate">${m.opponent}</span>
-              </div>
-              <div class="flex items-center gap-2 shrink-0">
-                <span class="font-black text-slate-900 font-mono">${m.score}</span>
-                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${badgeClass}">${m.result}</span>
-                <span class="text-[10px] font-mono font-bold text-emerald-600">${m.diff}</span>
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        return `
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 space-y-3">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-slate-400 font-mono">${item.date}</span>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.resultBadge}">${item.result}</span>
-                  <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-mono">
-                    Lv.${item.preLevel} → Lv.${item.postLevel} (${item.levelDelta})
-                  </span>
-                </div>
-                <h4 class="text-sm sm:text-base font-extrabold text-slate-900 mt-1">${item.title}</h4>
-                <p class="text-[11px] text-slate-500">${item.category} ${item.partner ? '| ペア: ' + item.partner : ''}</p>
-              </div>
-              <div class="text-left sm:text-right bg-slate-50 sm:bg-transparent p-2 sm:p-0 rounded-xl">
-                <span class="text-[10px] text-slate-400 block">イロレーティング増減</span>
-                <span class="text-sm font-black text-emerald-700 font-mono">${item.levelDelta} Lv</span>
-              </div>
-            </div>
-
-            <!-- 各ラウンド対戦内訳 -->
-            <div class="space-y-1.5">
-              <span class="text-[11px] font-bold text-slate-500 block">公式戦スコア & レート増減ログ:</span>
-              ${matchesHtml}
-            </div>
-          </div>
-        `;
-      }).join('');
-      lucide.createIcons();
-    }
-
-    function filterMatchHistory() {
-      const year = document.getElementById('match-year-filter').value;
-      renderMatchHistory(year);
-    }
-
-    // チーム別対戦カード描画
-    function renderTeamMatchups() {
-      const container = document.getElementById('team-matchups-grid');
-      container.innerHTML = teamMatchupsData.map(t => {
-        return `
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-            <div class="flex items-center justify-between">
-              <div>
-                <h4 class="font-extrabold text-slate-900 text-sm">${t.teamName}</h4>
-                <span class="text-[10px] text-slate-500 font-mono">チーム平均 Lv.${t.avgLevel}</span>
-              </div>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${t.statusColor}">${t.statusBadge}</span>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2 text-center bg-slate-50 p-2 rounded-xl text-xs font-mono">
-              <div>
-                <span class="text-slate-400 block text-[10px] font-sans">通算成績</span>
-                <span class="font-black text-slate-800">${t.matchesCount}</span>
-              </div>
-              <div>
-                <span class="text-slate-400 block text-[10px] font-sans">勝率</span>
-                <span class="font-black text-emerald-700">${t.winRate}</span>
-              </div>
-              <div>
-                <span class="text-slate-400 block text-[10px] font-sans">得ゲーム率</span>
-                <span class="font-black text-slate-800">${t.gameRate}</span>
-              </div>
-            </div>
-
-            <div class="text-[11px] text-slate-500 space-y-0.5">
-              <div class="truncate">📅 ${t.recentLog}</div>
-              <div class="truncate text-slate-700 font-medium">🎯 主力ライバル: ${t.keyRival}</div>
-            </div>
-          </div>
-        `;
-      }).join('');
-      lucide.createIcons();
-    }
-
-    // ライバル比較描画
-    function renderRivalComparison() {
-      const select = document.getElementById('rival-select');
-      const rival = rivalProfiles[select.value] || rivalProfiles.kimura;
-      const container = document.getElementById('rival-comparison-container');
-
-      container.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
-          <!-- 左右ステータス比較カード -->
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="text-center flex-1 bg-white p-3 rounded-xl border border-emerald-200 shadow-2xs">
-                <span class="text-[10px] text-emerald-600 font-bold block">あなた (GREEN STARS)</span>
-                <span class="text-sm font-black text-slate-900 block">佐藤 健太</span>
-                <span class="text-xs font-bold text-emerald-700 font-mono">Lv 580 (B級)</span>
-              </div>
-              <div class="px-2 text-rose-500 font-black text-xs">VS</div>
-              <div class="text-center flex-1 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-                <span class="text-[10px] text-slate-400 font-bold block">${rival.team}</span>
-                <span class="text-sm font-black text-slate-900 block">${rival.name}</span>
-                <span class="text-xs font-bold text-slate-700 font-mono">Lv ${rival.level} (${rival.classTier})</span>
-              </div>
-            </div>
-
-            <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100 text-center">
-              <span class="text-[11px] text-emerald-800 font-bold block">過去直接対戦成績</span>
-              <span class="text-base font-black text-emerald-950 font-mono">${rival.directRecord}</span>
-            </div>
-
-            <p class="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-200">
-              💡 <strong>戦術アドバイス:</strong> ${rival.notes}
-            </p>
-          </div>
-
-          <!-- 各能力比較バー -->
-          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2.5 text-xs">
-            <span class="text-[11px] font-bold text-slate-500 block border-b border-slate-100 pb-1">能力スタッツ直接比較 (あなた / ライバル)</span>
-            
-            <div>
-              <div class="flex justify-between text-[11px] font-bold mb-0.5">
-                <span class="text-emerald-700 font-mono">サーブ力: 85</span>
-                <span class="text-slate-600 font-mono">${rival.skills.serve}</span>
-              </div>
-              <div class="flex h-2 rounded-full overflow-hidden bg-slate-100">
-                <div class="bg-emerald-500" style="width: ${(85 / (85 + rival.skills.serve)) * 100}%"></div>
-                <div class="bg-slate-400" style="width: ${(rival.skills.serve / (85 + rival.skills.serve)) * 100}%"></div>
-              </div>
-            </div>
-
-            <div>
-              <div class="flex justify-between text-[11px] font-bold mb-0.5">
-                <span class="text-emerald-700 font-mono">リターン力: 78</span>
-                <span class="text-slate-600 font-mono">${rival.skills.return}</span>
-              </div>
-              <div class="flex h-2 rounded-full overflow-hidden bg-slate-100">
-                <div class="bg-emerald-500" style="width: ${(78 / (78 + rival.skills.return)) * 100}%"></div>
-                <div class="bg-slate-400" style="width: ${(rival.skills.return / (78 + rival.skills.return)) * 100}%"></div>
-              </div>
-            </div>
-
-            <div>
-              <div class="flex justify-between text-[11px] font-bold mb-0.5">
-                <span class="text-emerald-700 font-mono">ラリー安定性: 88</span>
-                <span class="text-slate-600 font-mono">${rival.skills.rally}</span>
-              </div>
-              <div class="flex h-2 rounded-full overflow-hidden bg-slate-100">
-                <div class="bg-emerald-500" style="width: ${(88 / (88 + rival.skills.rally)) * 100}%"></div>
-                <div class="bg-slate-400" style="width: ${(rival.skills.rally / (88 + rival.skills.rally)) * 100}%"></div>
-              </div>
-            </div>
-
-            <div>
-              <div class="flex justify-between text-[11px] font-bold mb-0.5">
-                <span class="text-emerald-700 font-mono">勝負強さ (クラッチ): 90</span>
-                <span class="text-slate-600 font-mono">${rival.skills.clutch}</span>
-              </div>
-              <div class="flex h-2 rounded-full overflow-hidden bg-slate-100">
-                <div class="bg-emerald-500" style="width: ${(90 / (90 + rival.skills.clutch)) * 100}%"></div>
-                <div class="bg-slate-400" style="width: ${(rival.skills.clutch / (90 + rival.skills.clutch)) * 100}%"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-      lucide.createIcons();
-    }
-
-    function compareWithPlayer(name, level) {
-      switchTab('analysis');
-      showToast(`${name}選手 (Lv.${level}) との直接対決比較を開きました`, 'info');
+      }, 120);
     }
 
     function showTeamMatchesDetail(teamName) {
@@ -1549,7 +1597,7 @@
 
     // Chart.js 初期化
     function initCharts() {
-      // 1. レベル推移折れ線グラフ (100〜999)
+      // 1. レベル推移折れ線グラフ (ダークヒーローカード内に最適化)
       const ctxLevel = document.getElementById('levelHistoryChart').getContext('2d');
       levelChartInstance = new Chart(ctxLevel, {
         type: 'line',
@@ -1559,19 +1607,21 @@
             {
               label: 'あなたのGRANレベル',
               data: [545, 552, 560, 568, 585, 580],
-              borderColor: '#059669',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderColor: '#34d399',
+              backgroundColor: 'rgba(52, 211, 153, 0.18)',
               borderWidth: 3,
               fill: true,
               tension: 0.35,
-              pointBackgroundColor: '#059669',
+              pointBackgroundColor: '#34d399',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 1.5,
               pointRadius: 5,
               pointHoverRadius: 7
             },
             {
               label: '全体平均レート (485)',
               data: [485, 485, 485, 485, 485, 485],
-              borderColor: '#cbd5e1',
+              borderColor: 'rgba(148, 163, 184, 0.65)',
               borderWidth: 2,
               borderDash: [5, 5],
               fill: false,
@@ -1585,6 +1635,12 @@
           plugins: {
             legend: { display: false },
             tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.95)',
+              titleColor: '#f8fafc',
+              bodyColor: '#34d399',
+              borderColor: 'rgba(52, 211, 153, 0.3)',
+              borderWidth: 1,
+              padding: 10,
               callbacks: {
                 label: function(context) {
                   return context.dataset.label + ': Lv.' + context.parsed.y;
@@ -1594,13 +1650,13 @@
           },
           scales: {
             y: {
-              min: 400,
-              max: 750,
-              ticks: { stepSize: 50, font: { size: 10 } },
-              grid: { color: 'rgba(226, 232, 240, 0.6)' }
+              min: 420,
+              max: 650,
+              ticks: { stepSize: 50, color: 'rgba(203, 213, 225, 0.8)', font: { size: 10, weight: '500' } },
+              grid: { color: 'rgba(255, 255, 255, 0.08)' }
             },
             x: {
-              ticks: { font: { size: 10 } },
+              ticks: { color: 'rgba(203, 213, 225, 0.8)', font: { size: 10, weight: '500' } },
               grid: { display: false }
             }
           }
@@ -1717,9 +1773,9 @@
       ['6m', '1y', 'all'].forEach(p => {
         const btn = document.getElementById('period-' + p);
         if (p === period) {
-          btn.className = 'px-2.5 py-1 rounded-md bg-white text-emerald-700 shadow-xs';
+          btn.className = 'px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-black shadow-xs transition';
         } else {
-          btn.className = 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900';
+          btn.className = 'px-2.5 py-1 rounded-lg text-slate-300 hover:text-white transition';
         }
       });
 
@@ -1737,6 +1793,23 @@
         levelChartInstance.update();
         showToast(`表示期間を「${period === '6m' ? '6ヶ月' : period === '1y' ? '1年間' : '全期間'}」に更新しました`, 'info');
       }
+    }
+
+    // 公式認定証モーダル
+    function openCertificateModal() {
+      document.getElementById('modal-certificate').classList.remove('hidden');
+      lucide.createIcons();
+    }
+    function closeCertificateModal() {
+      document.getElementById('modal-certificate').classList.add('hidden');
+    }
+    function downloadCertificate() {
+      showToast('公式戦績認定証カード画像をダウンロードしました', 'success');
+    }
+
+    // 最新レート再同期
+    function refreshDataStats() {
+      showToast('最新の公式大会対戦結果およびイロレーティングを再計算・同期しました', 'success');
     }
 
     // マイページモーダル
