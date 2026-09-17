@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GRAN - 大会日程・要項一覧 (2026 Season)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            admin: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Modern Performance: Defer off-screen row rendering for 100+ items */
+    .schedule-row-deferred {
+      content-visibility: auto;
+      contain-intrinsic-size: auto none auto 72px;
+    }
+    .schedule-card-deferred {
+      content-visibility: auto;
+      contain-intrinsic-size: auto none auto 240px;
+    }
+
+    /* ダークモード用スタイル */
+    body.dark {
+      background-color: #0f172a !important;
+      color: #f8fafc !important;
+    }
+    body.dark header {
+      background-color: #1e293b !important;
+      border-color: #334155 !important;
+    }
+    body.dark header .bg-slate-50 {
+      background-color: #0f172a !important;
+      border-color: #334155 !important;
+    }
+    body.dark header .text-slate-900,
+    body.dark header .text-slate-800 {
+      color: #f8fafc !important;
+    }
+    body.dark .bg-white {
+      background-color: #1e293b !important;
+      color: #f8fafc !important;
+    }
+    body.dark .border-slate-200,
+    body.dark .border-slate-100 {
+      border-color: #334155 !important;
+    }
+    body.dark .text-slate-900,
+    body.dark .text-slate-800,
+    body.dark .text-slate-700 {
+      color: #f8fafc !important;
+    }
+    body.dark .text-slate-600,
+    body.dark .text-slate-500 {
+      color: #94a3b8 !important;
+    }
+    body.dark .bg-slate-50 {
+      background-color: #0f172a !important;
+    }
+    body.dark .bg-slate-100 {
+      background-color: #1e293b !important;
+    }
+    body.dark .bg-slate-200 {
+      background-color: #334155 !important;
+      color: #cbd5e1 !important;
+    }
+    body.dark nav {
+      background-color: #1e293b !important;
+      border-color: #334155 !important;
+    }
+    body.dark input,
+    body.dark select {
+      background-color: #0f172a !important;
+      color: #f8fafc !important;
+      border-color: #334155 !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen font-sans antialiased pb-20 md:pb-8 md:pl-60">
+
+  <!-- 管理者用上部バー（管理者/運営者プレビュー時） -->
+  <div id="admin-banner" class="hidden bg-indigo-900 text-indigo-100 text-xs px-4 py-2 flex items-center justify-between shadow-inner">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500 text-white uppercase" id="admin-badge">ADMIN</span>
+      <span class="truncate">大会管理者モードでプレビュー中（大会日程追加・一括要項編集・枠数調整権限あり）</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <button onclick="showToast('大会作成・一括要項アップロード画面へ進みます', 'info')" class="text-xs bg-indigo-700 hover:bg-indigo-600 text-white px-2.5 py-1 rounded transition font-medium">
+        新規大会一括登録
+      </button>
+    </div>
+  </div>
+
+  <!-- PC用デスクトップ左サイドバーナビゲーション -->
+  <aside class="hidden md:flex flex-col fixed top-0 bottom-0 left-0 w-60 bg-white border-r border-slate-200 z-30">
+    <div class="h-16 flex items-center gap-2.5 px-6 border-b border-slate-100">
+      <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-black text-base shadow-sm">
+        G
+      </div>
+      <div>
+        <span class="font-extrabold text-base tracking-tight text-slate-900">GRAN TENNIS</span>
+        <span class="block text-[10px] text-emerald-600 font-bold">2026 Season</span>
+      </div>
+    </div>
+
+    <!-- サイドバーメニュー項目 (5項目) -->
+    <div class="p-4 space-y-1.5 flex-1 overflow-y-auto">
+      <!-- 1: ホーム -->
+      <a href="home.html" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+        <i data-lucide="home" class="w-4 h-4"></i>
+        <span>ホーム</span>
+      </a>
+      <!-- 2: 大会日程 (アクティブ) -->
+      <a href="schedule.html" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition bg-emerald-50 text-emerald-600">
+        <i data-lucide="calendar" class="w-4 h-4"></i>
+        <span>大会日程</span>
+      </a>
+      <!-- 3: データ -->
+      <a href="data.html" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+        <i data-lucide="database" class="w-4 h-4"></i>
+        <span>データ</span>
+      </a>
+      <!-- 4: お知らせ -->
+      <a href="notifications.html" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+        <i data-lucide="bell" class="w-4 h-4"></i>
+        <span>お知らせ</span>
+        <span class="ml-auto w-2 h-2 rounded-full bg-rose-500"></span>
+      </a>
+      <!-- 5: 設定 -->
+      <a href="settings.html" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+        <i data-lucide="settings" class="w-4 h-4"></i>
+        <span>設定</span>
+      </a>
+    </div>
+
+    <!-- フッター部（ユーザー概要・ログアウト等） -->
+    <div class="p-4 border-t border-slate-100 space-y-2">
+      <div class="flex items-center gap-2.5 px-2 py-1.5 rounded-xl bg-slate-50 border border-slate-100 cursor-pointer hover:bg-slate-100 transition" onclick="openMyPageModal()">
+        <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold" id="sidebar-user-avatar">
+          佐
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-bold text-slate-800 truncate" id="sidebar-user-name">佐藤 健太</div>
+          <div class="text-[10px] text-slate-500 truncate" id="sidebar-user-team">Team GRAN Apex</div>
+        </div>
+      </div>
+      <div class="text-center">
+        <a href="login.html" class="text-[11px] text-slate-400 hover:text-slate-600 flex items-center justify-center gap-1 py-1">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          <span>ログアウト</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- トップ共通ヘッダー -->
+  <header class="sticky top-0 bg-white/90 backdrop-blur-md border-b border-slate-200 z-20 transition-colors">
+    <div class="max-w-4xl mx-auto px-4 h-14 sm:h-16 flex items-center justify-between gap-3">
+      <!-- モバイル用ロゴ -->
+      <div class="flex items-center gap-2 md:hidden">
+        <div class="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-black text-sm shadow-xs">
+          G
+        </div>
+        <div>
+          <span class="font-extrabold text-sm sm:text-base tracking-tight text-slate-900">GRAN TENNIS</span>
+          <span class="text-[9px] text-emerald-600 font-bold ml-1 px-1 py-0.5 bg-emerald-50 rounded">2026</span>
+        </div>
+      </div>
+
+      <!-- ページ見出し（PC表示） -->
+      <div class="hidden md:flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+          <i data-lucide="calendar-days" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-extrabold text-slate-900 leading-none">大会日程・要項一覧</h1>
+          <p class="text-[11px] text-slate-500 mt-0.5">2026年度 年間公式ツアースケジュール & 要項閲覧・申込</p>
+        </div>
+      </div>
+
+      <!-- 右側アクション・ユーザーバッジ -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- マイエントリークイックボタン -->
+        <button onclick="filterMyEnteredTournaments()" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition shadow-2xs">
+          <i data-lucide="bookmark-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>エントリー中大会 (2)</span>
+        </button>
+
+        <!-- ユーザープロフィールバッジ -->
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 py-1 px-2.5 rounded-full cursor-pointer hover:bg-slate-100 transition" onclick="openMyPageModal()" title="マイページを表示">
+          <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold" id="user-avatar-text">
+            佐
+          </div>
+          <div class="text-left hidden sm:block">
+            <div class="text-xs font-bold leading-none text-slate-800" id="user-header-name">佐藤 健太</div>
+            <div class="text-[10px] text-slate-500 leading-tight">Rate: <span class="font-bold text-emerald-600 font-mono">540</span> (B級)</div>
+          </div>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツエリア -->
+  <main class="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-5 space-y-4">
+
+    <!-- 1. 年間スケジュールサマリーKPIカード -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+      <div class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-xs flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="calendar" class="w-5 h-5"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="text-[11px] font-bold text-slate-500">年間総大会数</div>
+          <div class="flex items-baseline gap-1">
+            <span class="text-lg sm:text-xl font-black font-mono text-slate-900" id="kpi-total-tournaments">108</span>
+            <span class="text-xs text-slate-400 font-bold">大会</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-xs flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="user-check" class="w-5 h-5"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="text-[11px] font-bold text-slate-500">現在受付中</div>
+          <div class="flex items-baseline gap-1">
+            <span class="text-lg sm:text-xl font-black font-mono text-blue-600" id="kpi-open-tournaments">38</span>
+            <span class="text-xs text-slate-400 font-bold">大会</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-xs flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="flame" class="w-5 h-5"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="text-[11px] font-bold text-slate-500">残りわずか</div>
+          <div class="flex items-baseline gap-1">
+            <span class="text-lg sm:text-xl font-black font-mono text-amber-600" id="kpi-few-tournaments">14</span>
+            <span class="text-xs text-slate-400 font-bold">大会</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-xs flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="bookmark" class="w-5 h-5"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="text-[11px] font-bold text-slate-500">自チーム申込中</div>
+          <div class="flex items-baseline gap-1">
+            <span class="text-lg sm:text-xl font-black font-mono text-purple-600" id="kpi-entered-tournaments">2</span>
+            <span class="text-xs text-slate-400 font-bold">大会</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. コントロールバー：表示形式切り替え & 絞り込みフィルター & 月別クイックセレクター -->
+    <section class="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-5 shadow-xs space-y-3.5">
+      
+      <!-- 上段：タイトル & 表示形式切り替えタブ（一覧表 vs カレンダー・カード） -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+            <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-emerald-600"></i>
+            スケジュール表示設定
+          </span>
+          <span class="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60" id="filter-result-count">
+            108 大会 表示中
+          </span>
+        </div>
+
+        <!-- 表示形式スイッチ -->
+        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+          <button onclick="setViewMode('table')" id="btn-view-table"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-emerald-700 shadow-2xs transition">
+            <i data-lucide="table" class="w-3.5 h-3.5"></i>
+            <span>一覧表（1枚表示）</span>
+          </button>
+          <button onclick="setViewMode('cards')" id="btn-view-cards"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">
+            <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+            <span>カード・要項サムネイル</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 中段：月別クイックタブ (通年 + 1月〜12月) -->
+      <div>
+        <div class="text-[11px] font-bold text-slate-500 mb-1.5 flex items-center justify-between">
+          <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-600"></i>開催月で絞り込み:</span>
+          <span class="text-[10px] text-slate-400">横スクロールで12ヶ月全日程へジャンプ</span>
+        </div>
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="month-filter-container">
+          <button onclick="filterByMonth('all')" id="month-btn-all" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-2xs transition">
+            全日程 (通年)
+          </button>
+          <!-- 1〜12月のボタンをJSで生成または配置 -->
+          <button onclick="filterByMonth(1)" id="month-btn-1" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">1月</button>
+          <button onclick="filterByMonth(2)" id="month-btn-2" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">2月</button>
+          <button onclick="filterByMonth(3)" id="month-btn-3" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">3月</button>
+          <button onclick="filterByMonth(4)" id="month-btn-4" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">4月</button>
+          <button onclick="filterByMonth(5)" id="month-btn-5" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">5月</button>
+          <button onclick="filterByMonth(6)" id="month-btn-6" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">6月</button>
+          <button onclick="filterByMonth(7)" id="month-btn-7" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">7月</button>
+          <button onclick="filterByMonth(8)" id="month-btn-8" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">8月</button>
+          <button onclick="filterByMonth(9)" id="month-btn-9" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">9月</button>
+          <button onclick="filterByMonth(10)" id="month-btn-10" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">10月</button>
+          <button onclick="filterByMonth(11)" id="month-btn-11" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">11月</button>
+          <button onclick="filterByMonth(12)" id="month-btn-12" class="month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">12月</button>
+        </div>
+      </div>
+
+      <!-- 下段：種目・階級・ステータス・キーワード検索フィルター -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2.5 pt-2 border-t border-slate-100">
+        <!-- 種目区分 -->
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 mb-1">種目・部門</label>
+          <select id="filter-category" onchange="applyFilters()" class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:outline-emerald-500">
+            <option value="all">すべての種目</option>
+            <option value="MIX_TEAM">ミックス団体戦</option>
+            <option value="MEN_TEAM">男子団体戦</option>
+            <option value="WOMEN_TEAM">女子団体戦</option>
+            <option value="SINGLES">シングルス</option>
+            <option value="DOUBLES">ダブルス</option>
+          </select>
+        </div>
+
+        <!-- 階級 -->
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 mb-1">対象階級</label>
+          <select id="filter-tier" onchange="applyFilters()" class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:outline-emerald-500">
+            <option value="all">すべての階級</option>
+            <option value="A">A級</option>
+            <option value="B">B級 (所属)</option>
+            <option value="C">C級</option>
+            <option value="D">D級</option>
+            <option value="E">E級</option>
+            <option value="OPEN">オープン</option>
+          </select>
+        </div>
+
+        <!-- 申込ステータス -->
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 mb-1">受付状況</label>
+          <select id="filter-status" onchange="applyFilters()" class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:outline-emerald-500">
+            <option value="all">すべての状況</option>
+            <option value="OPEN">受付中 (空きあり)</option>
+            <option value="FEW">残りわずか</option>
+            <option value="WAITLIST">満員 (キャンセル待ち)</option>
+            <option value="ENTERED">エントリー中のみ</option>
+          </select>
+        </div>
+
+        <!-- キーワード検索 -->
+        <div class="col-span-2 sm:col-span-1 lg:col-span-2">
+          <label class="block text-[10px] font-bold text-slate-500 mb-1">大会名・会場検索</label>
+          <div class="relative">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="text" id="filter-search-input" oninput="applyFilters()"
+              placeholder="有明、秋季、ダブルス..."
+              class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-8 py-2 text-slate-800 placeholder-slate-400 focus:outline-emerald-500" />
+            <button onclick="clearSearchInput()" id="clear-search-btn" class="hidden absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 【VIEW 1】1枚の統合スケジュール一覧表 (Table Mode) -->
+    <section id="schedule-table-section" class="space-y-2">
+      <!-- テーブルヘッダーインフォ -->
+      <div class="flex items-center justify-between px-1">
+        <h2 class="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+          <i data-lucide="list-filter" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>2026年 GRAN公式ツアースケジュール一覧表</span>
+        </h2>
+        <span class="text-[11px] text-slate-400">※行または「要項」クリックで公式要項を展開</span>
+      </div>
+
+      <!-- テーブルラッパー (スクロール & スティッキーヘッダー) -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse sm:min-w-[600px]">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200/80 text-[11px] font-bold text-slate-500">
+                <th class="py-2.5 sm:py-3 px-1.5 sm:px-2.5 w-11 sm:w-20 text-center whitespace-nowrap">日程</th>
+                <th class="py-2.5 sm:py-3 px-2 sm:px-3">大会名・会場</th>
+                <th class="hidden sm:table-cell py-3 px-2.5 w-16 whitespace-nowrap">階級</th>
+                <th class="hidden md:table-cell py-3 px-3 w-36 whitespace-nowrap">会場</th>
+                <th class="hidden sm:table-cell py-3 px-3 w-32 whitespace-nowrap">申込状況</th>
+                <th class="py-2.5 sm:py-3 px-2 sm:px-3 w-20 sm:w-32 text-right sm:text-center whitespace-nowrap">
+                  <span class="sm:hidden">状況・要項</span>
+                  <span class="hidden sm:inline">要項・申込</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="schedule-tbody" class="divide-y divide-slate-100 text-xs">
+              <!-- JSで動的レンダリング -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 該当なし表示 -->
+        <div id="table-empty-state" class="hidden py-16 text-center space-y-2">
+          <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+            <i data-lucide="search-x" class="w-6 h-6"></i>
+          </div>
+          <p class="text-xs font-bold text-slate-600">条件に合致する大会が見つかりませんでした</p>
+          <p class="text-[11px] text-slate-400">月別フィルターまたは検索キーワードを変更してお試しください</p>
+          <button onclick="resetAllFilters()" class="mt-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition">
+            フィルターをリセット
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 【VIEW 2】カード・サムネイル表示モード (Cards Mode) -->
+    <section id="schedule-cards-section" class="hidden space-y-4">
+      <div class="flex items-center justify-between px-1">
+        <h2 class="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+          <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>大会カード・要項サムネイル一覧</span>
+        </h2>
+        <span class="text-[11px] text-slate-400">要項画像をタップすると詳細ビューアが開きます</span>
+      </div>
+
+      <div id="schedule-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <!-- JSでカードを動的レンダリング -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 5. 【大会要項ビューア (Guidelines Viewer)】（100+枚の要項を高速・快適に連続ブラウズできるドロワー＆モーダル） -->
+  <div id="guidelines-modal" class="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    
+    <div class="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[95vh] my-auto animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- ビューアトップバー：前後大会送りナビゲーション & 大会インジケーター & 閉じる -->
+      <div class="bg-slate-900 text-white px-4 sm:px-6 py-3 flex items-center justify-between border-b border-slate-800">
+        
+        <!-- 左側：前の要項ボタン -->
+        <button id="viewer-prev-btn" onclick="switchGuideline(-1)" title="前の大会要項を表示 (キーボード ←)"
+          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold transition disabled:opacity-30 disabled:cursor-not-allowed">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">前の要項</span>
+        </button>
+
+        <!-- 中央：インデックス番号 & 大会ID -->
+        <div class="text-center px-2">
+          <div class="flex items-center justify-center gap-2">
+            <span class="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded bg-emerald-600 text-white font-mono" id="viewer-index-badge">
+              35 / 108
+            </span>
+            <span class="text-xs font-mono text-slate-400" id="viewer-tournament-id">T-2026-0920</span>
+          </div>
+          <p class="text-[11px] text-slate-300 font-bold truncate max-w-xs sm:max-w-md mt-0.5" id="viewer-header-title">
+            第14回 GRANカップ秋季ミックス団体戦
+          </p>
+        </div>
+
+        <!-- 右側：次の要項ボタン & 閉じるボタン -->
+        <div class="flex items-center gap-2">
+          <button id="viewer-next-btn" onclick="switchGuideline(1)" title="次の大会要項を表示 (キーボード →)"
+            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold transition disabled:opacity-30 disabled:cursor-not-allowed">
+            <span class="hidden sm:inline">次の要項</span>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+
+          <button onclick="closeGuidelinesModal()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white flex items-center justify-center transition ml-1" title="閉じる (ESC)">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ビューアコンテンツエリア (左右スプリットまたはタブ) -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          <!-- 左側 (5カラム): 美麗な公式大会要項フライヤーシート（グラフィカルポスター） -->
+          <div class="lg:col-span-5 flex flex-col items-center">
+            <div class="w-full max-w-sm rounded-2xl overflow-hidden shadow-lg border border-slate-200 bg-slate-900 aspect-[9/16] relative group">
+              <!-- SVG要項グラフィックを動的描画 -->
+              <div id="viewer-flyer-container" class="w-full h-full flex items-center justify-center">
+                <!-- SVG Flyer Content -->
+              </div>
+              
+              <!-- ホバー時の拡大アクション -->
+              <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4 pointer-events-none">
+                <span class="px-3 py-1.5 rounded-full bg-white/90 text-slate-900 text-xs font-bold shadow-md flex items-center gap-1.5">
+                  <i data-lucide="zoom-in" class="w-3.5 h-3.5 text-emerald-600"></i>
+                  <span>高精細公式要項シート</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- 要項PDFダウンロード・印刷シミュレーションボタン -->
+            <div class="flex items-center gap-2 mt-3 w-full max-w-sm">
+              <button onclick="printOrDownloadGuideline()" class="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1.5">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>要項PDFを保存</span>
+              </button>
+              <button onclick="shareGuideline()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1.5" title="要項を共有">
+                <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 右側 (7カラム): 大会要項の文字情報・競技規則・エントリー空き状況 -->
+          <div class="lg:col-span-7 space-y-4">
+            
+            <!-- 大会名 & バッジ -->
+            <div class="space-y-1.5 pb-3 border-b border-slate-100">
+              <div class="flex flex-wrap items-center gap-2">
+                <span id="viewer-badge-category" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                  ミックス団体戦
+                </span>
+                <span id="viewer-badge-tier" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                  B級
+                </span>
+                <span id="viewer-badge-status" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500 text-white">
+                  受付中 (空きあり)
+                </span>
+              </div>
+              <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight leading-snug" id="viewer-title">
+                第14回 GRANカップ秋季ミックス団体戦
+              </h3>
+            </div>
+
+            <!-- 大会スペック基本一覧グリッド -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                <div class="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                  <i data-lucide="calendar" class="w-3 h-3 text-emerald-600"></i>
+                  開催日程・時刻
+                </div>
+                <div class="font-extrabold text-slate-900 text-sm" id="viewer-datetime">
+                  2026/09/20 (日)
+                </div>
+                <div class="text-[11px] text-slate-500" id="viewer-timings">
+                  09:00 集合 / 09:30 試合開始 (16:30 終了予定)
+                </div>
+              </div>
+
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                <div class="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                  <i data-lucide="map-pin" class="w-3 h-3 text-emerald-600"></i>
+                  開催会場・コート環境
+                </div>
+                <div class="font-extrabold text-slate-900 text-sm" id="viewer-venue">
+                  有明テニスの森公園
+                </div>
+                <div class="text-[11px] text-slate-500" id="viewer-court-info">
+                  砂入り人工芝（オムニ）4面使用 / 有料駐車場有
+                </div>
+              </div>
+
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                <div class="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                  <i data-lucide="users" class="w-3 h-3 text-emerald-600"></i>
+                  種目構成・参加資格
+                </div>
+                <div class="font-extrabold text-slate-900 text-sm" id="viewer-team-format">
+                  3ペア混成団体戦 (最低6名)
+                </div>
+                <div class="text-[11px] text-slate-500" id="viewer-level-limit">
+                  チーム平均レベル: B級 (Lv.550〜599推奨)
+                </div>
+              </div>
+
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                <div class="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                  <i data-lucide="wallet" class="w-3 h-3 text-emerald-600"></i>
+                  エントリー参加費用
+                </div>
+                <div class="font-black text-emerald-600 font-mono text-base" id="viewer-fee">
+                  ¥20,000 / チーム
+                </div>
+                <div class="text-[11px] text-slate-500">
+                  事前オンライン決済（クレカ・PayPay対応）
+                </div>
+              </div>
+            </div>
+
+            <!-- 競技規則・試合方式 -->
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100 space-y-2 text-xs">
+              <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <span>競技規則・試合方式</span>
+              </div>
+              <ul class="list-disc list-inside space-y-1 text-[11px] text-slate-600 leading-relaxed" id="viewer-rules-list">
+                <li>予選リーグ（各組3〜4チーム）後、本戦順位別トーナメントを実施（全チーム最低3対戦保証）。</li>
+                <li>試合方式：6ゲーム先取（ノーアドバンテージ方式）。</li>
+                <li>使用球：ダンロップフォート（大会本部支給）。</li>
+                <li>荒天時：当日朝7:00までに本アプリお知らせおよびメールにて可否を連絡。</li>
+              </ul>
+            </div>
+
+            <!-- 賞品・表彰 -->
+            <div class="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl space-y-1.5 text-xs text-amber-950">
+              <div class="font-bold flex items-center gap-1.5 text-amber-900">
+                <i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-600"></i>
+                <span>表彰・入賞賞品</span>
+              </div>
+              <div class="text-[11px] text-amber-900 leading-relaxed" id="viewer-prizes">
+                【1位トーナメント優勝】GRANゴールドトロフィー ＋ 各種スポーツギフト券（¥30,000相当）<br>
+                【準優勝・各位L優勝】GRANオリジナル記念ウェア ＋ テニスボール1箱
+              </div>
+            </div>
+
+            <!-- 申込受付状況プログレスバー -->
+            <div class="p-3.5 bg-white border border-slate-200 rounded-xl space-y-2">
+              <div class="flex items-center justify-between text-xs font-bold">
+                <span class="text-slate-600">エントリー枠の空き状況</span>
+                <span class="font-mono text-emerald-600" id="viewer-capacity-text">確定 12枠 / 定員 16枠 (残り 4枠)</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div id="viewer-capacity-bar" class="bg-emerald-600 h-full rounded-full transition-all duration-300" style="width: 75%;"></div>
+              </div>
+              <div class="text-[10px] text-slate-400 flex items-center justify-between">
+                <span>受付締切: 開催7日前の23:59まで</span>
+                <span>キャンセル規定: 開催3日前まで無料</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ビューアフッター：エントリー申込CTAボタンバー -->
+      <div class="bg-slate-50 border-t border-slate-200 px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <i data-lucide="info" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+          <span>キーボードの <kbd class="px-1.5 py-0.5 bg-slate-200 rounded text-[10px] font-mono">←</kbd> <kbd class="px-1.5 py-0.5 bg-slate-200 rounded text-[10px] font-mono">→</kbd> キーでも前後の大会要項をめくることができます</span>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button onclick="closeGuidelinesModal()" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-xs font-bold text-slate-700 transition">
+            閉じる
+          </button>
+          <button id="viewer-entry-btn" onclick="handleTournamentEntry()"
+            class="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-extrabold text-white shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+            <i data-lucide="edit-3" class="w-4 h-4"></i>
+            <span id="viewer-entry-btn-text">この大会にエントリー申込</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- モバイルボトムナビゲーション -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 md:hidden">
+    <div class="grid grid-cols-5 h-14 text-[10px] font-medium text-slate-500">
+      <!-- 1: ホーム -->
+      <button onclick="window.location.href='home.html'" class="flex flex-col items-center justify-center hover:text-slate-900">
+        <i data-lucide="home" class="w-5 h-5 mb-0.5"></i>
+        <span>ホーム</span>
+      </button>
+      <!-- 2: 大会日程 (アクティブ) -->
+      <button class="flex flex-col items-center justify-center text-emerald-600 font-bold">
+        <i data-lucide="calendar" class="w-5 h-5 mb-0.5"></i>
+        <span>大会日程</span>
+      </button>
+      <!-- 3: データ -->
+      <button onclick="window.location.href='data.html'" class="flex flex-col items-center justify-center hover:text-slate-900">
+        <i data-lucide="database" class="w-5 h-5 mb-0.5"></i>
+        <span>データ</span>
+      </button>
+      <!-- 4: お知らせ -->
+      <button onclick="window.location.href='notifications.html'" class="flex flex-col items-center justify-center hover:text-slate-900 relative">
+        <i data-lucide="bell" class="w-5 h-5 mb-0.5"></i>
+        <span>お知らせ</span>
+        <span class="absolute top-2 right-4 w-2 h-2 rounded-full bg-rose-500"></span>
+      </button>
+      <!-- 5: 設定 -->
+      <button onclick="window.location.href='settings.html'" class="flex flex-col items-center justify-center hover:text-slate-900">
+        <i data-lucide="settings" class="w-5 h-5 mb-0.5"></i>
+        <span>設定</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- トースト通知コンテナ -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"></div>
+
+  <!-- マイページモーダル -->
+  <div id="modal-mypage" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+          <i data-lucide="user" class="w-5 h-5 text-emerald-600"></i>
+          <span>選手マイページ</span>
+        </h3>
+        <button onclick="closeMyPageModal()" class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="flex items-center gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+        <div class="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center text-lg font-black">
+          佐
+        </div>
+        <div>
+          <div class="font-extrabold text-slate-900 text-sm">佐藤 健太 (代表者)</div>
+          <div class="text-xs text-slate-500">Team GRAN Apex / 登録ID: 1042</div>
+          <div class="text-xs font-bold text-emerald-600 mt-0.5">GRAN レベル: 540 (B級)</div>
+        </div>
+      </div>
+      <div class="space-y-2 text-xs">
+        <div class="flex justify-between py-1.5 border-b border-slate-100">
+          <span class="text-slate-500">規定クラス</span>
+          <span class="font-bold text-slate-800">B級 (中級)</span>
+        </div>
+        <div class="flex justify-between py-1.5 border-b border-slate-100">
+          <span class="text-slate-500">エントリー中大会</span>
+          <span class="font-bold text-emerald-600">2大会 (確定済)</span>
+        </div>
+      </div>
+      <div class="pt-2 flex items-center justify-end gap-2">
+        <button onclick="window.location.href='settings.html'" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+          アカウント設定へ
+        </button>
+        <button onclick="closeMyPageModal()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition">
+          閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT AREA -->
+  <script>
+    // ==========================================
+    // 1. 2026シーズン 100+大会マスターデータ生成
+    // ==========================================
+    const categories = [
+      { key: 'MIX_TEAM', name: 'ミックス団体戦', tagClass: 'bg-blue-100 text-blue-800 border-blue-200', desc: '3ペア混成団体戦 (最低6名)' },
+      { key: 'MEN_TEAM', name: '男子団体戦', tagClass: 'bg-indigo-100 text-indigo-800 border-indigo-200', desc: '4ダブルス団体戦 (最低8名)' },
+      { key: 'WOMEN_TEAM', name: '女子団体戦', tagClass: 'bg-pink-100 text-pink-800 border-pink-200', desc: '3ダブルス団体戦 (最低6名)' },
+      { key: 'SINGLES', name: '男子シングルス', tagClass: 'bg-emerald-100 text-emerald-800 border-emerald-200', desc: '一般シングルス (個人戦)' },
+      { key: 'DOUBLES', name: '男子ダブルス', tagClass: 'bg-amber-100 text-amber-800 border-amber-200', desc: '一般ダブルス (ペア戦)' }
+    ];
+
+    const venues = [
+      { name: '有明テニスの森公園', surface: '砂入り人工芝（オムニ4面）', fee: '¥20,000' },
+      { name: '昭和の森テニスセンター', surface: 'ハードコート（インドア4面）', fee: '¥24,000' },
+      { name: '横浜テニスクラブ', surface: '砂入り人工芝（オムニ6面）', fee: '¥20,000' },
+      { name: '川崎リバーサイドTC', surface: 'クレーコート（4面）', fee: '¥18,000' },
+      { name: '大宮第二公園テニスコート', surface: '砂入り人工芝（オムニ8面）', fee: '¥18,000' },
+      { name: '千葉ベイサイドTC', surface: 'ハードコート（アウトドア6面）', fee: '¥22,000' }
+    ];
+
+    const tiers = ['A', 'B', 'C', 'D', 'E', 'OPEN'];
+
+    // 12ヶ月×9大会 = 108大会のシードデータ
+    const allTournaments = [];
+    let tournamentCounter = 1;
+
+    for (let month = 1; month <= 12; month++) {
+      for (let dayIdx = 1; dayIdx <= 9; dayIdx++) {
+        const idNum = String(tournamentCounter).padStart(3, '0');
+        const day = 3 + (dayIdx * 3); // 6, 9, 12, 15, 18, 21, 24, 27, 30
+        const dateStr = `2026/${String(month).padStart(2, '0')}/${String(Math.min(day, 28)).padStart(2, '0')}`;
+        const dayOfWeek = ['(日)', '(土)', '(祝)', '(日)', '(土)', '(日)', '(土)', '(日)', '(祝)'][dayIdx - 1];
+        
+        const cat = categories[(month + dayIdx) % categories.length];
+        const ven = venues[(month * 2 + dayIdx) % venues.length];
+        const tier = tiers[(month + dayIdx * 2) % tiers.length];
+        
+        const capacity = [16, 16, 24, 12, 32, 16, 20, 16, 24][dayIdx - 1];
+        
+        // 申込ステータス判定（過去月・現在月・未来月でリアルに分岐）
+        let status = 'OPEN';
+        let entriesCount = 0;
+        
+        if (month < 9) {
+          // 開催終了または満員
+          status = (dayIdx % 3 === 0) ? 'CLOSED' : 'PAST';
+          entriesCount = capacity;
+        } else if (month === 9) {
+          // 9月（現在月）：受付中・残枠わずか・満員が混在
+          if (dayIdx === 1) {
+            status = 'ENTERED'; // 自チームエントリー中
+            entriesCount = capacity - 2;
+          } else if (dayIdx === 2) {
+            status = 'FEW'; // 残りわずか
+            entriesCount = capacity - 1;
+          } else if (dayIdx === 3) {
+            status = 'WAITLIST'; // キャンセル待ち
+            entriesCount = capacity;
+          } else {
+            status = 'OPEN';
+            entriesCount = Math.floor(capacity * 0.6);
+          }
+        } else if (month === 10) {
+          if (dayIdx === 1) {
+            status = 'ENTERED'; // 自チームエントリー中
+            entriesCount = capacity - 4;
+          } else if (dayIdx <= 4) {
+            status = 'FEW';
+            entriesCount = capacity - 2;
+          } else {
+            status = 'OPEN';
+            entriesCount = Math.floor(capacity * 0.4);
+          }
+        } else {
+          // 11月〜12月：順次受付中
+          status = 'OPEN';
+          entriesCount = Math.floor(capacity * (0.2 + (dayIdx * 0.05)));
+        }
+
+        const tierTitles = {
+          'A': 'プレミアA級シリーズ',
+          'B': 'クラシックB級チャレンジ',
+          'C': 'サテライトC級カップ',
+          'D': 'ステップアップD級トーナメント',
+          'E': 'エントリーE級フェスティバル',
+          'OPEN': 'チャンピオンシップ・オープン'
+        };
+
+        const shortTitle = tierTitles[tier];
+        const title = `第${tournamentCounter}回 GRAN ${month}月${tierTitles[tier]} (${cat.name})`;
+
+        allTournaments.push({
+          id: `T-2026-${String(month).padStart(2, '0')}${String(Math.min(day, 28)).padStart(2, '0')}-${idNum}`,
+          counter: tournamentCounter,
+          month: month,
+          date: dateStr,
+          dayOfWeek: dayOfWeek,
+          time: dayIdx % 2 === 0 ? '08:30 集合 / 09:00 開始' : '09:00 集合 / 09:30 開始',
+          title: title,
+          shortTitle: shortTitle,
+          category: cat.key,
+          categoryName: cat.name,
+          categoryDesc: cat.desc,
+          tier: tier,
+          venue: ven.name,
+          surface: ven.surface,
+          fee: ven.fee,
+          capacity: capacity,
+          entriesCount: entriesCount,
+          status: status,
+          isEntered: status === 'ENTERED',
+          rules: [
+            '予選リーグ（3〜4組）後、全チーム順位別トーナメント進出（最低3対戦保証）',
+            '試合方式：6ゲーム先取（ノーアドバンテージ方式）',
+            '使用球：ダンロップフォート公式球（大会本部支給）',
+            '全選手にGRANレーティング変動ポイントが付与されます'
+          ],
+          prizes: `【優勝】GRANゴールドトロフィー ＋ スポーツギフト券（${tier === 'A' ? '¥50,000' : '¥30,000'}相当）\n【準優勝・下位L優勝】GRAN特製ウェア ＋ 記念ボール`
+        });
+
+        tournamentCounter++;
+      }
+    }
+
+    // ==========================================
+    // 2. 状態管理（フィルター・ビュー）
+    // ==========================================
+    let currentViewMode = 'table'; // 'table' or 'cards'
+    let currentMonthFilter = 'all'; // 'all' or 1..12
+    let currentCategoryFilter = 'all';
+    let currentTierFilter = 'all';
+    let currentStatusFilter = 'all';
+    let currentSearchKeyword = '';
+    let currentSelectedTournamentIndex = 0; // for guidelines viewer
+
+    // フィルタリング適用後の現在表示リスト
+    let currentFilteredTournaments = [...allTournaments];
+
+    // ==========================================
+    // 3. 画面レンダリング処理
+    // ==========================================
+    function applyFilters() {
+      const catSelect = document.getElementById('filter-category');
+      const tierSelect = document.getElementById('filter-tier');
+      const statusSelect = document.getElementById('filter-status');
+      const searchInput = document.getElementById('filter-search-input');
+      const clearBtn = document.getElementById('clear-search-btn');
+
+      currentCategoryFilter = (catSelect && catSelect.value) ? catSelect.value : 'all';
+      currentTierFilter = (tierSelect && tierSelect.value) ? tierSelect.value : 'all';
+      currentStatusFilter = (statusSelect && statusSelect.value) ? statusSelect.value : 'all';
+      currentSearchKeyword = (searchInput ? searchInput.value : '').trim().toLowerCase();
+
+      if (clearBtn) {
+        if (currentSearchKeyword) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+      }
+
+      currentFilteredTournaments = allTournaments.filter(t => {
+        // 月フィルター
+        if (currentMonthFilter !== 'all' && t.month !== Number(currentMonthFilter)) {
+          return false;
+        }
+        // 種目フィルター
+        if (currentCategoryFilter !== 'all' && t.category !== currentCategoryFilter) {
+          return false;
+        }
+        // 階級フィルター
+        if (currentTierFilter !== 'all' && t.tier !== currentTierFilter) {
+          return false;
+        }
+        // ステータスフィルター
+        if (currentStatusFilter === 'OPEN' && !(t.status === 'OPEN' || t.status === 'FEW')) return false;
+        if (currentStatusFilter === 'FEW' && t.status !== 'FEW') return false;
+        if (currentStatusFilter === 'WAITLIST' && t.status !== 'WAITLIST') return false;
+        if (currentStatusFilter === 'ENTERED' && !t.isEntered) return false;
+
+        // キーワード検索
+        if (currentSearchKeyword) {
+          const matchTitle = t.title.toLowerCase().includes(currentSearchKeyword);
+          const matchVenue = t.venue.toLowerCase().includes(currentSearchKeyword);
+          const matchCat = t.categoryName.toLowerCase().includes(currentSearchKeyword);
+          const matchId = t.id.toLowerCase().includes(currentSearchKeyword);
+          if (!matchTitle && !matchVenue && !matchCat && !matchId) return false;
+        }
+
+        return true;
+      });
+
+      // 件数表示の更新
+      const countEl = document.getElementById('filter-result-count');
+      if (countEl) {
+        countEl.textContent = `${currentFilteredTournaments.length} 大会 表示中`;
+      }
+
+      // レンダリング実行
+      if (currentViewMode === 'table') {
+        renderTableView();
+      } else {
+        renderCardsView();
+      }
+    }
+
+    // 月フィルター切り替え
+    function filterByMonth(m) {
+      currentMonthFilter = m;
+      document.querySelectorAll('.month-pill-btn').forEach(btn => {
+        btn.className = 'month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+      });
+      const activeBtn = document.getElementById(`month-btn-${m}`);
+      if (activeBtn) {
+        activeBtn.className = 'month-pill-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-2xs transition';
+      }
+      applyFilters();
+    }
+
+    // 自チームエントリー済み大会クイックフィルター
+    function filterMyEnteredTournaments() {
+      const statusSelect = document.getElementById('filter-status');
+      if (statusSelect) statusSelect.value = 'ENTERED';
+      filterByMonth('all');
+    }
+
+    // 表示モード切り替え (table vs cards)
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      const tableSec = document.getElementById('schedule-table-section');
+      const cardsSec = document.getElementById('schedule-cards-section');
+      const btnTable = document.getElementById('btn-view-table');
+      const btnCards = document.getElementById('btn-view-cards');
+
+      if (mode === 'table') {
+        tableSec.classList.remove('hidden');
+        cardsSec.classList.add('hidden');
+        btnTable.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-emerald-700 shadow-2xs transition';
+        btnCards.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+        renderTableView();
+      } else {
+        tableSec.classList.add('hidden');
+        cardsSec.classList.remove('hidden');
+        btnTable.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+        btnCards.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-emerald-700 shadow-2xs transition';
+        renderCardsView();
+      }
+    }
+
+    // 検索入力クリア
+    function clearSearchInput() {
+      const input = document.getElementById('filter-search-input');
+      if (input) input.value = '';
+      applyFilters();
+    }
+
+    // フィルターリセット
+    function resetAllFilters() {
+      currentMonthFilter = 'all';
+      const cat = document.getElementById('filter-category');
+      const tier = document.getElementById('filter-tier');
+      const status = document.getElementById('filter-status');
+      const search = document.getElementById('filter-search-input');
+      if (cat) cat.value = 'all';
+      if (tier) tier.value = 'all';
+      if (status) status.value = 'all';
+      if (search) search.value = '';
+      filterByMonth('all');
+    }
+
+    // 階級バッジスタイル取得
+    function getTierBadgeHtml(tier) {
+      const badges = {
+        'A': '<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">A級</span>',
+        'B': '<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">B級</span>',
+        'C': '<span class="px-2 py-0.5 rounded text-[10px] font-black bg-sky-100 text-sky-900 border border-sky-300">C級</span>',
+        'D': '<span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-900 border border-indigo-300">D級</span>',
+        'E': '<span class="px-2 py-0.5 rounded text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-300">E級</span>',
+        'OPEN': '<span class="px-2 py-0.5 rounded text-[10px] font-black bg-purple-100 text-purple-900 border border-purple-300">OPEN</span>'
+      };
+      return badges[tier] || `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${tier}</span>`;
+    }
+
+    // ステータスバッジHTML取得
+    function getStatusBadgeHtml(status, remaining, isEntered) {
+      if (isEntered) {
+        return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800 border border-purple-300"><i data-lucide="bookmark-check" class="w-3 h-3"></i>エントリー済</span>';
+      }
+      if (status === 'FEW') {
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>残${remaining}枠</span>`;
+      }
+      if (status === 'WAITLIST') {
+        return '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">キャンセル待ち</span>';
+      }
+      if (status === 'PAST' || status === 'CLOSED') {
+        return '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">受付終了</span>';
+      }
+      return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">受付中 (残${remaining}枠)</span>`;
+    }
+
+    // テーブルビューの描画 (1枚の一覧表)
+    function renderTableView() {
+      const tbody = document.getElementById('schedule-tbody');
+      const emptyState = document.getElementById('table-empty-state');
+      if (!tbody) return;
+
+      if (currentFilteredTournaments.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+      }
+      if (emptyState) emptyState.classList.add('hidden');
+
+      tbody.innerHTML = currentFilteredTournaments.map(t => {
+        const remaining = Math.max(0, t.capacity - t.entriesCount);
+        const percent = Math.min(100, Math.round((t.entriesCount / t.capacity) * 100));
+        const tierBadge = getTierBadgeHtml(t.tier);
+        const statusBadge = getStatusBadgeHtml(t.status, remaining, t.isEntered);
+        const isSun = t.dayOfWeek.includes('日');
+        const isSat = t.dayOfWeek.includes('土');
+        const dayClass = isSun ? 'text-rose-600' : isSat ? 'text-blue-600' : 'text-slate-600';
+
+        return `
+          <tr class="schedule-row-deferred hover:bg-slate-50/90 transition-colors group cursor-pointer" onclick="openGuidelineByTournamentId('${t.id}')">
+            <!-- 日程（曜日を日にちの下に配置し、横幅をスリム化） -->
+            <td class="py-2 sm:py-2.5 px-1.5 sm:px-2.5 text-center whitespace-nowrap align-middle">
+              <div class="font-black text-slate-900 font-mono text-xs leading-none">
+                <span class="sm:hidden">${t.month}/${t.date.split('/')[2]}</span>
+                <span class="hidden sm:inline">${t.date}</span>
+              </div>
+              <div class="text-[10px] font-bold ${dayClass} leading-none mt-1">
+                ${t.dayOfWeek}
+              </div>
+            </td>
+
+            <!-- 大会名（スマホ時は階級バッジ・会場・種目を統合表示、大会名は簡潔に表示） -->
+            <td class="py-2.5 sm:py-3 px-2 sm:px-3 min-w-0 align-middle">
+              <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+                <span class="sm:hidden">${tierBadge}</span>
+                <span class="font-extrabold text-slate-900 group-hover:text-emerald-600 transition leading-snug text-xs truncate">
+                  ${t.shortTitle}
+                </span>
+                ${t.isEntered ? '<span class="text-[9px] font-black text-purple-600 bg-purple-50 px-1 rounded border border-purple-200 shrink-0">ENTRY</span>' : ''}
+              </div>
+              <!-- PC表示時の部門 -->
+              <div class="hidden sm:block text-[10px] text-slate-500">
+                ${t.categoryName} <span class="text-slate-300">|</span> ${t.categoryDesc}
+              </div>
+              <!-- スマホ表示時の会場・種目インライン情報 -->
+              <div class="sm:hidden flex items-center gap-1 text-[10px] text-slate-500 mt-0.5 flex-wrap">
+                <span class="inline-flex items-center gap-0.5 text-slate-700 font-medium truncate max-w-[130px]">
+                  <i data-lucide="map-pin" class="w-2.5 h-2.5 text-emerald-600 shrink-0"></i>
+                  ${t.venue}
+                </span>
+                <span class="text-slate-300">·</span>
+                <span class="text-slate-600">${t.categoryName}</span>
+              </div>
+            </td>
+
+            <!-- 階級（PC用） -->
+            <td class="hidden sm:table-cell py-3 px-3 whitespace-nowrap align-middle">
+              ${tierBadge}
+            </td>
+
+            <!-- 会場（PC用） -->
+            <td class="hidden md:table-cell py-3 px-3 whitespace-nowrap align-middle">
+              <div class="font-bold text-slate-800 flex items-center gap-1">
+                <i data-lucide="map-pin" class="w-3 h-3 text-emerald-600 shrink-0"></i>
+                <span class="truncate max-w-[130px]">${t.venue}</span>
+              </div>
+              <div class="text-[10px] text-slate-400 truncate max-w-[140px] mt-0.5">
+                ${t.surface}
+              </div>
+            </td>
+
+            <!-- 申込状況（PC時のみ独立列、スマホ時は状況・要項列に統合） -->
+            <td class="hidden sm:table-cell py-2.5 sm:py-3 px-3 whitespace-nowrap align-middle">
+              <div class="mb-1">
+                ${statusBadge}
+              </div>
+              <div class="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div class="${t.status === 'FEW' ? 'bg-amber-500' : 'bg-emerald-500'} h-full rounded-full" style="width: ${percent}%;"></div>
+              </div>
+              <div class="text-[9px] text-slate-400 font-mono mt-0.5">
+                確定 ${t.entriesCount} / 定員 ${t.capacity}
+              </div>
+            </td>
+
+            <!-- 要項 & 申込アクション（スマホ時は状況バッジ＋要項ボタンを統合した超スリム列） -->
+            <td class="py-2 sm:py-2.5 px-2 sm:px-3 text-right sm:text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
+              <!-- スマホ表示: 状況バッジ + 要項リンク（超スリム） -->
+              <div class="sm:hidden flex flex-col items-end gap-1">
+                <div>${statusBadge}</div>
+                <button onclick="openGuidelineByTournamentId('${t.id}')"
+                  class="text-[10px] text-emerald-600 font-extrabold hover:text-emerald-800 flex items-center gap-0.5 py-0.5">
+                  <span>要項詳細</span>
+                  <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                </button>
+              </div>
+
+              <!-- PC表示: 要項 ＋ 申込の2連ボタン -->
+              <div class="hidden sm:flex items-center justify-center gap-1.5">
+                <button onclick="openGuidelineByTournamentId('${t.id}')"
+                  class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 transition flex items-center gap-1">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5 text-emerald-600"></i>
+                  <span>要項</span>
+                </button>
+                <button onclick="handleListEntryClick('${t.id}')"
+                  class="px-2.5 py-1.5 rounded-lg text-xs font-bold ${
+                    t.isEntered ? 'bg-purple-600 text-white' :
+                    t.status === 'WAITLIST' ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200' :
+                    (t.status === 'PAST' || t.status === 'CLOSED') ? 'bg-slate-100 text-slate-400 cursor-not-allowed' :
+                    'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
+                  } transition">
+                  ${t.isEntered ? '確認' : t.status === 'WAITLIST' ? '待機' : (t.status === 'PAST' || t.status === 'CLOSED') ? '終了' : '申込'}
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    // カード表示モードの描画 (Cards Mode)
+    function renderCardsView() {
+      const grid = document.getElementById('schedule-cards-grid');
+      if (!grid) return;
+
+      if (currentFilteredTournaments.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-16 text-center space-y-2">
+            <p class="text-xs font-bold text-slate-600">条件に合致する大会が見つかりませんでした</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = currentFilteredTournaments.map(t => {
+        const remaining = Math.max(0, t.capacity - t.entriesCount);
+        const tierBadge = getTierBadgeHtml(t.tier);
+        const statusBadge = getStatusBadgeHtml(t.status, remaining, t.isEntered);
+
+        return `
+          <div class="schedule-card-deferred bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition p-3.5 space-y-3 flex flex-col justify-between">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[10px] font-mono font-bold text-slate-400">${t.date} ${t.dayOfWeek}</span>
+                ${tierBadge}
+              </div>
+
+              <!-- サムネイル枠（タップで要項展開） -->
+              <div onclick="openGuidelineByTournamentId('${t.id}')"
+                class="w-full h-32 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 p-3 text-white flex flex-col justify-between cursor-pointer group relative overflow-hidden shadow-inner">
+                <div class="flex items-center justify-between">
+                  <span class="text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/20 text-emerald-300">
+                    ${t.categoryName}
+                  </span>
+                  <span class="text-[10px] font-mono opacity-60">${t.id.split('-').slice(1,3).join('-')}</span>
+                </div>
+                <div>
+                  <h4 class="text-xs font-black tracking-tight leading-tight line-clamp-1 text-white group-hover:text-emerald-300 transition">
+                    ${t.shortTitle}
+                  </h4>
+                  <div class="text-[10px] text-slate-300 flex items-center gap-1 mt-1 truncate">
+                    <i data-lucide="map-pin" class="w-3 h-3 text-emerald-400"></i>
+                    <span>${t.venue}</span>
+                  </div>
+                </div>
+                <div class="absolute inset-0 bg-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span class="px-2.5 py-1 rounded-full bg-black/80 text-white text-[10px] font-bold flex items-center gap-1">
+                    <i data-lucide="file-text" class="w-3 h-3 text-emerald-400"></i>
+                    <span>要項を見る</span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- 申込状況 -->
+              <div class="flex items-center justify-between text-xs pt-1">
+                <div>${statusBadge}</div>
+              </div>
+            </div>
+
+            <!-- アクションボタン -->
+            <div class="pt-2 border-t border-slate-100 flex items-center gap-2">
+              <button onclick="openGuidelineByTournamentId('${t.id}')"
+                class="flex-1 py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1">
+                <i data-lucide="file-text" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <span>要項詳細</span>
+              </button>
+              <button onclick="handleListEntryClick('${t.id}')"
+                class="flex-1 py-1.5 px-2 rounded-lg text-xs font-bold ${
+                  t.isEntered ? 'bg-purple-600 text-white' :
+                  t.status === 'WAITLIST' ? 'bg-rose-100 text-rose-800' :
+                  (t.status === 'PAST' || t.status === 'CLOSED') ? 'bg-slate-100 text-slate-400 cursor-not-allowed' :
+                  'bg-emerald-600 hover:bg-emerald-700 text-white'
+                } transition flex items-center justify-center gap-1">
+                <span>${t.isEntered ? '確認' : t.status === 'WAITLIST' ? '待機' : (t.status === 'PAST' || t.status === 'CLOSED') ? '終了' : 'エントリー'}</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    // ==========================================
+    // 4. 【要項ビューア】オンデマンド生成 & ページ送り
+    // ==========================================
+    function openGuidelineByTournamentId(tournamentId) {
+      const idx = currentFilteredTournaments.findIndex(t => t.id === tournamentId);
+      if (idx !== -1) {
+        currentSelectedTournamentIndex = idx;
+      } else {
+        // フィルタ外の場合は全体リストから検索
+        const globalIdx = allTournaments.findIndex(t => t.id === tournamentId);
+        if (globalIdx !== -1) {
+          currentFilteredTournaments = [allTournaments[globalIdx], ...allTournaments];
+          currentSelectedTournamentIndex = 0;
+        }
+      }
+      renderCurrentGuidelineModal();
+      document.getElementById('guidelines-modal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeGuidelinesModal() {
+      document.getElementById('guidelines-modal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    // 前後大会送り（左右ボタンまたはキーボード）
+    function switchGuideline(direction) {
+      const newIndex = currentSelectedTournamentIndex + direction;
+      if (newIndex >= 0 && newIndex < currentFilteredTournaments.length) {
+        currentSelectedTournamentIndex = newIndex;
+        renderCurrentGuidelineModal();
+      }
+    }
+
+    // 現在選択中の大会要項をモーダルに描画
+    function renderCurrentGuidelineModal() {
+      const t = currentFilteredTournaments[currentSelectedTournamentIndex];
+      if (!t) return;
+
+      const remaining = Math.max(0, t.capacity - t.entriesCount);
+      const percent = Math.min(100, Math.round((t.entriesCount / t.capacity) * 100));
+
+      // ナビゲーションバー更新
+      document.getElementById('viewer-index-badge').textContent = `${currentSelectedTournamentIndex + 1} / ${currentFilteredTournaments.length}`;
+      document.getElementById('viewer-tournament-id').textContent = t.id;
+      document.getElementById('viewer-header-title').textContent = t.title;
+
+      const prevBtn = document.getElementById('viewer-prev-btn');
+      const nextBtn = document.getElementById('viewer-next-btn');
+      if (prevBtn) prevBtn.disabled = (currentSelectedTournamentIndex === 0);
+      if (nextBtn) nextBtn.disabled = (currentSelectedTournamentIndex === currentFilteredTournaments.length - 1);
+
+      // 基本情報更新
+      document.getElementById('viewer-title').textContent = t.title;
+      document.getElementById('viewer-badge-category').textContent = t.categoryName;
+      document.getElementById('viewer-badge-tier').textContent = `${t.tier}級`;
+      
+      const badgeStatus = document.getElementById('viewer-badge-status');
+      if (badgeStatus) {
+        badgeStatus.textContent = t.isEntered ? 'エントリー済' : t.status === 'FEW' ? `残り${remaining}枠` : t.status === 'WAITLIST' ? '満員 (キャンセル待ち)' : (t.status === 'PAST' || t.status === 'CLOSED') ? '受付終了' : '受付中';
+        badgeStatus.className = t.isEntered ? 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-600 text-white' :
+                                t.status === 'FEW' ? 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white' :
+                                t.status === 'WAITLIST' ? 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-600 text-white' :
+                                (t.status === 'PAST' || t.status === 'CLOSED') ? 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-500 text-white' :
+                                'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white';
+      }
+
+      document.getElementById('viewer-datetime').textContent = `${t.date} ${t.dayOfWeek}`;
+      document.getElementById('viewer-timings').textContent = `${t.time} (17:00 終了予定)`;
+      document.getElementById('viewer-venue').textContent = t.venue;
+      document.getElementById('viewer-court-info').textContent = `${t.surface} / 本部テント設置`;
+      document.getElementById('viewer-team-format').textContent = t.categoryDesc;
+      document.getElementById('viewer-level-limit').textContent = `推奨階級: ${t.tier}級 (イロレーティング連動)`;
+      document.getElementById('viewer-fee').textContent = `${t.fee} (税込)`;
+      document.getElementById('viewer-prizes').innerHTML = t.prizes.replace(/\n/g, '<br>');
+
+      // 空き状況プログレス
+      const capText = document.getElementById('viewer-capacity-text');
+      if (capText) {
+        capText.textContent = `確定 ${t.entriesCount}枠 / 定員 ${t.capacity}枠 (残り ${remaining}枠)`;
+      }
+      const capBar = document.getElementById('viewer-capacity-bar');
+      if (capBar) {
+        capBar.style.width = `${percent}%`;
+        capBar.className = t.status === 'FEW' ? 'bg-amber-500 h-full rounded-full transition-all' : 'bg-emerald-600 h-full rounded-full transition-all';
+      }
+
+      // エントリーボタン制御
+      const entryBtn = document.getElementById('viewer-entry-btn');
+      const entryBtnText = document.getElementById('viewer-entry-btn-text');
+      if (entryBtn && entryBtnText) {
+        if (t.isEntered) {
+          entryBtnText.textContent = 'エントリー詳細・メンバー確認へ';
+          entryBtn.className = 'flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-xs font-extrabold text-white shadow-md transition flex items-center justify-center gap-2';
+        } else if (t.status === 'WAITLIST') {
+          entryBtnText.textContent = 'キャンセル待ちを申し込む';
+          entryBtn.className = 'flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-extrabold text-white shadow-md transition flex items-center justify-center gap-2';
+        } else if (t.status === 'PAST' || t.status === 'CLOSED') {
+          entryBtnText.textContent = 'この大会は受付終了しました';
+          entryBtn.className = 'flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-slate-300 text-slate-500 text-xs font-extrabold cursor-not-allowed transition flex items-center justify-center gap-2';
+        } else {
+          entryBtnText.textContent = 'この大会にエントリー申込';
+          entryBtn.className = 'flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-extrabold text-white shadow-md transition flex items-center justify-center gap-2';
+        }
+      }
+
+      // オンデマンド公式要項SVGフライヤー生成
+      renderFlyerGraphic(t);
+
+      lucide.createIcons();
+    }
+
+    // オンデマンド公式要項SVGシート生成（美麗なポスターフライヤー）
+    function renderFlyerGraphic(t) {
+      const container = document.getElementById('viewer-flyer-container');
+      if (!container) return;
+
+      const themeColor = t.tier === 'A' ? '#f59e0b' : t.tier === 'B' ? '#10b981' : t.tier === 'C' ? '#0ea5e9' : t.tier === 'D' ? '#6366f1' : '#64748b';
+      const bgGrad1 = t.tier === 'A' ? '#78350f' : t.tier === 'B' ? '#064e3b' : t.tier === 'C' ? '#0c4a6e' : t.tier === 'D' ? '#312e81' : '#1e293b';
+      const bgGrad2 = '#090d16';
+
+      container.innerHTML = `
+        <svg viewBox="0 0 540 960" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="${bgGrad1}" />
+              <stop offset="50%" stop-color="${bgGrad2}" />
+              <stop offset="100%" stop-color="#020617" />
+            </linearGradient>
+            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="${themeColor}" />
+              <stop offset="100%" stop-color="#ffffff" />
+            </linearGradient>
+          </defs>
+
+          <!-- 背景 -->
+          <rect width="540" height="960" fill="url(#bgGrad)" />
+          
+          <!-- 装飾アクセント円 -->
+          <circle cx="480" cy="80" r="140" fill="${themeColor}" fill-opacity="0.12" filter="blur(40px)" />
+          <circle cx="60" cy="880" r="120" fill="${themeColor}" fill-opacity="0.1" filter="blur(40px)" />
+
+          <!-- 上部ヘッダーバナー -->
+          <g transform="translate(30, 30)">
+            <rect width="480" height="50" rx="10" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.2" />
+            <text x="20" y="32" fill="#ffffff" font-family="-apple-system, sans-serif" font-size="14" font-weight="900" letter-spacing="1">GRAN OFFICIAL TOURNAMENT 2026</text>
+            <rect x="380" y="12" width="80" height="26" rx="6" fill="${themeColor}" />
+            <text x="420" y="29" fill="#ffffff" font-family="-apple-system, sans-serif" font-size="12" font-weight="900" text-anchor="middle">${t.tier}級</text>
+          </g>
+
+          <!-- 大会名タイトル -->
+          <g transform="translate(30, 110)">
+            <text x="0" y="24" fill="${themeColor}" font-family="-apple-system, sans-serif" font-size="13" font-weight="800" letter-spacing="2">【公式大会要項】${t.categoryName}</text>
+            <text x="0" y="65" fill="#ffffff" font-family="-apple-system, sans-serif" font-size="24" font-weight="900">${t.title.slice(0, 16)}</text>
+            <text x="0" y="98" fill="#ffffff" font-family="-apple-system, sans-serif" font-size="20" font-weight="800" opacity="0.9">${t.title.slice(16, 32)}</text>
+            <line x1="0" y1="120" x2="480" y2="120" stroke="${themeColor}" stroke-width="2" />
+          </g>
+
+          <!-- 大会スペック表カード -->
+          <g transform="translate(30, 255)">
+            <rect width="480" height="420" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-width="1" stroke-opacity="0.15" />
+
+            <!-- 開催日 -->
+            <g transform="translate(25, 30)">
+              <text x="0" y="14" fill="${themeColor}" font-family="-apple-system, sans-serif" font-size="12" font-weight="700">📅 開催日程</text>
+              <text x="0" y="42" fill="#ffffff" font-family="-apple-system, sans-serif" font-size="22" font-weight="900">${t.date} ${t.dayOfWeek}</text>
+              <text x="0" y="64" fill="#94a3b8" font-family="-apple-system, sans-serif" font-size="13">${t.time}</text>
+            </g>
+            <line x1="25" y1="110" x2="455" y2="110" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.1" />
+
+            <!-- 会場 -->
+            <g transform="translate(25, 125)">
+              <text x="0" y="14" fill="${themeColor}" font-family="-apple-system, sans-serif" font-size="12" font-weight="700">📍 会場・コート</text>
+              <text x="0" y="40" fill="#ffffff" font-family="-apple-system, sans-serif" font-size="19" font-weight="800">${t.venue}</text>
+              <text x="0" y="62" fill="#94a3b8" font-family="-apple-system, sans-serif" font-size="13">${t.surface}</text>
+            </g>
+            <line x1="25" y1="200" x2="455" y2="200" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.1" />
+
+            <!-- 種目形式 -->
+            <g transform="translate(25, 215)">
+              <text x="0" y="14" fill="${themeColor}" font-family="-apple-system, sans-serif" font-size="12" font-weight="700">👥 種目・構成</text>
+              <text x="0" y="40" fill="#ffffff" font-family="-apple-system, sans-serif" font-size="18" font-weight="800">${t.categoryDesc}</text>
+              <text x="0" y="62" fill="#94a3b8" font-family="-apple-system, sans-serif" font-size="13">規定階級: ${t.tier}級 (Eloレーティング対象)</text>
+            </g>
+            <line x1="25" y1="290" x2="455" y2="290" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.1" />
+
+            <!-- 参加費 & 募集枠 -->
+            <g transform="translate(25, 305)">
+              <text x="0" y="14" fill="${themeColor}" font-family="-apple-system, sans-serif" font-size="12" font-weight="700">💰 参加費用・定員</text>
+              <text x="0" y="40" fill="#facc15" font-family="-apple-system, sans-serif" font-size="22" font-weight="900">${t.fee}</text>
+              <text x="0" y="62" fill="#94a3b8" font-family="-apple-system, sans-serif" font-size="13">募集定員: ${t.capacity}枠 (事前Web決済)</text>
+            </g>
+          </g>
+
+          <!-- 特記事項バナー -->
+          <g transform="translate(30, 700)">
+            <rect width="480" height="90" rx="14" fill="${themeColor}" fill-opacity="0.15" stroke="${themeColor}" stroke-width="1.2" />
+            <text x="25" y="32" fill="${themeColor}" font-family="-apple-system, sans-serif" font-size="13" font-weight="800">🏆 試合方式・賞品</text>
+            <text x="25" y="54" fill="#ffffff" font-family="-apple-system, sans-serif" font-size="12" font-weight="600">予選リーグ＋順位別トーナメント（全チーム最低3対戦）</text>
+            <text x="25" y="74" fill="#cbd5e1" font-family="-apple-system, sans-serif" font-size="11">優勝トロフィー ＋ 各種スポーツギフト券贈呈</text>
+          </g>
+
+          <!-- フッター公式捺印 & ID -->
+          <g transform="translate(30, 815)">
+            <text x="0" y="24" fill="#64748b" font-family="-apple-system, sans-serif" font-size="11">主催: GRAN TENNIS 運営事務局</text>
+            <text x="0" y="42" fill="#64748b" font-family="-apple-system, sans-serif" font-size="11">公認: 日本アマチュアレーティングテニス連盟</text>
+            <text x="0" y="60" fill="#64748b" font-family="-apple-system, sans-serif" font-size="10" font-mono>ID: ${t.id}</text>
+            
+            <circle cx="430" cy="35" r="32" fill="none" stroke="${themeColor}" stroke-width="2" stroke-dasharray="4 2" />
+            <text x="430" y="32" fill="${themeColor}" font-family="-apple-system, sans-serif" font-size="11" font-weight="900" text-anchor="middle">GRAN</text>
+            <text x="430" y="46" fill="${themeColor}" font-family="-apple-system, sans-serif" font-size="9" font-weight="700" text-anchor="middle">OFFICIAL</text>
+          </g>
+
+          <!-- タップガイド -->
+          <g transform="translate(30, 900)">
+            <rect width="480" height="35" rx="8" fill="#ffffff" fill-opacity="0.1" />
+            <text x="240" y="22" fill="#ffffff" font-family="-apple-system, sans-serif" font-size="12" font-weight="700" text-anchor="middle">公式要項原本 (閲覧用) ❯</text>
+          </g>
+        </svg>
+      `;
+    }
+
+    // ==========================================
+    // 5. ユーザーインタラクション
+    // ==========================================
+    function handleListEntryClick(tournamentId) {
+      const t = allTournaments.find(item => item.id === tournamentId);
+      if (!t) return;
+
+      if (t.isEntered) {
+        showToast(`【${t.title}】のエントリー確認画面へ進みます`, 'info');
+      } else if (t.status === 'WAITLIST') {
+        showToast(`【${t.title}】のキャンセル待ち待機列へ進みます`, 'warning');
+      } else if (t.status === 'PAST' || t.status === 'CLOSED') {
+        showToast('この大会は受付期間が終了しています', 'error');
+      } else {
+        showToast(`【${t.title}】のエントリー申込画面を開きます`, 'success');
+      }
+    }
+
+    function handleTournamentEntry() {
+      const t = currentFilteredTournaments[currentSelectedTournamentIndex];
+      if (!t) return;
+      handleListEntryClick(t.id);
+    }
+
+    function printOrDownloadGuideline() {
+      const t = currentFilteredTournaments[currentSelectedTournamentIndex];
+      if (!t) return;
+      showToast(`【${t.title}】の公式大会要項PDFを生成・保存しました`, 'success');
+    }
+
+    function shareGuideline() {
+      const t = currentFilteredTournaments[currentSelectedTournamentIndex];
+      if (!t) return;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(window.location.href);
+      }
+      showToast(`要項リンクをクリップボードにコピーしました: ${t.id}`, 'info');
+    }
+
+    // キーボードショートカット (ESCで閉じる, ←/→で要項めくり)
+    window.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('guidelines-modal');
+      if (!modal || modal.classList.contains('hidden')) return;
+
+      if (e.key === 'Escape') {
+        closeGuidelinesModal();
+      } else if (e.key === 'ArrowLeft') {
+        switchGuideline(-1);
+      } else if (e.key === 'ArrowRight') {
+        switchGuideline(1);
+      }
+    });
+
+    // モーダル背景クリックで閉じる
+    document.getElementById('guidelines-modal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'guidelines-modal') {
+        closeGuidelinesModal();
+      }
+    });
+
+    // トースト通知システム
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = `p-3.5 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 pointer-events-auto transition-all duration-300 transform translate-y-[-10px] opacity-0 ${
+        type === 'success' ? 'bg-emerald-600 text-white border-emerald-700' :
+        type === 'error' ? 'bg-rose-600 text-white border-rose-700' :
+        type === 'warning' ? 'bg-amber-500 text-white border-amber-600' :
+        'bg-slate-900 text-white border-slate-800'
+      }`;
+
+      const icon = type === 'success' ? 'check-circle' :
+                   type === 'error' ? 'alert-triangle' :
+                   type === 'warning' ? 'alert-circle' : 'info';
+
+      toast.innerHTML = `
+        <i data-lucide="${icon}" class="w-4 h-4 flex-shrink-0"></i>
+        <span class="flex-1">${message}</span>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-[-10px]', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-[-10px]');
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    // マイページモーダル
+    function openMyPageModal() {
+      document.getElementById('modal-mypage').classList.remove('hidden');
+      lucide.createIcons();
+    }
+    function closeMyPageModal() {
+      document.getElementById('modal-mypage').classList.add('hidden');
+    }
+
+    // 初期化
+    document.addEventListener('DOMContentLoaded', () => {
+      // KPI更新
+      const totalKpi = document.getElementById('kpi-total-tournaments');
+      if (totalKpi) totalKpi.textContent = allTournaments.length;
+
+      const openCount = allTournaments.filter(t => t.status === 'OPEN').length;
+      const fewCount = allTournaments.filter(t => t.status === 'FEW').length;
+      const enteredCount = allTournaments.filter(t => t.isEntered).length;
+
+      const openKpi = document.getElementById('kpi-open-tournaments');
+      if (openKpi) openKpi.textContent = openCount;
+      const fewKpi = document.getElementById('kpi-few-tournaments');
+      if (fewKpi) fewKpi.textContent = fewCount;
+      const enteredKpi = document.getElementById('kpi-entered-tournaments');
+      if (enteredKpi) enteredKpi.textContent = enteredCount;
+
+      // 描画実行
+      applyFilters();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
