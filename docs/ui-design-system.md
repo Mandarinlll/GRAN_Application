@@ -71,7 +71,9 @@ module.exports = {
 ### 2.1 採用スタック
 * **Base Framework**: Tailwind CSS
 * **UI Component Library**: **shadcn/ui** (Radix UI ベース、Tailwind完全統合)
-* **Icons**: **Lucide React** (Lucide Icons、統一サイズ: 16px / 20px / 24px)
+* **Icons**: **Lucide Icons** (統一サイズ: 16px / 20px / 24px)
+  * **バージョン固定の義務化**: CDN読み込み時は `lucide@latest` などの浮動バージョン指定を**禁止**し、必ず特定バージョン（例: `https://unpkg.com/lucide@0.344.0`）に固定すること。npm管理時もバージョンをロックする。
+  * **絵文字の直接ハードコード禁止**: 大会要項・登録画面・リスト等で絵文字（📅⏰📍👥等）を直接記述することを**禁止**する。必ず Lucide アイコン（`<Calendar>`, `<Clock>`, `<MapPin>`, `<Users>` 等）を使用し、視覚的な統一感とアクセシビリティを担保する。
 * **Class Utilities**: `clsx`, `tailwind-merge` (`cn` ヘルパー関数を使用)
 
 ### 2.2 クラス統合ユーティリティ (`src/lib/utils.ts`)
@@ -88,31 +90,46 @@ export function cn(...inputs: ClassValue[]) {
 1. **カラーモード対応**: ライトモード（`bg-slate-50` / `bg-white`）を標準とし、ダークモード設定時は `dark:bg-slate-950` / `dark:bg-slate-900` / `dark:text-slate-100` で高コントラストな視認性を維持する。
 2. **ハードコードカラーの制限**: 任意カラーのインラインスタイルは避け、Tailwindセマンティックトークンクラスを使用する。
 3. **角丸（Border Radius）の体系化**:
-   * **特大コンテナ / データレポート / 大型モーダル外枠**: `rounded-3xl` (24px)
-   * **標準カード / ダイアログ / モーダルパネル**: `rounded-2xl` (16px)
-   * **コンパクトカード / リストアイテム / ボタン / 入力フォーム**: `rounded-xl` (12px) または `rounded-lg` (8px)
+   * **特大コンテナ / データレポート外枠 / 大型モーダル外枠**: `rounded-3xl` (24px)
+   * **標準カード / ダイアログ / 詳細パネル**: `rounded-2xl` (16px)
+   * **ボタン / 入力フォーム / コンパクトカード / リストアイテム**: `rounded-xl` (12px) または `rounded-lg` (8px)
    * **バッジ / ピルタグ / アバター / インジケーター**: `rounded-full` (9999px)
 4. **シャドウ・境界線の統一**:
    * カード / リストアイテム: `shadow-xs border border-slate-200 dark:border-slate-800`
    * モーダル / フローティングバー / ボトムシート: `shadow-xl border border-slate-200 dark:border-slate-700`
+5. **装飾抑制ルール（屋外視認性・機能性最優先）**:
+   * 屋外テニスコートや直射日光下での可読性を最優先するため、**過度なグラデーション、多重のぼかし（`backdrop-blur` の乱用）、左端アクセント線、点滅アニメーションなどの過剰装飾は抑制・禁止**する。
+   * クリーンで明瞭なコントラスト重視のフラット＋適度なシャドウ・枠線（`border border-slate-200 dark:border-slate-800`）に統一する。
+6. **共通部品化とコンテンツ最大幅（Container Max Width）の統一**:
+   * ヘッダー、ボトムナビ、PCナビ、マイページモーダル、トーストなどの共通部品は各画面ファイルに複製せず、共通コンポーネントとして一元管理する。
+   * 画面ごとの最大幅のバラつき（896px vs 672px等）を解消し、以下の2分類に統一する：
+     * **基本アプリ画面（モバイルファースト最適幅）**: `max-w-2xl mx-auto` (672px)（ホーム、大会日程、設定、通知、エントリー）
+     * **データ・統計画面（横幅を要するグラフ・表展開）**: `max-w-4xl mx-auto` (896px)
 
 ---
 
 ## 3. ボタン共通スタイル (Button Variants & States)
 
-モバイルでのタップミスを防ぐため、高さ44px以上（`h-11` または `h-12`）を基本とし、明示的なホバー・アクティブ・フォーカス・無効化状態を定義します。
+### 3.1 タップターゲット（Tap Target）原則【厳格遵守】
+* **最小44pxの絶対確保**:
+  * モバイル操作時の誤タップ防止および屋外での操作性確保のため、すべてのボタン・リンク・セレクトボックス・チェックボックス等のクリック／タップ可能要素は、**最小44px × 44px（`min-h-[44px] min-w-[44px]`）** のタッチターゲットを確保することを必須とする。
+  * **32px〜40px の低背ボタンは原則禁止**とする。
+  * 見た目をコンパクトに見せたいアイコンボタン（例: 24px や 32px の見た目）であっても、パディング（`p-2.5` 等）や親要素のサイズ確保により、実際のタップ可能領域は必ず 44px 以上を確保すること。
+* **キーボード操作性とフォーカスリング**:
+  * クリック・タップ可能な要素には `<div>` や `<span>` ではなく、意味的に正しい `<button>` または `<a>` 要素を使用する。
+  * キーボード操作（Tab移動、Enter / Space での発火）に対応し、全画面で統一された明確なフォーカスリング（`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2`）を適用する。
 
-### 3.1 ボタンスタイル仕様表
+### 3.2 ボタンスタイル仕様表
 
 | バリアント | 基本クラス | ホバー / アクティブ | 無効化 (Disabled) |
 | :--- | :--- | :--- | :--- |
-| **Primary (主要CTA)** | `bg-emerald-600 text-white font-medium shadow-sm` | `hover:bg-emerald-700 active:bg-emerald-800` | `disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none` |
-| **Secondary (副次)** | `bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium border border-slate-200 dark:border-slate-700` | `hover:bg-slate-200 dark:hover:bg-slate-700` | `disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed` |
-| **Outline (枠線)** | `bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 border border-emerald-600 font-medium` | `hover:bg-emerald-50 dark:hover:bg-emerald-950/30` | `disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed` |
-| **Destructive (危険/キャンセル)** | `bg-rose-600 text-white font-medium shadow-sm` | `hover:bg-rose-700 active:bg-rose-800` | `disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed` |
-| **Ghost (テキストのみ)** | `bg-transparent text-slate-700 dark:text-slate-300 font-medium` | `hover:bg-slate-100 dark:hover:bg-slate-800` | `disabled:text-slate-400 disabled:cursor-not-allowed` |
+| **Primary (主要CTA)** | `min-h-[44px] bg-emerald-600 text-white font-medium shadow-sm` | `hover:bg-emerald-700 active:bg-emerald-800` | `disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none` |
+| **Secondary (副次)** | `min-h-[44px] bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium border border-slate-200 dark:border-slate-700` | `hover:bg-slate-200 dark:hover:bg-slate-700` | `disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed` |
+| **Outline (枠線)** | `min-h-[44px] bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 border border-emerald-600 font-medium` | `hover:bg-emerald-50 dark:hover:bg-emerald-950/30` | `disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed` |
+| **Destructive (危険/キャンセル)** | `min-h-[44px] bg-rose-600 text-white font-medium shadow-sm` | `hover:bg-rose-700 active:bg-rose-800` | `disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed` |
+| **Ghost (テキストのみ)** | `min-h-[44px] bg-transparent text-slate-700 dark:text-slate-300 font-medium` | `hover:bg-slate-100 dark:hover:bg-slate-800` | `disabled:text-slate-400 disabled:cursor-not-allowed` |
 
-### 3.2 実装コンポーネントコード (`src/components/ui/button.tsx`)
+### 3.3 実装コンポーネントコード (`src/components/ui/button.tsx`)
 ```tsx
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
@@ -120,7 +137,7 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:pointer-events-none select-none',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:pointer-events-none select-none min-h-[44px]',
   {
     variants: {
       variant: {
@@ -136,11 +153,11 @@ const buttonVariants = cva(
           'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:text-slate-400',
       },
       size: {
-        sm: 'h-9 px-3 text-xs rounded-lg',
-        md: 'h-11 px-4 py-2 text-sm',
-        lg: 'h-12 px-6 text-base font-semibold',
-        full: 'w-full h-12 px-6 text-base font-semibold',
-        icon: 'h-10 w-10 p-0',
+        sm: 'min-h-[44px] px-3.5 text-xs rounded-lg',
+        md: 'min-h-[44px] h-11 px-4 py-2 text-sm',
+        lg: 'min-h-[48px] h-12 px-6 text-base font-medium',
+        full: 'w-full min-h-[48px] h-12 px-6 text-base font-medium',
+        icon: 'min-h-[44px] min-w-[44px] w-11 h-11 p-2.5',
       },
     },
     defaultVariants: {
@@ -179,29 +196,48 @@ Button.displayName = 'Button';
 ## 4. タイポグラフィとフォント規則 (Typography)
 
 日本語環境で最も明瞭かつ美しい可読性を発揮するため、**`Noto Sans JP` に完全固定**します。
+また、屋外のテニスコートや直射日光下での視認性を最優先し、過度な太字や極小文字を排した厳格なタイポグラフィ規約を適用します。
 
 ### 4.1 フォントファミリー定義
 ```css
 font-family: 'Noto Sans JP', sans-serif;
 ```
-HTMLヘッダーでのWebフォント読み込み例:
+HTMLヘッダーでのWebフォント読み込み（ウェイトは 400, 500, 700 の3種のみ読み込む）:
 ```html
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 ```
 
-### 4.2 タイポグラフィ階層定義表
+### 4.2 フォントウェイト（太さ）の厳格制限【3種のみ】
+* 見出しの強弱を明確にし、視覚的ノイズを低減するため、太さは以下の**3種類に限定**します。
+  1. **標準（Normal）**: `font-normal` (400) - 本文、説明文、注釈
+  2. **やや太字（Medium）**: `font-medium` (500) - ボタンラベル、リストヘッダー、補助的な強調
+  3. **太字（Bold）**: `font-bold` (700) - ページタイトル、セクション見出し、重要数値
+* **極太（`font-black` / `font-extrabold`）の使用は原則禁止**とします。強調したい箇所は、太さではなく「フォントサイズ」「カラーコントラスト」「周囲の余白」によって表現します。
 
-| 要素 | Tailwind クラス群 | サイズ / 太さ | 用途 |
-| :--- | :--- | :--- | :--- |
-| **Page Title (H1)** | `text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight` | 20px / 24px Bold | 画面最上部タイトル、ヘッダー |
-| **Section Title (H2)** | `text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-100 leading-snug` | 18px / 20px Bold | カード見出し、ブロック区切り |
-| **Card / Sub Title (H3)** | `text-base font-bold text-slate-800 dark:text-slate-100 leading-normal` | 16px Bold | 大会名、チーム名、モーダル題名 |
-| **Body (本文)** | `text-sm font-normal text-slate-700 dark:text-slate-300 leading-relaxed` | 14px Normal | 一般説明文、要項本文、フォームラベル |
-| **Body Medium (強調本文)** | `text-sm font-medium text-slate-900 dark:text-white leading-relaxed` | 14px Medium | 項目名、強調データ、テーブルヘッダー |
-| **Caption (注釈/補足)** | `text-xs font-normal text-slate-500 dark:text-slate-400 leading-normal` | 12px Normal | 日時補足、残り枠数注釈、免責事項 |
-| **Badge / Stat (数値強調)** | `text-xs font-bold font-mono uppercase tracking-wider` | 12px Bold / 等幅 | GRANレベル数値、ステータスタグ、受付番号 |
+### 4.3 文字サイズ基準【3段階体系・最小12px遵守】
+屋外利用（スマホ画面）での可読性を担保するため、文字サイズ体系を整理し、**最小サイズを12px（`text-xs`）に制限**します。
+* **10px・11px・9px などの極小フォントは原則禁止**とします。
+* 情報量が多いエリアであっても、文字サイズを縮小して詰め込むのではなく、**「掲載情報の厳選」「アコーディオン（折りたたみ）」「モーダル展開」** によって対応します。
+
+| 階層 | フォントサイズ | Tailwind クラス | 太さ | 用途・適用ルール |
+| :--- | :--- | :--- | :--- | :--- |
+| **Page Title (H1)** | 20px / 24px | `text-xl sm:text-2xl` | `font-bold` | 画面最上部タイトル、ヘッダーロゴ横 |
+| **Section Title (H2)** | 18px / 20px | `text-lg sm:text-xl` | `font-bold` | カード見出し、ブロック区切り |
+| **Card / Sub Title (H3)** | 16px | `text-base` | `font-bold` | 大会名、チーム名、モーダル題名 |
+| **本文 (Body)** | **14〜16px** | `text-sm` (14px) / `text-base` (16px) | `font-normal` / `font-medium` | 一般説明文、大会詳細要項、フォーム入力値、主要ラベル |
+| **補足 (Subtext)** | **13px** | `text-[13px]` | `font-normal` | 補助説明、メタデータ、プレースホルダー、入力ヒント |
+| **注釈・バッジ (Caption/Badge)** | **12px (最小)** | `text-xs` | `font-normal` / `font-bold` | 日時注釈、残り枠数、ステータスバッジ、免責事項（※これより小さくしない） |
+
+### 4.4 数値・日時の等幅表示（`tabular-nums`）【必須】
+レート（GRANレベル）、大会開催日時、試合スコア、エントリー金額、順位、カウントダウン等の数値表示には、必ず **`tabular-nums`（CSS: `font-variant-numeric: tabular-nums;`）** を付与します。
+数字の表示幅が均一になることで、リストや表での桁揃えや、動的更新時のレイアウトのガタつきを防止します。
+```html
+<!-- 例: GRANレベルおよびスコア表示 -->
+<span class="font-bold tabular-nums text-emerald-600">750</span> pt
+<span class="font-medium tabular-nums text-slate-800">2026/04/15 09:00</span>
+```
 
 ---
 
@@ -221,34 +257,44 @@ HTMLヘッダーでのWebフォント読み込み例:
 | **lg** | 24px | `gap-6`, `p-6`, `space-y-6` | セクション間の余白、モーダル内パディング |
 | **xl** | 32px | `gap-8`, `py-8`, `space-y-8` | ページメインブロック間の余白 |
 
-### 5.2 画面コンテナ & ページ構造ルール
-* **モバイル画面**:
-  * ルートラッパー: `min-h-screen bg-slate-50 dark:bg-slate-950 pb-20` (※ボトムナビの被りを防ぐため `pb-20` 必須)
-  * 水平パディング: `px-4` (16px)
-  * PC表示時のサイドバー対応: `md:pl-60 md:pb-8`
-* **管理者 Web 画面**:
-  * ルートラッパー: `min-h-screen bg-slate-50 dark:bg-slate-950`
-  * メインコンテンツ幅: `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8`
+### 5.2 モバイル下部セーフエリア & トースト配置規約
+* **iPhone ホームバー（セーフエリア）対応**:
+  * モバイルボトムナビのコンテナには、必ずセーフエリアを考慮した `pb-[env(safe-area-inset-bottom)]` を付与し、ホームバーとの干渉を防ぎます。
+  * メインコンテンツの最下部（mainエリアまたはページラッパー）には、ナビゲーションの高さ（14 = 3.5rem）＋セーフエリア＋余裕を持たせた余白として **`pb-24`（または `pb-[calc(3.5rem+env(safe-area-inset-bottom)+1.5rem)]`）** を必ず確保します。
+* **完了通知（トースト）の表示位置**:
+  * スマホ画面での横幅不足や見切れを防ぐため、トースト通知は右下固定ではなく、**下部ナビのすぐ上・画面中央（`bottom-[calc(3.5rem+env(safe-area-inset-bottom)+12px)] inset-x-4 max-w-sm mx-auto`）** に表示します。
+  * PC画面（`md:` 768px以上）では右下表示（`md:bottom-6 md:right-6 md:left-auto md:mx-0`）へレスポンシブに切り替えます。
 
 ---
 
-## 6. レスポンシブ対応基準 (Responsive Breakpoints)
+## 6. レスポンシブ対応・画面遷移ナビゲーション基準
 
-本システムは **モバイルファースト（Mobile-First）** を原則とします。
+本システムは **モバイルファースト（Mobile-First）** を原則としつつ、PC・タブレット環境でも快適に利用できるよう設計します。
 
-| 接頭辞 | 最小幅 | 主なターゲットデバイス | レイアウト指針 |
+### 6.1 ブレークポイント基準
+
+| 接頭辞 | 最小幅 | 主なターゲット | レイアウト指針 |
 | :--- | :--- | :--- | :--- |
-| *(None)* | `0px` | スマートフォン (iOS / Android) | 1カラム構成、フルワイドボタン、下部固定5項目ボトムナビ |
+| *(None)* | `0px` | スマートフォン (iOS / Android) | 1カラム構成、フルワイドCTAボタン、下部固定5項目ボトムナビ |
 | `sm:` | `640px` | 大型スマホ / 小型タブレット | カードパディング拡張 (`p-6`)、ボタン幅の自動調整 |
-| `md:` | `768px` | タブレット / PCブラウザ | 2カラムグリッド (`grid-cols-2`)、左側固定サイドバー（w-60）表示 |
+| `md:` | `768px` | タブレット / PCブラウザ | 2カラムグリッド (`grid-cols-2`)、**ヘッダーナビまたは固定サイドバー表示** |
 | `lg:` | `1024px` | デスクトップ PC | 3〜4カラムグリッド、テーブル全列表示 |
+
+### 6.2 PC・タブレットでの画面遷移ナビゲーション【必須要件】
+下部ボトムナビゲーションはスマホ幅専用（`md:hidden`）であるため、**PCやタブレット幅（`md:` 768px以上）で開いた際にユーザーが画面を移動できる手段を常時提供することを必須**とします。
+以下のいずれかのアプローチを必ず実装します：
+1. **ヘッダー統合型ナビゲーション（推奨標準）**:
+   * 共通ヘッダー内に「ホーム」「大会日程」「データ」「通知」「設定」のナビゲーションリンク/タブを常時表示（`hidden md:flex items-center gap-1`）。
+   * アクティブ画面のタブには下線または背景ハイライトを付与。
+2. **固定サイドバー型ナビゲーション（管理画面・大画面向け）**:
+   * 左側に幅60（240px）の固定サイドバー（`SidebarNav`）を配置し、メインコンテンツは `md:pl-60` でオフセット。
 
 ---
 
 ## 7. 実装コードサンプル集 (標準コンポーネント)
 
-### 7.1 共通ボトムナビゲーション (モバイル専用: 5項目 `BottomNav.tsx`)
-実装画面（全主要画面）と完全整合する5項目の下部固定ナビゲーションです。
+### 7.1 共通ボトムナビゲーション (モバイル専用: 5項目・セーフエリア対応 `BottomNav.tsx`)
+iPhoneホームバーとの干渉を防ぐセーフエリア対応（`pb-[env(safe-area-inset-bottom)]`）と、最小12px文字・44pxタッチターゲットを担保した標準コンポーネントです。
 
 ```tsx
 import React from 'react';
@@ -273,15 +319,15 @@ export const BottomNav: React.FC<{ activeId: string }> = ({ activeId }) => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-40 md:hidden">
-      <div className="grid grid-cols-5 h-14 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-40 md:hidden pb-[env(safe-area-inset-bottom)]">
+      <div className="grid grid-cols-5 h-14 text-xs font-medium text-slate-500 dark:text-slate-400">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
             <button
               key={item.id}
               onClick={() => { window.location.href = item.href; }}
-              className={`flex flex-col items-center justify-center transition-colors ${
+              className={`flex flex-col items-center justify-center min-h-[44px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                 item.active
                   ? 'text-emerald-600 dark:text-emerald-400 font-bold'
                   : 'hover:text-slate-900 dark:hover:text-slate-200'
@@ -290,12 +336,12 @@ export const BottomNav: React.FC<{ activeId: string }> = ({ activeId }) => {
               <div className="relative">
                 <Icon className={`w-5 h-5 mb-0.5 ${item.active ? 'stroke-[2.25px]' : 'stroke-[1.75px]'}`} />
                 {item.badgeCount && item.badgeCount > 0 ? (
-                  <span className="absolute -top-1 -right-2 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] flex items-center justify-center font-bold font-mono">
+                  <span className="absolute -top-1 -right-2 min-w-4 h-4 px-1 bg-rose-500 text-white rounded-full text-xs flex items-center justify-center font-bold tabular-nums">
                     {item.badgeCount}
                   </span>
                 ) : null}
               </div>
-              <span className="leading-none">{item.label}</span>
+              <span className="leading-none text-xs">{item.label}</span>
             </button>
           );
         })}
@@ -305,13 +351,15 @@ export const BottomNav: React.FC<{ activeId: string }> = ({ activeId }) => {
 };
 ```
 
-### 7.2 PC用 左側固定サイドバーナビゲーション (`SidebarNav.tsx`)
+### 7.2 PC用 ヘッダー統合型ナビゲーション (`HeaderNav.tsx` - 推奨標準)
+大画面（`md:` 768px以上）でユーザーが迷わず画面遷移できるよう、共通ヘッダーに配置するナビゲーションです。
+
 ```tsx
 import React from 'react';
-import { Trophy, Home, Calendar, Database, Bell, Settings, ChevronRight } from 'lucide-react';
+import { Trophy, Home, Calendar, Database, Bell, Settings } from 'lucide-react';
 
-export const SidebarNav: React.FC<{ activeId: string; user: { name: string; rate: number; tier: string } }> = ({ activeId, user }) => {
-  const items = [
+export const HeaderNav: React.FC<{ activeId: string; user: { name: string; avatarUrl?: string } }> = ({ activeId, user }) => {
+  const navItems = [
     { id: 'home', label: 'ホーム', href: 'home.html', icon: Home },
     { id: 'schedule', label: '大会日程', href: 'schedule.html', icon: Calendar },
     { id: 'data', label: 'データ', href: 'data.html', icon: Database },
@@ -320,72 +368,129 @@ export const SidebarNav: React.FC<{ activeId: string; user: { name: string; rate
   ];
 
   return (
-    <aside className="hidden md:flex flex-col fixed top-0 bottom-0 left-0 w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-40 shadow-xs">
-      <div className="h-14 px-4 flex items-center border-b border-slate-100 dark:border-slate-800">
-        <a href="home.html" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+    <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+      <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+        {/* ブランドロゴ */}
+        <a href="home.html" className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg">
+          <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
             <Trophy className="w-4 h-4" />
           </div>
-          <div>
-            <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">GRAN TENNIS</span>
-            <span className="text-[10px] text-emerald-600 font-bold ml-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/50 rounded">2026</span>
-          </div>
+          <span className="font-bold text-base tracking-tight text-slate-900 dark:text-white">GRAN TENNIS</span>
         </a>
-      </div>
-      <nav className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
-        {items.map((it) => {
-          const Icon = it.icon;
-          const isActive = it.id === activeId;
-          return (
-            <a
-              key={it.id}
-              href={it.href}
-              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
-                isActive
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} />
-                <span>{it.label}</span>
-              </div>
-              {it.badge && (
-                <span className="w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] flex items-center justify-center font-bold font-mono">
-                  {it.badge}
-                </span>
-              )}
-            </a>
-          );
-        })}
-      </nav>
-      <div className="p-3 border-t border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 cursor-pointer">
-          <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+
+        {/* PC向けメニュータブ (md以上で表示) */}
+        <nav className="hidden md:flex items-center gap-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = item.id === activeId;
+            return (
+              <a
+                key={item.id}
+                href={item.href}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                  isActive
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{item.label}</span>
+                {item.badge ? (
+                  <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white rounded-full text-xs font-bold tabular-nums">
+                    {item.badge}
+                  </span>
+                ) : null}
+              </a>
+            );
+          })}
+        </nav>
+
+        {/* ユーザープロフィールボタン（キーボード操作対応） */}
+        <button
+          type="button"
+          onClick={() => { /* マイページモーダル開く */ }}
+          className="flex items-center gap-2 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 min-h-[44px] min-w-[44px]"
+          aria-label="マイページを開く"
+        >
+          <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold">
             {user.name.charAt(0)}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{user.name}</div>
-            <div className="text-[10px] text-slate-500 truncate">Rate: <span className="font-bold text-emerald-600 font-mono">{user.rate}</span> ({user.tier}級)</div>
-          </div>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-        </div>
+        </button>
       </div>
-    </aside>
+    </header>
+  );
+};
+```
+
+### 7.3 トースト通知コンポーネント (`ToastNotification.tsx`)
+モバイルでは下部ナビの直上・画面中央に配置し、幅不足や見切れを防止します。
+
+```tsx
+import React from 'react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
+
+interface ToastProps {
+  message: string;
+  type?: 'success' | 'error';
+  visible: boolean;
+}
+
+export const ToastNotification: React.FC<ToastProps> = ({ message, type = 'success', visible }) => {
+  if (!visible) return null;
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed z-50 pointer-events-none transition-all duration-300
+        bottom-[calc(3.5rem+env(safe-area-inset-bottom)+12px)] inset-x-4 max-w-sm mx-auto
+        md:bottom-6 md:right-6 md:left-auto md:mx-0
+        flex items-center gap-2.5 bg-slate-900 dark:bg-slate-800 text-white text-sm px-4 py-3 rounded-xl shadow-lg border border-slate-700"
+    >
+      {type === 'success' ? (
+        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+      ) : (
+        <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+      )}
+      <span className="font-medium text-xs leading-snug">{message}</span>
+    </div>
   );
 };
 ```
 
 ---
 
-## 8. AIバイブコーディング時の厳格チェックリスト
+## 8. 内部ツール・計算シミュレーターの分離方針
 
-AIが画面やコンポーネントコードを出力する際、以下の項目を必ず自己検証してください。
+* **`rate_calculate.html` の位置づけ**:
+  * 本画面は、イロレーティングおよびGRANレベルの計算変動ロジックを開発者・運営者が検証するための**「内部シミュレーションツール」**です。
+  * 一般ユーザー向けの公式動線（ボトムナビ・共通ヘッダー・デザインシステム）とは明確に分離し、一般ユーザーの利用画面には含めません。
+  * 本番運用フェーズでは、`tests/tools/` または管理画面（PC専用）配下のデバッグ・検証機能へと移管します。
 
-* [ ] **開発規約の順守**：docsファイルは以下にある要件定義書・コーティング規約・デザイン指示等を鑑みて問題点はないか
+---
+
+## 9. 大会要項情報のテキスト化ルール【重要】
+
+* **画像内文字依存の完全撤廃**:
+  * 大会要項ポスター画像の中に開催日・会場・参加料・種目・募集枠数・ステータス等の重要情報を埋め込む運用は行いません。
+  * スマホ画面での縮小による判読不能、音声読み上げ（スクリーンリーダー）不可、検索やコピーの不可能性を防ぐため、**すべての重要情報は必ずカードおよび詳細画面内にHTMLテキストとして明記**します。
+  * 要項画像はあくまで視覚的な補足（チラシ/ポスターイメージのプレビュー）として扱い、画像が表示されない・読み込めない環境であっても、エントリーに必要なすべての情報がテキストで把握できるようにUIを設計します。
+
+---
+
+## 10. AIバイブコーディング時の厳格チェックリスト
+
+AIが画面やコンポーネントコードを出力・改修する際、以下の項目を必ず自己検証してください。
+
+* [ ] **文字サイズの最小基準**: `text-[10px]`、`text-[11px]`、`text-[9px]` を使用していないか？ 最小サイズは 12px (`text-xs`) を厳守しているか？
+* [ ] **タッチターゲットの確保**: すべてのボタン・リンク・セレクトボックスは `min-h-[44px]` (44px以上) を確保しているか？
+* [ ] **フォントウェイトの制限**: `font-black` (900) や `font-extrabold` (800) を使わず、`font-normal` (400) / `font-medium` (500) / `font-bold` (700) の3種に抑えているか？
+* [ ] **数値の等幅表示**: レート・日時・金額・スコア表示に `tabular-nums` を付与しているか？
 * [ ] **フォントの指定**: フォントファミリーに `'Noto Sans JP', sans-serif` を適用しているか？
-* [ ] **カラーモードの配慮**: ダークモード対応スタイル（`dark:` プレフィックス）またはダークテーマ用クラスが正しく考慮されているか？
-* [ ] **タッチ領域の確保**: モバイル操作用ボタン・入力欄の高さが `h-11` (44px) または `h-12` (48px) に設定されているか？
-* [ ] **ボトムナビの整合性**: モバイル下部ナビゲーションは「ホーム」「大会日程」「データ」「通知」「設定」の5項目（`h-14`）で統一されているか？
-* [ ] **角丸の規則遵守**: 特大コンテナは `rounded-3xl`、カード・ダイアログは `rounded-2xl`、コンパクト部品・ボタンは `rounded-xl` / `rounded-lg`、バッジは `rounded-full` になっているか？
-* [ ] **下部余白の確保**: モバイル画面の最下部にボトムナビゲーション用の `pb-20` が付与されているか？
+* [ ] **PCナビゲーションの提供**: `md:` (768px以上) で開いた際に画面遷移できるヘッダーナビまたはサイドバーが常時表示されているか？
+* [ ] **iPhoneセーフエリアの確保**: ボトムナビに `pb-[env(safe-area-inset-bottom)]`、ページ最下部に `pb-24` を付与しているか？
+* [ ] **トースト通知の配置**: モバイルで下部ナビの直上中央（`bottom-[calc(3.5rem+env(safe-area-inset-bottom)+12px)] inset-x-4 max-w-sm mx-auto`）になっているか？
+* [ ] **アイコンのバージョン固定 & 絵文字禁止**: LucideのCDN読み込みはバージョン固定されているか？ 絵文字をアイコン代わりにハードコードしていないか？
+* [ ] **要項情報のテキスト化**: 大会開催日・会場・料金などの重要情報が画像内テキストだけでなくHTMLテキストで明記されているか？
+* [ ] **コンテンツ最大幅の統一**: 標準画面は `max-w-2xl` (672px)、データ統計画面は `max-w-4xl` (896px) に統一されているか？
+* [ ] **過剰装飾の抑制**: 過度なグラデーション、多重のぼかし（backdrop-blur乱用）、点滅アニメーション等を排し、高コントラストな視認性を維持しているか？
