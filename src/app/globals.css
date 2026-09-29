@@ -1,0 +1,19 @@
+/* Tailwind の3つの基本レイヤーを読み込む。この3行で Tailwind のクラスが全部使えるようになる。 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 日本語フォント指定（ui-design-system.md の定義に準拠） */
+body {
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "BIZ UDPGothic",
+    "Meiryo", sans-serif;
+}
+
+/* 横スクロールバーを隠すユーティリティ（元 home.html の .no-scrollbar を移植） */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
