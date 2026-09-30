@@ -1,33 +1,36 @@
-// これがトップページ（URL: / ）の本体。
+// トップページ（URL: / ）= ログイン後のホーム画面。
 // App Router では「src/app/page.tsx」が自動的にトップページになる。
 //
-// このファイル自体は "use client" を付けていない = サーバーコンポーネント。
-// 将来ここで「DBから大会を取ってくる」処理を書ける（今は固定データを import するだけ）。
+// このファイルはサーバーコンポーネント。ここでセッションを検証し、
+// ログイン中ユーザーを DB から取得する。未ログインなら /login へ誘導する。
 
+import { redirect } from "next/navigation";
 import { AdminBanner } from "@/components/home/AdminBanner";
 import { AppHeader } from "@/components/home/AppHeader";
 import { RequiredActionCard } from "@/components/home/RequiredActionCard";
 import { EnteredTournamentsCarousel } from "@/components/home/EnteredTournamentsCarousel";
 import { BottomNav } from "@/components/home/BottomNav";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CalendarX } from "lucide-react";
+import { getCurrentUser } from "@/features/auth/server/currentUser";
 
-// 固定データを読み込む。将来はこの3行が「DBへの問い合わせ」に置き換わる。
-import {
-  currentUser,
-  requiredActions,
-  enteredTournaments,
-} from "@/data/homeData";
+// 大会・エントリー機能は本タスクの対象外のため、表示用データは固定のまま読み込む。
+// 実ユーザーのエントリー履歴が実装されるまでの暫定表示。
+import { requiredActions, enteredTournaments } from "@/data/homeData";
 
-export default function HomePage() {
+export default async function HomePage() {
+  // セッション検証。未ログインならログイン画面へ。
+  const currentUser = await getCurrentUser();
+  if (!currentUser) redirect("/login");
+
   return (
     <>
-      {/* 管理者バナー（isAdminPreview が true のときだけ中身が出る） */}
+      {/* 管理者バナー（管理者/運営者のときだけ表示） */}
       <AdminBanner
         role={currentUser.role === "OPERATOR" ? "OPERATOR" : "ADMIN"}
         visible={currentUser.isAdminPreview}
       />
 
-      {/* ヘッダー。user という props でログイン中ユーザーを渡す */}
+      {/* ヘッダー（ログアウト導線を含む） */}
       <AppHeader user={currentUser} />
 
       {/* メインコンテンツ */}
@@ -39,21 +42,42 @@ export default function HomePage() {
             <span>要対応</span>
           </h3>
 
-          {/* requiredActions（配列）を1件ずつカードに変換して並べる。
-              key は React が「どの要素か」を見分けるための目印。必ず一意の値を渡す。 */}
-          {requiredActions.map((action) => (
-            <RequiredActionCard key={action.id} action={action} />
-          ))}
+          {requiredActions.length > 0 ? (
+            requiredActions.map((action) => (
+              <RequiredActionCard key={action.id} action={action} />
+            ))
+          ) : (
+            <EmptyState message="対応が必要な項目はありません。" />
+          )}
         </section>
 
-        {/* エントリー済み大会セクション（見出し・ページ表示はカルーセル側が持つ） */}
+        {/* エントリー済み大会セクション */}
         <section>
-          <EnteredTournamentsCarousel tournaments={enteredTournaments} />
+          {enteredTournaments.length > 0 ? (
+            <EnteredTournamentsCarousel tournaments={enteredTournaments} />
+          ) : (
+            <>
+              <h3 className="text-base font-bold text-slate-900 mb-3">
+                エントリー済みの大会
+              </h3>
+              <EmptyState message="まだエントリー済みの大会はありません。" />
+            </>
+          )}
         </section>
       </main>
 
       {/* 下部固定ナビ */}
       <BottomNav />
     </>
+  );
+}
+
+// エントリーや要対応が空のときに表示する簡易プレースホルダー。
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col items-center justify-center text-center gap-2 shadow-sm">
+      <CalendarX className="w-8 h-8 text-slate-300" />
+      <p className="text-sm text-slate-500">{message}</p>
+    </div>
   );
 }

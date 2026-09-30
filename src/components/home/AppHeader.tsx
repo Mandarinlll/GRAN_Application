@@ -1,8 +1,9 @@
 // 画面上部の固定ヘッダー。ロゴ + ログイン中ユーザーのバッジを表示。
 // 元 home.html の <header> を移植したもの。
 
-import { Trophy, ChevronDown } from "lucide-react";
+import { Trophy } from "lucide-react";
 import type { CurrentUser } from "@/types/home";
+import { UserMenu } from "@/components/home/UserMenu";
 
 // props としてログイン中ユーザー1人分のデータを受け取る。
 type Props = {
@@ -28,25 +29,8 @@ export function AppHeader({ user }: Props) {
           </div>
         </div>
 
-        {/* ユーザープロフィールバッジ */}
-        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 py-1 px-2.5 rounded-full">
-          <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
-            {user.avatarText}
-          </div>
-          <div className="text-left hidden sm:block">
-            <div className="text-xs font-bold leading-none text-slate-800">
-              {user.realName}
-            </div>
-            <div className="text-[10px] text-slate-500 leading-tight">
-              Rate:{" "}
-              <span className="font-bold text-emerald-600 font-mono">
-                {user.granLevel}
-              </span>{" "}
-              ({user.classLabel})
-            </div>
-          </div>
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-        </div>
+        {/* ユーザープロフィールバッジ + ログアウトメニュー */}
+        <UserMenu user={user} />
       </div>
     </header>
   );
