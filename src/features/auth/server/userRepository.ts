@@ -108,12 +108,15 @@ export function createUser(params: CreateUserParams): User {
   const id = randomUUID();
   const loginId = nextLoginId();
 
+  // 作成/更新日時はスキーマ DEFAULT に頼らず、アプリ側で明示的に JST を書き込む。
+  // （既存DBのテーブル定義は変更されないため、DEFAULT 依存だと UTC のままになる）
   db.prepare(
     `INSERT INTO users (
       id, login_id, email, password_hash, role, is_admin, status,
       is_initial_login, real_name, kana_name, nickname, gender, birth_date,
-      phone_number, declared_class, gran_level, is_level_calibrated, rated_match_count
-    ) VALUES (?, ?, ?, ?, 'USER', 0, 'ACTIVE', 0, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)`,
+      phone_number, declared_class, gran_level, is_level_calibrated, rated_match_count,
+      created_at, updated_at
+    ) VALUES (?, ?, ?, ?, 'USER', 0, 'ACTIVE', 0, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ${NOW_JST}, ${NOW_JST})`,
   ).run(
     id,
     loginId,
