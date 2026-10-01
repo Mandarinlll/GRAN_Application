@@ -17,3 +17,11 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Edge/IE がパスワード入力欄に標準表示する目玉アイコン(::-ms-reveal)と
+   クリアボタン(::-ms-clear)を非表示にする。
+   独自実装のパスワード表示切替ボタンと重複して目玉が2つ出るのを防ぐ。 */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
