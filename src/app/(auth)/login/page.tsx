@@ -12,7 +12,7 @@ export default async function LoginPage() {
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col justify-center px-4 py-8 sm:py-12">
       <div className="w-full max-w-md mx-auto">
-        <AuthBrandHeader subtitle="テニス大会エントリー＆レーティング運営システム" />
+        <AuthBrandHeader subtitle="北海道テニス大会「GRAN」公式アプリ" />
         <LoginForm />
       </div>
       <footer className="pt-8 text-center text-xs text-slate-400">

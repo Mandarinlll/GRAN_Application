@@ -37,27 +37,27 @@ const CLASS_GUIDANCE: Record<
   A: {
     label: "A 級",
     range: "850 〜 999 pt",
-    desc: "全日本・都道府県大会本選上位者、実業団トップクラスなどの上級者階級です。",
+    desc: "最上級者階級です。インカレ・全日本各種大会に出場経験がある方やコーチ経験がある方等",
   },
   AB: {
     label: "AB 級",
     range: "750 〜 870 pt",
-    desc: "地区大会本選上位、市民大会A級上位など上級〜中上級の上位選手階級です。",
+    desc: "市民大会や北海道予選などの公式大会にA・B級で出場されている方",
   },
   B: {
     label: "B 級",
     range: "650 〜 770 pt",
-    desc: "市民大会A級、ベテラン上位入賞者などの中上級者階級です。",
+    desc: "市民大会や北海道予選などの公式大会にA・B級で出場されている方",
   },
   BC: {
     label: "BC 級",
     range: "550 〜 670 pt",
-    desc: "草トー中級上位〜中上級、市民大会B級上位などの中級上位階級です。",
+    desc: "草トー上級、市民大会B級上位などの中級上位階級です。",
   },
   C: {
     label: "C 級",
     range: "450 〜 570 pt",
-    desc: "市民大会B/C級、一般草トーナメント中級レベルの標準階級です。",
+    desc: "本大会の標準階級です。市民大会B/C級、一般草トーナメント中級レベルの方",
   },
   CD: {
     label: "CD 級",
@@ -202,7 +202,7 @@ export function RegisterForm() {
                 type="text"
                 name="lastName"
                 defaultValue={values.lastName ?? ""}
-                placeholder="佐藤"
+                placeholder="田中"
                 className={inputBase}
               />
             </Field>
@@ -211,7 +211,7 @@ export function RegisterForm() {
                 type="text"
                 name="firstName"
                 defaultValue={values.firstName ?? ""}
-                placeholder="健太"
+                placeholder="太郎"
                 className={inputBase}
               />
             </Field>
@@ -223,7 +223,7 @@ export function RegisterForm() {
                 type="text"
                 name="lastKana"
                 defaultValue={values.lastKana ?? ""}
-                placeholder="サトウ"
+                placeholder="タナカ"
                 className={inputBase}
               />
             </Field>
@@ -232,7 +232,7 @@ export function RegisterForm() {
                 type="text"
                 name="firstKana"
                 defaultValue={values.firstKana ?? ""}
-                placeholder="ケンタ"
+                placeholder="タロウ"
                 className={inputBase}
               />
             </Field>
@@ -307,14 +307,14 @@ export function RegisterForm() {
                 type="text"
                 name="nickname"
                 defaultValue={values.nickname ?? ""}
-                placeholder="ケンタ"
+                placeholder="テニスタロウ"
                 className={`${inputBase} pl-9`}
               />
             </div>
             <div className="mt-1.5 p-2.5 bg-amber-50 rounded-lg border border-amber-200 flex items-start gap-2 text-[11px] text-amber-800">
               <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
               <span>
-                外部公開用（対戦表・ドロー表）に掲載されます。本名などの個人情報を含めることはお控えください。
+                外部公開用（対戦表・ドロー表）の資料に掲載されます。本名やメールアドレスなどの個人情報を含めることはお控えください。
               </span>
             </div>
           </Field>
@@ -323,7 +323,7 @@ export function RegisterForm() {
         {/* セクション4: テニス階級自己申告 */}
         <section className="space-y-4">
           <SectionTitle icon={<Award className="w-4 h-4 text-emerald-600" />}>
-            テニス階級自己申告 (GRANレベル)
+            エントリー階級自己申告 (GRANレベル)
           </SectionTitle>
 
           <Field

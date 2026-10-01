@@ -103,7 +103,7 @@ export function LoginForm() {
       {/* 新規登録リンク */}
       <div className="pt-4 border-t border-slate-100 text-center">
         <p className="text-xs text-slate-500">
-          アカウントをお持ちでないですか？
+          アカウントをまだお持ちでない方は→
           <Link
             href="/register"
             className="text-emerald-600 hover:text-emerald-700 font-semibold ml-1"

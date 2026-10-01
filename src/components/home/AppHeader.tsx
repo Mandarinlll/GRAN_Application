@@ -21,10 +21,10 @@ export function AppHeader({ user }: Props) {
           </div>
           <div>
             <span className="font-extrabold text-base tracking-tight text-slate-900">
-              GRAN TENNIS
+              GRANde
             </span>
             <span className="text-[10px] text-emerald-600 font-bold ml-1 px-1.5 py-0.5 bg-emerald-50 rounded">
-              2026 Season
+              2026-27 Season
             </span>
           </div>
         </div>

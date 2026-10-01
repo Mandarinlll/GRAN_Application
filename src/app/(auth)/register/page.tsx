@@ -12,7 +12,7 @@ export default async function RegisterPage() {
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col justify-center px-4 py-8 sm:py-10">
       <div className="w-full max-w-xl mx-auto">
-        <AuthBrandHeader subtitle="新規プレイヤー登録 (U-01)" />
+        <AuthBrandHeader subtitle="新規アカウント登録" />
         <RegisterForm />
       </div>
       <footer className="pt-8 text-center text-xs text-slate-400">
