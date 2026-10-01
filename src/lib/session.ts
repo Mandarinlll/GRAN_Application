@@ -13,10 +13,25 @@ import type { SessionPayload } from "@/types/user";
 export const SESSION_COOKIE = "gran_session";
 const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 7;
 
-// JWT 署名鍵。環境変数が無い場合は開発用の既定値を用いる（本番では必ず設定する）。
+// JWT 署名鍵。鍵が漏れるとセッション偽造（なりすまし）が可能になるため、
+// 本番環境では必ず環境変数 AUTH_SECRET を設定する。
+//  - 本番(NODE_ENV=production): 未設定なら即座に例外で起動を止める（弱い既定値へのフォールバック禁止）。
+//  - 開発: 利便性のため既定値を許可するが、本番では決して使われない。
 function getSecretKey(): Uint8Array {
-  const secret =
-    process.env.AUTH_SECRET ?? "dev-only-insecure-secret-change-in-production";
+  const secret = process.env.AUTH_SECRET;
+
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "AUTH_SECRET が設定されていません。本番環境では十分に長いランダムな署名鍵を環境変数に設定してください。",
+      );
+    }
+    // 開発環境のみ: 既定値を使用する（本番には絶対に持ち込まない）。
+    return new TextEncoder().encode(
+      "dev-only-insecure-secret-change-in-production",
+    );
+  }
+
   return new TextEncoder().encode(secret);
 }
 

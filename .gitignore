@@ -20,6 +20,8 @@ yarn-error.log*
 # env files
 .env*.local
 .env
+# サンプルは追跡する（実値は含めないこと）
+!.env.example
 
 # typescript
 *.tsbuildinfo
@@ -27,3 +29,6 @@ next-env.d.ts
 
 # local sqlite database (node:sqlite)
 /data/
+
+# 静的HTMLモック（実装の元資料。アプリ実行には不要なため追跡しない）
+/tests/
