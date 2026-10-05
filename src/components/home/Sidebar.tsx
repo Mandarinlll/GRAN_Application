@@ -6,6 +6,7 @@
 // クリック（onClick / ログアウト導線）があるのでクライアントコンポーネント。
 "use client";
 
+import Link from "next/link";
 import {
   Trophy,
   Home,
@@ -33,13 +34,13 @@ type NavItem = {
   icon: React.ElementType;
   active?: boolean;
   badge?: number;
+  href?: string; // 実装済み画面はこの href へ Link 遷移する。
 };
 
-// 遷移先は各ページ未実装のため、ホーム以外は暫定で alert を出すだけ。
-// 実ルーティングは各画面実装時に差し替える。
+// 実装済み画面は href を指定。未実装画面は暫定で alert を出すだけ。
 const navItems: NavItem[] = [
   { key: "home", label: "ホーム", icon: Home, active: true },
-  { key: "schedule", label: "大会日程", icon: Calendar },
+  { key: "schedule", label: "大会日程", icon: Calendar, href: "/tournaments" },
   { key: "data", label: "データ", icon: Database },
   { key: "notifications", label: "通知", icon: Bell, badge: 3 },
   { key: "settings", label: "設定", icon: Settings },
@@ -108,7 +109,16 @@ export function Sidebar({ user }: Props) {
             );
           }
 
-          // それ以外は押せるボタン（暫定 alert）。
+          // 実装済み画面は Link 遷移。
+          if (item.href) {
+            return (
+              <Link key={item.key} href={item.href} className={className}>
+                {inner}
+              </Link>
+            );
+          }
+
+          // 未実装画面は暫定 alert。
           return (
             <button
               key={item.key}
