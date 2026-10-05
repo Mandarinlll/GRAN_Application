@@ -71,7 +71,7 @@ export function ScheduleCards({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <FlyerPlaceholder tournament={t} />
+                <FlyerPlaceholder tournament={t} variant="card" />
               )}
               {/* 一括選択チェック */}
               {selectable && (
@@ -100,7 +100,7 @@ export function ScheduleCards({
 
             {/* テキスト情報 */}
             <div className="p-3.5 space-y-2 flex-1 flex flex-col">
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <CategoryBadge category={t.category} className="scale-90 origin-left" />
                 <TierBadge tier={t.tier} className="scale-90 origin-left" />
               </div>
@@ -108,9 +108,9 @@ export function ScheduleCards({
                 {t.title}
               </h3>
               <div className="space-y-1 text-xs text-slate-600 mt-auto pt-1">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
                   <Calendar className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span className="font-bold tabular-nums">
+                  <span className="font-bold tabular-nums truncate">
                     {t.eventDateLabel} {t.startTime}
                   </span>
                 </div>
@@ -118,14 +118,14 @@ export function ScheduleCards({
                   <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span className="truncate">{t.venue}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span className="font-bold text-emerald-600 tabular-nums">
+                    <span className="font-bold text-emerald-600 tabular-nums truncate">
                       {t.entryFeeLabel}
                     </span>
                   </div>
-                  <span className="text-xs text-slate-400 tabular-nums">
+                  <span className="text-xs text-slate-400 tabular-nums whitespace-nowrap">
                     残り {t.remaining}/{t.capacity}枠
                   </span>
                 </div>
