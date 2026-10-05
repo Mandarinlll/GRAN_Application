@@ -3,32 +3,39 @@
 ```
 【修正対象テーブルと変更内容の概要】
 1. users（ユーザー管理）
+   ├─ phone_number: 連絡先電話番号（登録必須化）
+   ├─ declared_tier（新規追加）: 登録時自己申告階級（8段階: A, AB, B, BC, C, CD, D, DE）
    ├─ gran_level: 管理者が個別査定した初期値を格納（CHECK制約: 100〜999）
    ├─ is_level_calibrated（新規追加）: 管理者の初期査定完了フラグ（BOOLEAN）
    └─ rated_match_count（新規追加）: K値分岐（1〜5戦: K=32 / 6戦以降: K=16）用の消化試合数
 
-2. tournament_results（大会結果・変動ログ）
+2. tournaments（大会管理）
+   ├─ tier（新規追加）: 募集階級（8段階: A, AB, B, BC, C, CD, D, DE）
+   └─ 大会詳細表示の変更（表彰・賞品非表示、16:9縦長要項写真全画面拡大）
+
+3. tournament_results（大会結果・変動ログ）
    ├─ awarded_points: 「point」から名称明確化（年間加算pt: 1〜3pt）
    ├─ pre_gran_level（新規追加）: 試合前のGRANレベル（イロレーティング監査用）
    ├─ gran_level_diff: 1試合ごとのElo変動値（±数pt）
    ├─ post_gran_level（新規追加）: 試合後のGRANレベル
    └─ user_id: 個人レート計算のため NOT NULL 制約へ変更
-
 ```
 
 ### 1. `users` テーブルの差分
 
+* **`phone_number`**：緊急連絡および本人確認用として登録必須（NOT NULL）に変更。
+* **`declared_tier`（tournament_tier_enum / 新規追加）**：アカウント新規登録時の自己申告階級（8段階: A, AB, B, BC, C, CD, D, DE）。
 * **`gran_level`**：一律500固定ではなく、管理者が主観・実績（150〜850）で査定・設定できるように運用を変更。100〜999の範囲制約を追加。
-
-
 * **`is_level_calibrated`（BOOLEAN / 新規追加）**：管理者が初期レベル査定を完了しているかを判定するフラグ（初期値: `false`）。
 * **`rated_match_count`（SMALLINT / 新規追加）**：イロレーティングの変動係数（初期プレースメント $K=32$ / 通常 $K=16$）を切り替えるための公式戦消化試合数カウンター（初期値: `0`）。
 
-### 2. `tournament_results` テーブルの差分
+### 2. `tournaments` テーブルの差分
+
+* **`tier`（tournament_tier_enum / 新規追加）**：対象大会の出場階級（8段階: A, AB, B, BC, C, CD, D, DE）。
+
+### 3. `tournament_results` テーブルの差分
 
 * **`point` $\rightarrow$ `awarded_points`（名称変更）**：チーム/個人に加算される固定順位ポイント（1pt: 参加 / 2pt: 2位L優勝・1位準優勝 / 3pt: 1位優勝）であることを明確化。
-
-
 * **`pre_gran_level` / `post_gran_level`（SMALLINT / 新規追加）**：対戦前後のレートを記録し、レーティング計算の透明性と履歴追跡性を担保。
 * **`user_id`（NULL許容 $\rightarrow$ NOT NULL）**：個人のイロレーティング（GRANレベル）を計算・更新するために必須化。
 
@@ -76,6 +83,8 @@ erDiagram
         uuid id PK
         varchar login_id UK
         varchar email UK
+        varchar phone_number
+        varchar declared_tier "A-DE 8段階"
         varchar role
         boolean is_admin
         int gran_level "100-999"
@@ -93,6 +102,7 @@ erDiagram
         uuid id PK
         varchar title
         varchar category
+        varchar tier "A-DE 8段階"
         varchar status
         text draw_pdf_url
     }
@@ -171,6 +181,18 @@ CREATE TYPE user_role_enum AS ENUM (
 
 -- 性別
 CREATE TYPE gender_enum AS ENUM ('MALE', 'FEMALE', 'OTHER');
+
+-- 階級区分（8段階）
+CREATE TYPE tournament_tier_enum AS ENUM (
+    'A',     -- A級（850〜999 pt）
+    'AB',    -- AB級（750〜870 pt）
+    'B',     -- B級（650〜770 pt）
+    'BC',    -- BC級（550〜670 pt）
+    'C',     -- C級（450〜570 pt）
+    'CD',    -- CD級（350〜470 pt）
+    'D',     -- D級（250〜370 pt）
+    'DE'     -- DE級（100〜270 pt）
+);
 
 -- アカウントステータス
 CREATE TYPE account_status_enum AS ENUM ('ACTIVE', 'SUSPENDED', 'PROVISIONAL');
@@ -292,8 +314,10 @@ CREATE TYPE notification_type_enum AS ENUM (
  |
 | 生年月日 | `birth_date` | DATE | YES | - | 生年月日
 
+| 電話番号 | `phone_number` | VARCHAR(15) | **NO** | - | **連絡先電話番号（登録必須）**
+ 
  |
-| 電話番号 | `phone_number` | VARCHAR(15) | YES | - | 連絡先電話番号
+| **申告階級** | `declared_tier` | tournament_tier_enum | YES | - | **自己申告階級（8段階: A, AB, B, BC, C, CD, D, DE）**
 
  |
 | **GRANレベル** | `gran_level` | SMALLINT | NO | - | **初期査定値（CHECK: 100〜999）**<br> |
@@ -351,9 +375,12 @@ CREATE TYPE notification_type_enum AS ENUM (
 
  |
 | 種目区分 | `category` | tournament_category_enum | NO | - | 男子団体/女子団体/ミックス団体/単/複
+ 
+ |
+| **階級区分** | `tier` | tournament_tier_enum | **NO** | - | **対象階級（8段階: A, AB, B, BC, C, CD, D, DE）**
 
  |
-| 開催日 | `event_date` | DATE | NO | - | 大会開催日
+| 開催日 | `event_date` | DATE | NO | - | 大会開催日（※一覧の初期ソート順は昇順）
 
  |
 | 開始時刻 | `start_time` | TIME | NO | - | 試合開始予定時刻
