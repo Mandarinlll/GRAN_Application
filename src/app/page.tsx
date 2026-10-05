@@ -10,6 +10,7 @@ import { AppHeader } from "@/components/home/AppHeader";
 import { RequiredActionCard } from "@/components/home/RequiredActionCard";
 import { EnteredTournamentsCarousel } from "@/components/home/EnteredTournamentsCarousel";
 import { BottomNav } from "@/components/home/BottomNav";
+import { Sidebar } from "@/components/home/Sidebar";
 import { AlertCircle, CalendarX } from "lucide-react";
 import { getCurrentUser } from "@/features/auth/server/currentUser";
 
@@ -24,17 +25,23 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* 管理者バナー（管理者/運営者のときだけ表示） */}
-      <AdminBanner
-        role={currentUser.role === "OPERATOR" ? "OPERATOR" : "ADMIN"}
-        visible={currentUser.isAdminPreview}
-      />
+      {/* PC（640px以上）で常時表示する左側固定サイドバー */}
+      <Sidebar user={currentUser} />
 
-      {/* ヘッダー（ログアウト導線を含む） */}
-      <AppHeader user={currentUser} />
+      {/* サイドバー分の左余白を 640px 以上で確保するラッパー。
+          モバイルでは余白なし（サイドバー非表示）。 */}
+      <div className="sm:pl-60">
+        {/* 管理者バナー（管理者/運営者のときだけ表示） */}
+        <AdminBanner
+          role={currentUser.role === "OPERATOR" ? "OPERATOR" : "ADMIN"}
+          visible={currentUser.isAdminPreview}
+        />
 
-      {/* メインコンテンツ */}
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* ヘッダー（モバイル専用。640px以上ではサイドバーが担う） */}
+        <AppHeader user={currentUser} />
+
+        {/* メインコンテンツ */}
+        <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* 要対応セクション */}
         <section className="space-y-3">
           <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -64,9 +71,10 @@ export default async function HomePage() {
             </>
           )}
         </section>
-      </main>
+        </main>
+      </div>
 
-      {/* 下部固定ナビ */}
+      {/* 下部固定ナビ（モバイル専用。640px以上ではサイドバーが担う） */}
       <BottomNav />
     </>
   );

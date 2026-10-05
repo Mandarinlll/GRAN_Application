@@ -10,9 +10,11 @@ type Props = {
   user: CurrentUser;
 };
 
+// 640px以上ではサイドバー（Sidebar）がロゴ・ユーザー情報を担うため、
+// このヘッダーはモバイル専用（sm:hidden）にして重複表示を避ける。
 export function AppHeader({ user }: Props) {
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm sm:hidden">
       <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* ロゴ & アプリ名 */}
         <div className="flex items-center gap-2.5">
