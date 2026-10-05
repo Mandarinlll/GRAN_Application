@@ -7,12 +7,12 @@
 // その宣言が "use client"。ボタンを押す動きがあるのでここでは必須。
 "use client";
 
-import { Home, Calendar, Bell, Settings } from "lucide-react";
+import { Home, Calendar, Database, Bell, Settings } from "lucide-react";
 
 export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 sm:hidden">
-      <div className="grid grid-cols-4 h-14 text-[10px] font-medium text-slate-500">
+      <div className="grid grid-cols-5 h-14 text-[10px] font-medium text-slate-500">
         {/* ホーム（今表示中なので緑で強調） */}
         <button className="flex flex-col items-center justify-center text-emerald-600 font-bold">
           <Home className="w-5 h-5 mb-0.5" />
@@ -26,6 +26,15 @@ export function BottomNav() {
         >
           <Calendar className="w-5 h-5 mb-0.5" />
           <span>大会日程</span>
+        </button>
+
+        {/* データ（サイドバーと同じ並び・アイコン。遷移先未実装のため暫定アラート） */}
+        <button
+          onClick={() => alert("データ画面へ遷移します")}
+          className="flex flex-col items-center justify-center hover:text-slate-900"
+        >
+          <Database className="w-5 h-5 mb-0.5" />
+          <span>データ</span>
         </button>
 
         {/* 通知（未読バッジ付き） */}
