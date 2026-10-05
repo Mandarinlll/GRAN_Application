@@ -59,8 +59,10 @@ export function ScheduleCards({
             onClick={() => onCardClick(index)}
             className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden cursor-pointer hover:shadow-md hover:border-emerald-200 transition flex flex-col"
           >
-            {/* 要項写真（16:9） */}
-            <div className="relative aspect-video bg-slate-900 overflow-hidden">
+            {/* 要項写真。要項は 16:9（横長）で作成されるが、カードでは縦長の枠で
+                大きく見せるため、枠をやや縦長（15:16）にして object-cover で中央を表示する。
+                全体表示は要項ビューア（タップで展開）側で担保する。 */}
+            <div className="relative aspect-[15/16] bg-slate-900 overflow-hidden">
               {t.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img

@@ -4,7 +4,7 @@
 // このプレースホルダーはあくまで視覚的補足。
 //
 // variant で表示密度を切り替える:
-//  - "card"   : カード上部の 16:9（横長・低い）領域向け。要素を絞りオーバーフローを防ぐ。
+//  - "card"   : カード上部の 3:4（縦長）領域向け。溢れを防ぎつつ必要十分な情報を表示。
 //  - "full"   : 要項ビューア／全画面の 9:16（縦長・広い）領域向け。詳細を表示。
 
 import { Trophy } from "lucide-react";
@@ -18,17 +18,19 @@ type Props = {
 
 export function FlyerPlaceholder({ tournament, variant = "full" }: Props) {
   if (variant === "card") {
-    // 16:9 の低い領域に収めるためのコンパクト表示。
-    // 高さが足りなくても溢れないよう、要素は最小限・余白も小さく、
-    // タイトルは1行省略に抑える。詳細は要項ビューアで確認できる。
+    // 3:4 の縦長領域向け。縦に余裕ができたぶん、種目/階級・大会名・開催日まで表示する。
+    // タイトルは3行省略に抑え、溢れを防ぐ。詳細は要項ビューアで確認できる。
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-emerald-700 text-white px-3 py-2 text-center select-none overflow-hidden">
-        <Trophy className="w-6 h-6 mb-1.5 opacity-90 shrink-0" />
+      <div className="w-full h-full flex flex-col items-center justify-center bg-emerald-700 text-white px-3 py-3 text-center select-none overflow-hidden">
+        <Trophy className="w-8 h-8 mb-2 opacity-90 shrink-0" />
         <div className="text-xs font-bold opacity-80 leading-tight line-clamp-1">
           {CATEGORY_LABEL[tournament.category]} / {TIER_LABEL[tournament.tier]}
         </div>
-        <div className="text-xs font-bold leading-tight line-clamp-1 mt-0.5">
+        <div className="text-sm font-bold leading-snug line-clamp-3 mt-1">
           {tournament.title}
+        </div>
+        <div className="text-xs tabular-nums opacity-90 mt-2">
+          {tournament.eventDateLabel}
         </div>
       </div>
     );
