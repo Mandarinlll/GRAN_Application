@@ -21,11 +21,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  CapacityBadge,
   CategoryBadge,
-  LifecycleBadge,
   TierBadge,
 } from "@/features/tournaments/components/badges";
+import { CapacityMeter } from "@/features/tournaments/components/CapacityMeter";
 import { FlyerPlaceholder } from "@/features/tournaments/components/FlyerPlaceholder";
 import { memberCountRange } from "@/features/tournaments/utils/category";
 import { formatTime } from "@/utils/date";
@@ -70,10 +69,6 @@ export function GuidelinesViewer({
   const isOpen = t.status === "OPEN";
   const canAct = isOpen && !t.isPast;
   const range = memberCountRange(t.category, t.teamSizeMin, t.teamSizeMax);
-  const pct = Math.min(
-    100,
-    Math.round((t.confirmedCount / Math.max(1, t.capacity)) * 100),
-  );
 
   return (
     <div
@@ -158,14 +153,6 @@ export function GuidelinesViewer({
                 <div className="flex flex-wrap items-center gap-2">
                   <CategoryBadge category={t.category} />
                   <TierBadge tier={t.tier} />
-                  {canAct ? (
-                    <CapacityBadge
-                      status={t.capacityStatus}
-                      isEntered={t.isEntered}
-                    />
-                  ) : (
-                    <LifecycleBadge status={t.status} />
-                  )}
                 </div>
                 <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight leading-snug">
                   {t.title}
@@ -209,7 +196,20 @@ export function GuidelinesViewer({
                 />
               </div>
 
-              {/* 詳細テキスト */}
+              {/* エントリー状況メーター（残り枠バー + 状況色分けに一本化） */}
+              <CapacityMeter
+                variant="full"
+                capacity={t.capacity}
+                confirmedCount={t.confirmedCount}
+                remaining={t.remaining}
+                capacityStatus={t.capacityStatus}
+                lifecycleStatus={t.status}
+                isPast={t.isPast}
+                isEntered={t.isEntered}
+                waitingCount={t.waitingCount}
+              />
+
+              {/* 詳細テキスト（エントリー状況バーの下部に配置） */}
               {t.description && (
                 <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5 text-xs">
                   <div className="font-bold text-slate-800">大会要項・競技規則</div>
@@ -218,34 +218,6 @@ export function GuidelinesViewer({
                   </p>
                 </div>
               )}
-
-              {/* 空き状況プログレスバー */}
-              <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-slate-600">エントリー枠の空き状況</span>
-                  <span className="text-emerald-600 tabular-nums">
-                    確定 {t.confirmedCount}枠 / 定員 {t.capacity}枠 (残り {t.remaining}枠)
-                  </span>
-                </div>
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div
-                    className={cn(
-                      "h-full rounded-full transition-all",
-                      isFull
-                        ? "bg-rose-500"
-                        : t.capacityStatus === "FEW"
-                          ? "bg-amber-500"
-                          : "bg-emerald-600",
-                    )}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                {t.waitingCount > 0 && (
-                  <div className="text-xs text-slate-400 tabular-nums">
-                    キャンセル待ち: {t.waitingCount}件
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>

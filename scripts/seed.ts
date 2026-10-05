@@ -123,7 +123,7 @@ const SEED_TOURNAMENTS: SeedTournament[] = [
     dummyConfirmed: 6,
   },
   {
-    title: "第5回 クラシックB級チャレンジ（残りわずか）",
+    title: "第5回 クラシックB級チャレンジ",
     category: "MEN_TEAM",
     tier: "BC",
     offsetDays: 10,
@@ -141,7 +141,7 @@ const SEED_TOURNAMENTS: SeedTournament[] = [
     dummyConfirmed: 13, // 13/16 = 81% → 残りわずか
   },
   {
-    title: "第79回 GRAN サテライトC級カップ（満員）",
+    title: "第79回 GRAN サテライトC級カップ",
     category: "SINGLES",
     tier: "C",
     offsetDays: 7,

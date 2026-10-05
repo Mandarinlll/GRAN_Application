@@ -2,13 +2,12 @@
 // カードクリックで要項ビューアを開く。上部のチェックで一括選択。
 "use client";
 
-import { Calendar, MapPin, Wallet, SearchX } from "lucide-react";
+import { Calendar, MapPin, SearchX } from "lucide-react";
 import {
-  CapacityBadge,
   CategoryBadge,
-  LifecycleBadge,
   TierBadge,
 } from "@/features/tournaments/components/badges";
+import { CapacityMeter } from "@/features/tournaments/components/CapacityMeter";
 import { FlyerPlaceholder } from "@/features/tournaments/components/FlyerPlaceholder";
 import type { TournamentCardData } from "@/features/tournaments/types/view";
 
@@ -53,7 +52,6 @@ export function ScheduleCards({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {tournaments.map((t, index) => {
-        const canAct = t.status === "OPEN" && !t.isPast;
         const selectable = isSelectable(t);
         return (
           <article
@@ -88,14 +86,6 @@ export function ScheduleCards({
                   />
                 </label>
               )}
-              {/* ステータスバッジ */}
-              <div className="absolute top-2 right-2">
-                {canAct ? (
-                  <CapacityBadge status={t.capacityStatus} isEntered={t.isEntered} />
-                ) : (
-                  <LifecycleBadge status={t.status} />
-                )}
-              </div>
             </div>
 
             {/* テキスト情報 */}
@@ -118,18 +108,21 @@ export function ScheduleCards({
                   <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span className="truncate">{t.venue}</span>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span className="font-bold text-emerald-600 tabular-nums truncate">
-                      {t.entryFeeLabel}
-                    </span>
-                  </div>
-                  <span className="text-xs text-slate-400 tabular-nums whitespace-nowrap">
-                    残り {t.remaining}/{t.capacity}枠
-                  </span>
-                </div>
               </div>
+
+              {/* エントリー状況メーター（残り枠バー + 状況色分け） */}
+              <CapacityMeter
+                variant="compact"
+                capacity={t.capacity}
+                confirmedCount={t.confirmedCount}
+                remaining={t.remaining}
+                capacityStatus={t.capacityStatus}
+                lifecycleStatus={t.status}
+                isPast={t.isPast}
+                isEntered={t.isEntered}
+                waitingCount={t.waitingCount}
+                className="pt-1"
+              />
             </div>
           </article>
         );

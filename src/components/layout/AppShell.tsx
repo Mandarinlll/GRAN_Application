@@ -67,7 +67,7 @@ function Sidebar({
           </div>
           <div>
             <span className="font-bold text-base tracking-tight text-slate-900">
-              GRAN TENNIS
+              GRANde
             </span>
             <span className="block text-xs text-emerald-600 font-bold">
               2026 Season

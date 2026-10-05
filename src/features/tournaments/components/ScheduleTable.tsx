@@ -3,13 +3,11 @@
 "use client";
 
 import { ArrowUp, ArrowDown, SearchX, Calendar } from "lucide-react";
-import { cn } from "@/lib/utils";
 import {
-  CapacityBadge,
   CategoryBadge,
-  LifecycleBadge,
   TierBadge,
 } from "@/features/tournaments/components/badges";
+import { CapacityMeter } from "@/features/tournaments/components/CapacityMeter";
 import type { TournamentCardData } from "@/features/tournaments/types/view";
 import type { SortOrder } from "@/features/tournaments/hooks/useTournamentFilters";
 
@@ -77,7 +75,7 @@ export function ScheduleTable({
                 </div>
               </th>
               <th className="py-3 px-2 sm:px-3">大会名・会場</th>
-              <th className="hidden sm:table-cell py-3 px-2.5 w-16">階級</th>
+              <th className="hidden sm:table-cell py-3 px-2.5 w-20 whitespace-nowrap">階級</th>
               <th className="hidden md:table-cell py-3 px-3 w-40">会場</th>
               <th className="py-3 px-2 sm:px-3 w-24 sm:w-32 text-center">
                 申込状況
@@ -86,7 +84,6 @@ export function ScheduleTable({
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs">
             {tournaments.map((t, index) => {
-              const canAct = t.status === "OPEN" && !t.isPast;
               const selectable = isSelectable(t);
               return (
                 <tr
@@ -129,22 +126,25 @@ export function ScheduleTable({
                       </span>
                     </div>
                   </td>
-                  <td className="hidden sm:table-cell py-3 px-2.5">
+                  <td className="hidden sm:table-cell py-3 px-2.5 whitespace-nowrap">
                     <TierBadge tier={t.tier} />
                   </td>
                   <td className="hidden md:table-cell py-3 px-3 text-slate-600">
                     {t.venue}
                   </td>
-                  <td className="py-3 px-2 sm:px-3 text-center">
-                    {canAct ? (
-                      <CapacityBadge
-                        status={t.capacityStatus}
-                        isEntered={t.isEntered}
-                        className="scale-90"
-                      />
-                    ) : (
-                      <LifecycleBadge status={t.status} className="scale-90" />
-                    )}
+                  <td className="py-3 px-2 sm:px-3">
+                    <CapacityMeter
+                      variant="compact"
+                      capacity={t.capacity}
+                      confirmedCount={t.confirmedCount}
+                      remaining={t.remaining}
+                      capacityStatus={t.capacityStatus}
+                      lifecycleStatus={t.status}
+                      isPast={t.isPast}
+                      isEntered={t.isEntered}
+                      waitingCount={t.waitingCount}
+                      className="min-w-[88px]"
+                    />
                   </td>
                 </tr>
               );
