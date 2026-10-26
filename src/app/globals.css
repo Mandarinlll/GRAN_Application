@@ -9,6 +9,13 @@ body {
     "Meiryo", sans-serif;
 }
 
+/* 大会日程フィルターのセレクトボックス共通スタイル（ui-design-system.md 準拠・44px確保） */
+@layer components {
+  .filter-select {
+    @apply w-full text-sm font-medium bg-white border border-slate-200 rounded-xl px-2.5 min-h-[44px] text-slate-700 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500;
+  }
+}
+
 /* 横スクロールバーを隠すユーティリティ（元 home.html の .no-scrollbar を移植） */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
