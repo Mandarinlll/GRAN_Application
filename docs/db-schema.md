@@ -1,10 +1,36 @@
+﻿# データベース定義書
+
+> **【実装同期に関する注記（最終更新で追記）】**
+> 本定義書は本来 Supabase（PostgreSQL）を前提に記述している（ENUM / UUID / TIMESTAMPTZ 等）。
+> ただし現行の実装（`src/lib/db.ts`）は、この環境でネイティブビルド（better-sqlite3）が使えない制約により、
+> Node.js 標準の `node:sqlite`（SQLite ファイル `data/gran.db`）で稼働している。SQLite への写像ルールは以下のとおり。
+>
+> - **ENUM → CHECK 制約**：SQLite に ENUM 型が無いため、各 ENUM は `CHECK (col IN (...))` で表現する。
+> - **UUID → TEXT**：`id` は `randomUUID()` が生成した文字列を `TEXT PRIMARY KEY` に格納する。
+> - **TIMESTAMPTZ → TEXT（JST 文字列）**：日時は `datetime('now', '+9 hours')`（定数 `NOW_JST`）で JST 文字列として保存する。
+> - **BOOLEAN → INTEGER（0/1）**：真偽値は 0/1 で保存し、アプリ層で boolean へ変換する。
+>
+> また、カラムの論理名はこの定義書、物理名は現行実装（`src/lib/db.ts` / 各 `*Repository.ts`）を正とする。
+> 主な命名・実装差分は次のとおり（本文の該当箇所にも反映済み）。
+>
+> | 定義書の記載 | 現行実装 | 補足 |
+> | --- | --- | --- |
+> | `users.declared_tier` | **`users.declared_class`** | 物理名は `declared_class`。NULL 許容（登録フォームでは申告必須だが DB 制約上は NULL 可）。 |
+> | `tournaments.venue`（会場名＋コート情報を1カラム） | `tournaments.venue` ＋ **`court_info`** | 会場名とコート情報を別カラムに分離。 |
+> | （定義なし） | `tournaments.team_size_min` / **`team_size_max`** | 団体戦の最小／最大人数。大会ごとに指定。 |
+> | `tournament_matches.score` | **`score_detail`** | スコア文字列カラム（例: `6-4, 3-6, [10-8]`）。 |
+> | （定義なし / 詳細版 1.4 に別記） | `users.failed_login_attempts` / **`locked_until`** | アカウントロック用。3.1 に統合済み。 |
+>
+> **未実装テーブル**：`tournament_matches` / `tournament_results` / `yearly_rankings`（廃止）は、結果入力・ドロー・レーティング機能が未実装のため、現行の `src/lib/db.ts` にはテーブルが作成されていない（定義のみ）。
+
+---
 ## 修正の差分一覧（どこをどう変更したか）
 
 ```
 【修正対象テーブルと変更内容の概要】
 1. users（ユーザー管理）
    ├─ phone_number: 連絡先電話番号（登録必須化）
-   ├─ declared_tier（新規追加）: 登録時自己申告階級（8段階: A, AB, B, BC, C, CD, D, DE）
+   ├─ declared_class（新規追加）: 登録時自己申告階級（8段階: A, AB, B, BC, C, CD, D, DE / 物理名 declared_class）
    ├─ gran_level: 管理者が個別査定した初期値を格納（CHECK制約: 100〜999）
    ├─ is_level_calibrated（新規追加）: 管理者の初期査定完了フラグ（BOOLEAN）
    └─ rated_match_count（新規追加）: K値分岐（1〜5戦: K=32 / 6戦以降: K=16）用の消化試合数
@@ -23,9 +49,9 @@
 
 ### 1. `users` テーブルの差分
 
-* **`phone_number`**：緊急連絡および本人確認用として登録必須（NOT NULL）に変更。
-* **`declared_tier`（tournament_tier_enum / 新規追加）**：アカウント新規登録時の自己申告階級（8段階: A, AB, B, BC, C, CD, D, DE）。
-* **`gran_level`**：一律500固定ではなく、管理者が主観・実績（150〜850）で査定・設定できるように運用を変更。100〜999の範囲制約を追加。
+* **`phone_number`**：緊急連絡および本人確認用の連絡先。登録フォーム上は必須入力として案内するが、現行 DB 定義（`src/lib/db.ts`）では NULL 許容（既存データ移行・代理登録の猶予のため）。
+* **`declared_class`（tournament_tier_enum / 物理名 `declared_class` / 新規追加）**：アカウント新規登録時の自己申告階級（8段階: A, AB, B, BC, C, CD, D, DE）。NULL 許容。
+* **`gran_level`**：一律固定ではなく、管理者が主観・実績で査定・設定できるように運用を変更。`CHECK (gran_level BETWEEN 100 AND 999)` の範囲制約を追加。現行実装の DB デフォルトは `100`（登録時はアプリ側で自己申告階級の中央値を算出して明示設定する。`src/features/auth/utils/level.ts`）。
 * **`is_level_calibrated`（BOOLEAN / 新規追加）**：管理者が初期レベル査定を完了しているかを判定するフラグ（初期値: `false`）。
 * **`rated_match_count`（SMALLINT / 新規追加）**：イロレーティングの変動係数（初期プレースメント $K=32$ / 通常 $K=16$）を切り替えるための公式戦消化試合数カウンター（初期値: `0`）。
 
@@ -84,7 +110,7 @@ erDiagram
         varchar login_id UK
         varchar email UK
         varchar phone_number
-        varchar declared_tier "A-DE 8段階"
+        varchar declared_class "A-DE 8段階(NULL可)"
         varchar role
         boolean is_admin
         int gran_level "100-999"
@@ -320,9 +346,11 @@ CREATE TYPE notification_type_enum AS ENUM (
 | **申告階級** | `declared_tier` | tournament_tier_enum | YES | - | **自己申告階級（8段階: A, AB, B, BC, C, CD, D, DE）**
 
  |
-| **GRANレベル** | `gran_level` | SMALLINT | NO | - | **初期査定値（CHECK: 100〜999）**<br> |
+| **GRANレベル** | `gran_level` | SMALLINT | NO | - | 初期査定値（CHECK: 100〜999）。DBデフォルト `100`。登録時はアプリ側で自己申告階級の中央値を明示設定。 |
 | **初期レベル査定済フラグ** | `is_level_calibrated` | **BOOLEAN** | **NO** | - | **【変更】初期値: `false`（管理者査定完了で true）** |
 | **公式戦消化試合数** | `rated_match_count` | **SMALLINT** | **NO** | - | **【変更】初期値: `0`（K値判定用: 5戦未満=32, 以降=16）** |
+| **連続ログイン失敗回数** | `failed_login_attempts` | SMALLINT | NO | - | 初期値: `0`（ログイン成功で0リセット。詳細版 1.4 のアカウントロック用） |
+| **ロック解除予定日時** | `locked_until` | TIMESTAMPTZ | YES | - | 初期値: `NULL`（NULLまたは過去日時なら正常稼働。上限到達で事実上の永久ロック） |
 | 最終ログイン日時 | `last_login_at` | TIMESTAMPTZ | YES | - | 最終アクセス日時
 
  |
@@ -539,7 +567,9 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
-#### 3.9 tournament_matches（ドロー進行・スコア管理）
+#### 3.9 tournament_matches（ドロー進行・スコア管理）【未実装】
+
+> **【注意】結果入力・ドロー表作成機能が未実装のため、本テーブルは現行の `src/lib/db.ts` では作成されていない（定義のみ）。**
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -574,7 +604,9 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
-#### 3.10 tournament_results（大会結果・順位ポイント・GRANレベル変動記録）
+#### 3.10 tournament_results（大会結果・順位ポイント・GRANレベル変動記録）【未実装】
+
+> **【注意】結果入力・GRANレベル変動機能が未実装のため、本テーブルは現行の `src/lib/db.ts` では作成されていない（定義のみ）。**
 
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
@@ -674,3 +706,8 @@ WHERE is_paid = TRUE AND admin_status IN ('UNCONTACTED', 'IN_CONSULTATION');
 CREATE INDEX idx_users_gran_level ON users(gran_level DESC);
 
 ```
+
+
+
+
+
