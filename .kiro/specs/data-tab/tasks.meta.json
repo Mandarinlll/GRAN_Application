@@ -1,0 +1,614 @@
+{
+  "pbtResults": {
+    "2.6 レベル分布のプロパティテストを書く（`utils/__tests__/distribution.test.ts`）": {
+      "status": "passed",
+      "lastRunTimestamp": 1793003225513
+    },
+    "4.5 成績サマリ母集団分離・件数集計・履歴昇順のプロパティテストを書く（`server/__tests__/dataRepository.results.test.ts`）": {
+      "status": "passed",
+      "lastRunTimestamp": 1793003490213
+    },
+    "4.7 非公開プロフィール項目非露出のプロパティテストを書く（`server/__tests__/dataRepository.privacy.test.ts`）": {
+      "status": "passed",
+      "lastRunTimestamp": 1793003928374
+    }
+  },
+  "executionHistory": {
+    "1.1 vitest / fast-check を devDependency として追加しテスト設定を作成する": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002210607
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002225175
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002394745
+      }
+    ],
+    "1.2 ビューモデル型を定義する（`src/features/data/types/data.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002210901
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002226385
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002395332
+      }
+    ],
+    "2.1 ランキング整列・順位付与関数を実装する（`ranking.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002211075
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002400955
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002539505
+      }
+    ],
+    "2.3 チーム平均レート算出関数を実装する（`teamRating.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002211207
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002402330
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002541130
+      }
+    ],
+    "2.5 レベル分布の区間集計関数を実装する（`distribution.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002211330
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002403376
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002542029
+      }
+    ],
+    "2.8 期間フィルタ境界算出関数を実装する（`period.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002211562
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002404735
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002543418
+      }
+    ],
+    "2.9 出場履歴のソート・フィルタ関数を実装する（`entryHistory.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002211693
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002405916
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002544813
+      }
+    ],
+    "3. Checkpoint - utils のテストが通ることを確認": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002211820
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003279669
+      }
+    ],
+    "4.1 tournament_results 存在ガードを実装する（`tournamentResultsGuard.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002212014
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002554466
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002641983
+      }
+    ],
+    "4.2 ランキング・分布系の SELECT を実装する（`dataRepository.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002212209
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002647320
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002750274
+      }
+    ],
+    "4.3 tournament_results 依存の SELECT を実装する（`dataRepository.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002212636
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002754522
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002866481
+      }
+    ],
+    "5.1 ビューモデル組み立て関数を実装する": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002212884
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004019061
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004198323
+      }
+    ],
+    "6.1 /data ページ（Server・認証ガード）を実装する（`src/app/(user)/data/page.tsx`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002213038
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004205645
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004322903
+      }
+    ],
+    "6.2 navConfig の data 項目を有効化する（`src/components/layout/navConfig.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002213161
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002555643
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002640830
+      }
+    ],
+    "7.1 共通 UI（`EmptyState.tsx` / `ErrorRetry.tsx` / `RankRow.tsx`）を実装する": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002213614
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004204385
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004324034
+      }
+    ],
+    "7.2 画面内タブ親 DataTabView を実装する（`DataTabView.tsx`, \"use client\"）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002213784
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004705326
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004867689
+      }
+    ],
+    "7.3 個人ランキングパネルを実装する（`PersonalRankingPanel.tsx`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002213999
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004333223
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004534918
+      }
+    ],
+    "7.4 チームランキングパネルを実装する（`TeamRankingPanel.tsx`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002214160
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004334622
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004536304
+      }
+    ],
+    "7.5 レベル推移パネルを実装する（`LevelHistoryPanel.tsx`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002214302
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004336073
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004537705
+      }
+    ],
+    "7.6 出場履歴パネルを実装する（`EntryHistoryPanel.tsx`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002214514
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004337473
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004539011
+      }
+    ],
+    "7.7 レベル分布パネルを実装する（`LevelDistributionPanel.tsx`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002214662
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004338454
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004533666
+      }
+    ],
+    "7.8 成績サマリカードを実装する（`PerformanceSummaryCard.tsx`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002214795
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004545669
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004699836
+      }
+    ],
+    "8.1 ページ・ビューモデル・パネルを結線する": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002214919
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004881215
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793005047481
+      }
+    ],
+    "8.2 型チェックとテストを実行して検証する": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002215081
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793005053750
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793005110000
+      }
+    ],
+    "9. Final checkpoint - すべてのテストと型チェックが通ることを確認": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002215212
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793005115671
+      }
+    ],
+    "1. テスト基盤とビューモデル型の整備": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002395436
+      }
+    ],
+    "2. 純粋関数ユーティリティの実装（`src/features/data/utils/`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002544922
+      }
+    ],
+    "4. データアクセス層の実装（`src/features/data/server/`・SQL は Repository のみ）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793002866627
+      }
+    ],
+    "2.2 ランキング整列のプロパティテストを書く（`utils/__tests__/ranking.test.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003106274
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003260339
+      }
+    ],
+    "2.4 チーム平均レートのプロパティテストを書く（`utils/__tests__/teamRating.test.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003107872
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003261728
+      }
+    ],
+    "2.6 レベル分布のプロパティテストを書く（`utils/__tests__/distribution.test.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003109310
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003263101
+      }
+    ],
+    "2.7 tier 判定一致のプロパティテストを書く（`utils/__tests__/tier.test.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003110721
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003264534
+      }
+    ],
+    "2.10 出場履歴ソート・フィルタのプロパティテストを書く（`utils/__tests__/entryHistory.test.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003112118
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003265953
+      }
+    ],
+    "4.4 ランキング母集団除外・階級フィルタ・チーム順序のプロパティテストを書く（`server/__tests__/dataRepository.ranking.test.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003281554
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004011657
+      }
+    ],
+    "4.5 成績サマリ母集団分離・件数集計・履歴昇順のプロパティテストを書く（`server/__tests__/dataRepository.results.test.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003283451
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004008672
+      }
+    ],
+    "4.6 未整備フォールバックと副作用非発生のプロパティテストを書く（`server/__tests__/dataRepository.fallback.test.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003285356
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004006832
+      }
+    ],
+    "4.7 非公開プロフィール項目非露出のプロパティテストを書く（`server/__tests__/dataRepository.privacy.test.ts`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793003286847
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004010209
+      }
+    ],
+    "5. ビューモデル組み立て（`src/features/data/server/dataViewData.ts`・Server）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004198435
+      }
+    ],
+    "6. ルーティングとナビゲーション有効化": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004322997
+      }
+    ],
+    "6.3 認証ガードと navConfig のユニットテストを書く（`__tests__`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004546860
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004698684
+      }
+    ],
+    "7. パネルコンポーネントの実装（`src/features/data/components/`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004867819
+      }
+    ],
+    "7.9 パネルの分岐ユニットテストを書く（`components/__tests__`）": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793004880351
+      },
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793005048800
+      }
+    ],
+    "8. 結線と最終検証": [
+      {
+        "executionId": "efadf969-cdf9-49ac-ab7b-a1664446a36a",
+        "chatSessionId": "sess_6e1cbbca-5610-4d03-8d87-f3efd03fb227",
+        "timestamp": 1793005110089
+      }
+    ]
+  }
+}
