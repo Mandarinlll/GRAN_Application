@@ -24,7 +24,7 @@ export const NAV_ITEMS: NavItemDef[] = [
     icon: Calendar,
     implemented: true,
   },
-  { id: "data", label: "データ", href: "#", icon: Database, implemented: false },
+  { id: "data", label: "データ", href: "/data", icon: Database, implemented: true },
   {
     id: "notifications",
     label: "通知",
