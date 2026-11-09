@@ -2,9 +2,10 @@
 //
 // Application Service を、その SQLite リポジトリ実装と SqliteUnitOfWork に配線する唯一の場所。
 // インフラ実装クラス（Sqlite*Repository）は他 feature から直接 new せず、必ずここで配線する。
-// entries パイロット（FEAT-002）では、tournaments / teams / auth / notifications の本格 OOP 化が
-// 未了のため、entries が必要とする最小依存インターフェースを既存の公開リポジトリ関数の上に
-// 薄く配線する（§8 クロスインポート健全化: 他 feature の内部実装には触れず公開関数のみ利用）。
+// tournaments / teams / auth / notifications はいずれも本格 OOP 化済み（FEAT-001〜005）。
+// entries が必要とする最小依存インターフェースは、各 feature の本物の Sqlite リポジトリ／
+// サービス実装へ委譲して満たす（§8 クロスインポート健全化: 他 feature の内部実装には触れず、
+// このコンポジションルートでのみ配線する）。
 
 import { db } from "@/lib/db";
 import { SqliteUnitOfWork } from "@/lib/unitOfWork";
