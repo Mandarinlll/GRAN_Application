@@ -17,7 +17,7 @@ import type {
   TournamentView,
   UserRepository,
 } from "@/features/entries/domain/dependencies";
-import { findTournamentWithStats } from "@/features/tournaments/server/tournamentRepository";
+import { SqliteTournamentRepository } from "@/features/tournaments/infrastructure/SqliteTournamentRepository";
 import {
   findTeamById,
   findTeamByLeader,
@@ -37,11 +37,14 @@ export function createUnitOfWork(): SqliteUnitOfWork {
 
 // --- entries が必要とする最小依存の Sqlite 配線（既存公開関数の上に薄く載せる） ---
 
+// tournaments の本物の Repository 実装。entries の最小依存（TournamentView）は
+// Tournament エンティティの受付可否・残枠判定をそのまま委譲して満たす（§8-4 一方向 import）。
+const sqliteTournamentRepository = new SqliteTournamentRepository(db);
+
 const tournamentRepository: TournamentRepository = {
   findById(tournamentId): TournamentView | null {
-    const t = findTournamentWithStats(tournamentId);
+    const t = sqliteTournamentRepository.findById(tournamentId);
     if (!t) return null;
-    const capacity = t.capacity;
     return {
       id: t.id,
       title: t.title,
@@ -50,10 +53,10 @@ const tournamentRepository: TournamentRepository = {
       entryFee: t.entryFee,
       teamSizeMin: t.teamSizeMin,
       teamSizeMax: t.teamSizeMax,
-      isOpen: () => t.status === "OPEN",
-      remaining: (confirmedCount: number) =>
-        Math.max(0, capacity - confirmedCount),
-      canAcceptEntry: (confirmedCount: number) => confirmedCount < capacity,
+      isOpen: () => t.isOpen(),
+      remaining: (confirmedCount: number) => t.remaining(confirmedCount),
+      canAcceptEntry: (confirmedCount: number) =>
+        t.canAcceptEntry(confirmedCount),
     };
   },
 };
