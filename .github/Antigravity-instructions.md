@@ -51,7 +51,9 @@ src/
    - `app` $\rightarrow$ `features` $\rightarrow$ `components / lib / types / utils`
 2. **Feature間の直接クロスインポート禁止**:
    - `features/tournaments` から `features/entries` のプライベートな内部モジュールを直接インポートしてはなりません。
-   - 機能間で共有が必要なロジック・型は、ルートの `components` / `types` / `utils` へ昇格させるか、Props / Context 経由で注入してください。
+   - 機能間で共有が必要なロジック・型は、ルートの `components` / `types` / `utils` / `domain`（共有ドメイン基盤: VO・共通例外・基底クラス）/ `lib`（例: `lib/unitOfWork`）/ `server`（コンポジションルート）へ昇格させるか、Props / Context 経由で注入してください。
+
+> バックエンドのクラス構造・レイヤリング（Entity / VO / Domain Service / Repository / Application Service）は `docs/oop-architecture.md` に従うこと。
 
 ---
 
@@ -59,7 +61,7 @@ src/
 
 | 対象 | 命名規則 | 適用例 | 備考 |
 | :--- | :--- | :--- | :--- |
-| **ディレクトリ名** | `kebab-case` | `tournament-detail/`, `entry-form/` | 小文字ハイフン区切り |
+| **ディレクトリ名** | `kebab-case` | `tournament-detail/`, `entry-form/` | 小文字ハイフン区切り。ただしバックエンド OOP レイヤ用ディレクトリ `domain` / `application` / `infrastructure`（および既存の `server` / `types` / `utils`）は `kebab-case` の例外として単一小文字語とする（`docs/oop-architecture.md` §3）。 |
 | **Reactコンポーネント** | `PascalCase` | `TournamentCard.tsx`, `CancelModal.tsx` | ファイル名とコンポーネント名を一致 |
 | **カスタムフック** | `camelCase` | `useTournamentList.ts`, `useAuth.ts` | 接頭辞 `use` を必須 |
 | **ユーティリティ・関数** | `camelCase` | `calculateCancelFee()`, `formatDate()` | 原則として「動詞＋名詞」で開始 |
@@ -239,6 +241,8 @@ export function calculateCancelFee(eventDate: Date, cancelDate: Date, entryFee: 
 }
 ```
 
+> **実装は `cancelFee.ts`（移設後は `CancelFeePolicy`）を正とする（`Math.round` ／ 当日 0 起点）。本サンプルの `Math.ceil` ・ `daysBefore >= 3 && daysBefore <= 7` は非規範（non-normative）であり、実装してはならない（`docs/oop-architecture.md` §10 ステップ6 / Finding 8）。**
+
 ### 5.2 GRANレベル（イロレーティング）更新規約
 - レート範囲制約: **100 〜 999**（CHECK制約に準拠）。
 - 消化公式戦数（`rated_match_count`）による変動係数 $K$ の切り替え：
@@ -280,6 +284,8 @@ export function calculateNewGranLevel(
 ---
 
 ## 6. データベース・サーバーサイド実装規約
+
+> トランザクション境界（Unit of Work）・Repository interface・手動 DI（コンポジションルート）の実装規約は `docs/oop-architecture.md` を参照すること。
 
 ### 6.1 トランザクション & 排他制御の徹底
 以下の処理はデータ不整合を防ぐため、必ずDBトランザクション（Supabase RPC または PostgreSQL トランザクション）内で実行してください。

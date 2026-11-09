@@ -137,7 +137,7 @@ export interface EntryRepository {
   countConfirmed(tournamentId: string): number;                 // ★新設（確定数 COUNT。現行はインライン）
   countActiveWaitlist(tournamentId: string): number;            // ← 同名
   // --- 確定エントリー（UoW 内で呼ばれる単一操作へ分解） ---
-  insertConfirmed(entry: Entry, members: EntryMember[]): void;   // ← createConfirmedEntry の INSERT 部（Entry/EntryMember は書き込み系エンティティ）
+  insertConfirmed(entry: Entry, members: EntryMember[]): string; // ← createConfirmedEntry の INSERT 部。採番した entries.id を返す（完了画面・通知で現行どおり entryId を使うため。他の分解メソッドは void）
   updateStatus(entryId: string, status: EntryStatus): void;      // ← cancelEntry の UPDATE 部
   replaceMembers(entryId: string, members: EntryMember[]): void; // ← replaceEntryMembers（DELETE+INSERT+updated_at）
   insertCancellation(cancellation: Cancellation): void;          // ← cancelEntry の cancellations INSERT 部
@@ -272,13 +272,29 @@ export class PermissionDeniedError extends DomainError {
   readonly code = "PERMISSION_DENIED";
   constructor(readonly context: PermissionContext) { super(); }
 }
-export class NotFoundError extends DomainError { readonly code = "NOT_FOUND"; }
-export class MemberCompositionError extends DomainError { readonly code = "INVALID_MEMBERS"; }
+// NotFoundError は context（どのエンティティが見つからないか）を保持し、アダプタが文脈別文言へ変換する。
+export type NotFoundContext = "entry" | "user" | "tournament" | "team";
+export class NotFoundError extends DomainError {
+  readonly code = "NOT_FOUND";
+  constructor(readonly context: NotFoundContext) { super(); }
+}
+// チーム必須種目で teamId 未指定（現行「申込チームを指定してください。」）。入力前提エラーを
+// アダプタの早期 return から DomainError 化して Application Service へ寄せたもの（文言はアダプタで保存）。
+export class TeamRequiredError extends DomainError { readonly code = "TEAM_REQUIRED"; }
+// メンバー構成（人数レンジ）違反。現行「出場メンバーは N〜M 名で登録してください。」の N / M を保持する。
+export class MemberCompositionError extends DomainError {
+  readonly code = "INVALID_MEMBERS";
+  constructor(readonly min: number, readonly max: number) { super(); }
+}
+// メンバー変更期限切れ（現行「メンバー変更は開催3日前までです。期限を過ぎています。」）。
+export class MemberUpdateDeadlineError extends DomainError { readonly code = "MEMBER_UPDATE_DEADLINE"; }
 export class ConflictConfirmationRequiredError extends DomainError {
   readonly code = "CONFLICT_CONFIRM";
   constructor(readonly conflictTournaments: string[]) { super(); }
 }
 ```
+
+> 実装補足（FEAT-002 で確定・ビヘイビア保存）: `NotFoundError` は `context: NotFoundContext` を必須引数に持ち、アダプタ `toActionResult` が「エントリーが見つかりません。」「大会が見つかりません。」等の文脈別文言へ変換する。`TeamRequiredError`・`MemberUpdateDeadlineError`・`(min, max)` を持つ `MemberCompositionError` は、現行アダプタが早期 return していた**入力・前提エラー**を DomainError 化して Application Service へ寄せたものである（§4.2 注の「入力検証・前提エラー」をドメイン例外として表現し、文言はアダプタで 1 バイト一致保存）。いずれも権限例外（`PermissionDeniedError`）とは別クラスとする。
 
 ### 4.2 層ごとのエラー規約（各失敗操作の具体仕様）
 

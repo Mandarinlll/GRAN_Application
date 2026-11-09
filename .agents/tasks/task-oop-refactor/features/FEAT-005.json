@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-005",
+  "type": "docs",
+  "description": "Final documentation update (design §10 step 6): make docs/oop-architecture.md match the implemented result, and add the regulation revisions to .github/Antigravity-instructions.md so the design standard is referenced and the §1.2 promotion targets / §2 directory naming / §5.1 cancel-fee sample / §6 server section are reconciled with what was built (including carryover Finding B's §2 annotation). Pure documentation; no runtime code changes. Runs LAST so the docs reflect the final code.",
+  "status": "completed",
+  "steps": [
+    "Read the final state of docs/oop-architecture.md and .github/Antigravity-instructions.md FIRST, plus this task's completed FEAT findings, so the docs describe what was actually implemented (not the plan).",
+    "Reconcile docs/oop-architecture.md with the implemented result: update any file paths, class names, or method names that drifted during FEAT-002..004 so the document is accurate (behavior-preserving description). Do not introduce new design decisions.",
+    "Edit .github/Antigravity-instructions.md §1.2: in the 'Feature間の直接クロスインポート禁止' item, change the promotion-targets sentence from 'ルートの components / types / utils へ昇格させるか、Props / Context 経由で注入してください。' to additionally list domain (shared domain foundation: VO / common exceptions / base classes), lib (e.g. lib/unitOfWork), and server (composition root) — exactly per design §10 step 6 wording.",
+    "Edit .github/Antigravity-instructions.md §1.2: append the reference sentence (just before §2 '命名規則'): that backend class structure / layering (Entity/VO/Domain Service/Repository/Application Service) follows docs/oop-architecture.md.",
+    "[Carryover Finding B] Edit .github/Antigravity-instructions.md §2: annotate the directory-name row (kebab-case) that backend OOP layer directories domain/application/infrastructure (and existing server/types/utils) are single lowercase words, at the same granularity as the §1.2 extension.",
+    "Edit .github/Antigravity-instructions.md §6 (データベース・サーバーサイド実装規約) opening (just before §6.1): add the reference that transaction boundary / Repository interface / manual DI implementation rules are in docs/oop-architecture.md.",
+    "Edit .github/Antigravity-instructions.md §5.1: add the note under the calculateCancelFee sample that the implementation (cancelFee.ts, post-move CancelFeePolicy) is authoritative (Math.round / day-0 origin) and the sample's Math.ceil / daysBefore>=3 && <=7 is non-normative and must not be implemented (design §10 step 6 / Finding 8)."
+  ],
+  "acceptance_criteria": [
+    "docs/oop-architecture.md paths/names match the implemented code.",
+    ".github/Antigravity-instructions.md §1.2 lists domain/lib/server as promotion targets and references docs/oop-architecture.md; §2 has the domain/application/infrastructure lowercase annotation (Finding B); §6 references docs/oop-architecture.md; §5.1 has the Math.round/non-normative note.",
+    "npx tsc --noEmit exits 0; npm test passes; npm run build succeeds (external SQLite-lock caveat per context.json) — docs-only change must not break anything."
+  ],
+  "verification": [
+    "npx tsc --noEmit  (expect exit 0 — docs-only, nothing broken)",
+    "npm test  (expect all pass, Property 7 still passes)",
+    "npm run build  (expect success; apply external-lock caveat on SQLite 'database is locked')"
+  ],
+  "blocked_reason": null,
+  "findings": "最終ドキュメント更新（設計 §10 ステップ6）を完了。純ドキュメント変更のみ、ランタイムコードは無改修。3 ゲートすべて green（npx tsc --noEmit=exit0 / npm test=98 passed・17 files・0 failed、dataRepository.results Property 7 も pass / npm run build=exit0 成功: 今回は外部 SQLite ロックに阻まれなかった。build 実行時も 13:48 起動の node.exe 3 プロセスは稼働中だったが、今回は /data のページデータ収集まで通った。ユーザープロセスは kill していない）。\n\n【docs/oop-architecture.md の実装整合（FEAT-002..004 のドリフト吸収・ビヘイビア保存の記述更新のみ、新規設計判断なし）】\n- §2.4 EntryRepository interface: insertConfirmed の戻り値を void -> string に訂正（実装は採番した entries.id を返す。FEAT-002 で確定した意図的な契約。他の分解メソッドは void のまま）。\n- §4.1 DomainError 階層: 実装 src/domain/errors.ts に合わせて記述を更新。NotFoundError に NotFoundContext('entry'|'user'|'tournament'|'team') 必須引数を付与、MemberCompositionError を (min,max) 保持コンストラクタ付きへ、TeamRequiredError('TEAM_REQUIRED') / MemberUpdateDeadlineError('MEMBER_UPDATE_DEADLINE') を追記。これらは現行アダプタが早期 return していた入力・前提エラーを DomainError 化して Application Service へ寄せたもの（文言はアダプタで 1 バイト一致保存）という実装補足も追記。\n- GranLevel は設計どおり src/domain/GranLevel.ts に実在（ドリフトなし、変更不要）。\n\n【.github/Antigravity-instructions.md の規約改訂（設計 §10 ステップ6 の 5 項）】\n- §1.2「Feature間の直接クロスインポート禁止」の昇格先列挙に domain（共有ドメイン基盤: VO・共通例外・基底クラス）/ lib（例 lib/unitOfWork）/ server（コンポジションルート）を追記。\n- §1.2 末尾（§2 直前）に『バックエンドのクラス構造・レイヤリングは docs/oop-architecture.md に従う』の参照一文を追記。\n- §2 命名規則のディレクトリ名行（kebab-case）に、domain/application/infrastructure（および既存 server/types/utils）が kebab-case の例外として単一小文字語である旨を注記（Carryover Finding B・設計 §3 参照）。\n- §6 冒頭（§6.1 直前）に『トランザクション境界・Repository interface・手動 DI の実装規約は docs/oop-architecture.md 参照』を追記。\n- §5.1 の calculateCancelFee サンプル直下に『実装（cancelFee.ts / 移設後 CancelFeePolicy）を正とする（Math.round・当日0起点）。本サンプルの Math.ceil・daysBefore>=3&&<=7 は非規範であり実装してはならない』の注記（Finding 8）を追記。\n\n【OOP リファクタリング全体の完了状態（後続・保守者向け）】\n- 本 FEAT で FEAT-001..005 の全 FEAT が completed。規約（Antigravity-instructions.md）と設計（docs/oop-architecture.md）は実装コードと整合済み。今後のバックエンドコーディングは規約 §1.2/§2/§6 の参照先として docs/oop-architecture.md を正とする。"
+}
