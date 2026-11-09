@@ -19,7 +19,8 @@ import type {
 } from "@/features/entries/domain/dependencies";
 import { SqliteTournamentRepository } from "@/features/tournaments/infrastructure/SqliteTournamentRepository";
 import { SqliteTeamRepository } from "@/features/teams/infrastructure/SqliteTeamRepository";
-import { logNotification } from "@/features/notifications/server/notificationRepository";
+import { SqliteNotificationRepository } from "@/features/notifications/infrastructure/SqliteNotificationRepository";
+import { NotificationService as RealNotificationService } from "@/features/notifications/application/NotificationService";
 import { SqliteUserRepository } from "@/features/auth/infrastructure/SqliteUserRepository";
 import { AuthApplicationService } from "@/features/auth/application/AuthApplicationService";
 import type { PasswordHasher } from "@/features/auth/application/AuthApplicationService";
@@ -92,9 +93,15 @@ const userRepository: UserRepository = {
   },
 };
 
+// notifications の本物の Service/Repository 実装。entries の最小依存（NotificationService）は
+// これへ委譲する（FEAT-002 のスタブを置換・§8 一方向 import）。
+const realNotificationService = new RealNotificationService(
+  new SqliteNotificationRepository(db),
+);
+
 const notificationService: NotificationService = {
   log(input) {
-    logNotification(input);
+    realNotificationService.log(input);
   },
 };
 
