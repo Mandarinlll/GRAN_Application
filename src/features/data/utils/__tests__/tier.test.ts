@@ -9,7 +9,7 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 
-import { granLevelToTier } from "@/features/auth/utils/classLabel";
+import { GranLevel } from "@/domain/GranLevel";
 import { rankUsers } from "@/features/data/utils/ranking";
 import { buildDistribution } from "@/features/data/utils/distribution";
 import type { RankableUser } from "@/features/data/types/data";
@@ -35,7 +35,7 @@ describe("Property 4: tier 判定が granLevelToTier と一致", () => {
     fc.assert(
       fc.property(granLevelArb, (level) => {
         const [ranked] = rankUsers([singleUser(level)]);
-        expect(ranked.tier).toBe(granLevelToTier(level));
+        expect(ranked.tier).toBe(new GranLevel(level).toTier());
       }),
       { numRuns: 100 },
     );
@@ -44,7 +44,7 @@ describe("Property 4: tier 判定が granLevelToTier と一致", () => {
   it("buildDistribution では level が tier === granLevelToTier(level) の区間に落ちる", () => {
     fc.assert(
       fc.property(granLevelArb, (level) => {
-        const expectedTier = granLevelToTier(level);
+        const expectedTier = new GranLevel(level).toTier();
         const bins = buildDistribution([level]);
 
         // 件数が入った区間は 1 つだけで、その tier は期待値と一致する。

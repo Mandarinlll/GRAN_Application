@@ -22,8 +22,12 @@ import {
   findTeamById,
   findTeamByLeader,
 } from "@/features/teams/server/teamRepository";
-import { findUserById } from "@/features/auth/server/userRepository";
 import { logNotification } from "@/features/notifications/server/notificationRepository";
+import { SqliteUserRepository } from "@/features/auth/infrastructure/SqliteUserRepository";
+import { AuthApplicationService } from "@/features/auth/application/AuthApplicationService";
+import type { PasswordHasher } from "@/features/auth/application/AuthApplicationService";
+import { CurrentUserService } from "@/features/auth/application/CurrentUserService";
+import { hashPassword, verifyPassword } from "@/lib/password";
 
 // 共有の Unit of Work を生成する。各 Application Service はこれを注入して
 // トランザクション境界（§6.1）を得る。
@@ -67,9 +71,12 @@ const teamRepository: TeamRepository = {
   },
 };
 
+// auth の本物の UserRepository 実装。entries の最小依存（UserView）もこれ経由で解決する。
+const sqliteUserRepository = new SqliteUserRepository(db);
+
 const userRepository: UserRepository = {
   findById(userId) {
-    const user = findUserById(userId);
+    const user = sqliteUserRepository.findById(userId);
     if (!user) return null;
     return {
       id: user.id,
@@ -97,4 +104,22 @@ export function createEntryApplicationService(): EntryApplicationService {
     userRepository,
     notificationService,
   );
+}
+
+// --- auth（FEAT-003 で本格 OOP 化） ---
+
+// bcrypt ベースのパスワードハッシュ（lib/password の薄いアダプタ）。
+const passwordHasher: PasswordHasher = {
+  hash: hashPassword,
+  verify: verifyPassword,
+};
+
+// 認証ユースケースの Application Service を配線して返す。
+export function createAuthApplicationService(): AuthApplicationService {
+  return new AuthApplicationService(sqliteUserRepository, passwordHasher);
+}
+
+// 現在ユーザー解決サービスを配線して返す。
+export function createCurrentUserService(): CurrentUserService {
+  return new CurrentUserService(sqliteUserRepository);
 }

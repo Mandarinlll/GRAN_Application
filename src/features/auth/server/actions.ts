@@ -1,7 +1,12 @@
 "use server";
 
-// 認証系の Server Actions（新規登録・ログイン・ログアウト）。
-// クライアントのフォームから直接呼び出され、DB保存とセッション発行を担う。
+// 認証系の Server Actions（新規登録・ログイン・ログアウト）の薄いアダプタ。
+// クライアントのフォームから直接呼び出され、セッション発行と画面遷移を担う。
+//
+// OOP 化（oop-architecture.md §2.6）に伴い、ドメイン判断（メール重複・資格照合・
+// ロック/停止判定・失敗記録・初期レベル算出）は AuthApplicationService へ移設した。
+// 本アダプタの責務は「セッション取得/Zod 検証 + コンポジションルートからの配線 +
+// 結果 → AuthActionState 変換 + Next.js 固有処理（Cookie 発行・redirect）」に限定する。
 //
 // セキュリティ方針（コーディング規約 7）:
 //  - 入力は Zod で検証し、失敗時はフィールド単位のエラーを返す。
@@ -9,19 +14,9 @@
 //  - ログイン失敗はアカウント存在有無を隠蔽する汎用メッセージで統一する。
 
 import { redirect } from "next/navigation";
-import { hashPassword, verifyPassword } from "@/lib/password";
 import { setSessionCookie, clearSessionCookie } from "@/lib/session";
 import { loginSchema, registerSchema } from "@/features/auth/types/schema";
-import { estimateInitialGranLevel } from "@/features/auth/utils/level";
-import {
-  createUser,
-  emailExists,
-  findRowByIdentifier,
-  isLocked,
-  registerFailedLogin,
-  registerSuccessfulLogin,
-  rowToUser,
-} from "@/features/auth/server/userRepository";
+import { createAuthApplicationService } from "@/server/container";
 
 // フォーム送信の結果型。成功時は redirect するため、実質エラー時のみ返る。
 export interface AuthActionState {
@@ -78,23 +73,10 @@ export async function registerAction(
 
   const data = parsed.data;
 
-  // メール重複チェック。
-  if (emailExists(data.email)) {
-    return {
-      ok: false,
-      message: "登録に失敗しました。",
-      fieldErrors: { email: "このメールアドレスは既に登録されています" },
-      values: keep,
-    };
-  }
-
   try {
-    const passwordHash = await hashPassword(data.password);
-    const granLevel = estimateInitialGranLevel(data.declaredClass);
-
-    const user = createUser({
+    const outcome = await createAuthApplicationService().register({
       email: data.email,
-      passwordHash,
+      password: data.password,
       realName: `${data.lastName} ${data.firstName}`,
       kanaName: `${data.lastKana} ${data.firstKana}`,
       nickname: data.nickname,
@@ -102,15 +84,24 @@ export async function registerAction(
       birthDate: data.birthDate,
       phoneNumber: data.phoneNumber ? data.phoneNumber : null,
       declaredClass: data.declaredClass,
-      granLevel,
     });
+
+    // メール重複チェック。
+    if (outcome.kind === "emailTaken") {
+      return {
+        ok: false,
+        message: "登録に失敗しました。",
+        fieldErrors: { email: "このメールアドレスは既に登録されています" },
+        values: keep,
+      };
+    }
 
     // 登録完了後、そのままログイン状態にしてセッションを発行する。
     await setSessionCookie({
-      sub: user.id,
-      loginId: user.loginId,
-      role: user.role,
-      isAdmin: user.isAdmin,
+      sub: outcome.user.id,
+      loginId: outcome.user.loginId,
+      role: outcome.user.role,
+      isAdmin: outcome.user.isAdmin,
     });
   } catch {
     return {
@@ -151,13 +142,18 @@ export async function loginAction(
     values: keep,
   };
 
-  const row = findRowByIdentifier(identifier);
-  if (!row) {
+  const outcome = await createAuthApplicationService().login(
+    identifier,
+    password,
+  );
+
+  // 存在しない / パスワード不一致は汎用エラーで統一する。
+  if (outcome.kind === "invalidCredentials") {
     return genericError;
   }
 
   // ロック中の案内（requirements-detail-user.md 1.4）。
-  if (isLocked(row)) {
+  if (outcome.kind === "locked") {
     return {
       ok: false,
       message:
@@ -167,7 +163,7 @@ export async function loginAction(
   }
 
   // 停止アカウントの拒否。
-  if (row.status === "SUSPENDED") {
+  if (outcome.kind === "suspended") {
     return {
       ok: false,
       message: "このアカウントは現在利用できません。管理者へお問い合わせください。",
@@ -175,20 +171,12 @@ export async function loginAction(
     };
   }
 
-  const valid = await verifyPassword(password, row.password_hash);
-  if (!valid) {
-    registerFailedLogin(row.id);
-    return genericError;
-  }
-
-  // 認証成功。失敗カウントリセット + セッション発行。
-  registerSuccessfulLogin(row.id);
-  const user = rowToUser(row);
+  // 認証成功。セッション発行。
   await setSessionCookie({
-    sub: user.id,
-    loginId: user.loginId,
-    role: user.role,
-    isAdmin: user.isAdmin,
+    sub: outcome.user.id,
+    loginId: outcome.user.loginId,
+    role: outcome.user.role,
+    isAdmin: outcome.user.isAdmin,
   });
 
   redirect("/");
