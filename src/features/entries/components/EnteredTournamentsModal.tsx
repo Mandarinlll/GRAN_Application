@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { X, Bookmark, Calendar, MapPin, Clock, AlertCircle, Users2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { StatusBadge, EntryKindBadge } from "@/components/ui/StatusBadge";
 import { TierBadge, CategoryBadge } from "@/features/tournaments/components/badges";
 import { formatEventDate, formatYen } from "@/utils/date";
 import type { EntrySummary } from "@/features/entries/types/entry";
@@ -224,23 +225,19 @@ function EntryRow({
             {entry.tournamentTitle}
           </h4>
         </div>
-        {/* 状態バッジ */}
+        {/* 状態バッジ（共通 StatusBadge / EntryKindBadge へ集約） */}
         {isWaiting ? (
-          <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 tabular-nums">
+          <EntryKindBadge kind="WAITING" className="shrink-0 tabular-nums">
             <Clock className="w-3 h-3" />#{entry.queueNumber}
-          </span>
+          </EntryKindBadge>
         ) : isCancelled ? (
-          <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-600">
-            キャンセル済
-          </span>
+          <EntryKindBadge kind="CANCELLED" className="shrink-0" />
         ) : entry.isPast ? (
-          <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-600">
+          <StatusBadge tone="neutral" className="shrink-0">
             終了
-          </span>
+          </StatusBadge>
         ) : (
-          <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            確定
-          </span>
+          <EntryKindBadge kind="CONFIRMED" className="shrink-0" />
         )}
       </div>
 

@@ -28,6 +28,7 @@ import {
   type TournamentCategory,
   type TournamentTier,
 } from "@/features/tournaments/types/tournament";
+import { CAPACITY_STATUS_LABEL } from "@/components/ui/statusLabels";
 import type {
   FilterState,
   SortOrder,
@@ -58,8 +59,8 @@ const TIER_OPTIONS: TournamentTier[] = ["A", "AB", "B", "BC", "C", "CD", "D", "D
 const STATUS_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
   { value: "all", label: "すべての状況" },
   { value: "OPEN", label: "受付中 (空きあり)" },
-  { value: "FEW", label: "残りわずか" },
-  { value: "WAITLIST", label: "満員 (キャンセル待ち)" },
+  { value: "FEW", label: CAPACITY_STATUS_LABEL.FEW },
+  { value: "WAITLIST", label: CAPACITY_STATUS_LABEL.FULL },
   { value: "ENTERED", label: "エントリー中のみ" },
 ];
 

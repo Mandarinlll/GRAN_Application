@@ -14,6 +14,7 @@
 import { cn } from "@/lib/utils";
 import type { CapacityStatus } from "@/features/tournaments/utils/capacity";
 import type { TournamentStatus } from "@/features/tournaments/types/tournament";
+import { CAPACITY_STATUS_LABEL } from "@/components/ui/statusLabels";
 
 type Tone = "open" | "few" | "full" | "entered" | "closed";
 
@@ -45,9 +46,11 @@ function resolveTone(params: {
 
   if (isEntered) return { tone: "entered", label: "自チーム申込中" };
 
-  if (capacityStatus === "FULL") return { tone: "full", label: "満員 (キャンセル待ち)" };
-  if (capacityStatus === "FEW") return { tone: "few", label: "残りわずか" };
-  return { tone: "open", label: "空き枠あり" };
+  if (capacityStatus === "FULL")
+    return { tone: "full", label: CAPACITY_STATUS_LABEL.FULL };
+  if (capacityStatus === "FEW")
+    return { tone: "few", label: CAPACITY_STATUS_LABEL.FEW };
+  return { tone: "open", label: CAPACITY_STATUS_LABEL.OPEN };
 }
 
 // トーンごとのバー色・テキスト色。
