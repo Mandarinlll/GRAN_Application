@@ -12,8 +12,12 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import fc from "fast-check";
 
 import { db } from "@/lib/db";
-import { granLevelToTier } from "@/features/auth/utils/classLabel";
+import { GranLevel } from "@/domain/GranLevel";
 import type { TournamentTier } from "@/features/tournaments/types/tournament";
+
+// data → auth のクロス import を避け、共有ドメイン基盤の GranLevel.toTier() を用いる（§8-3）。
+const granLevelToTier = (granLevel: number): TournamentTier =>
+  new GranLevel(granLevel).toTier();
 import {
   listPersonalRanking,
   listTierRanking,

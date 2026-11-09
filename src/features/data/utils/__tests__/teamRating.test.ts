@@ -10,7 +10,11 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 
-import { computeTeamRating } from "@/features/data/utils/teamRating";
+import { TeamRatingService } from "@/features/data/domain/TeamRatingService";
+
+const teamRatingService = new TeamRatingService();
+const computeTeamRating = (memberLevels: number[]) =>
+  teamRatingService.computeTeamRating(memberLevels);
 
 const MIN_GRAN_LEVEL = 100;
 const MAX_GRAN_LEVEL = 999;

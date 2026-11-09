@@ -10,9 +10,15 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 
 import { GranLevel } from "@/domain/GranLevel";
-import { rankUsers } from "@/features/data/utils/ranking";
-import { buildDistribution } from "@/features/data/utils/distribution";
+import { RankingService } from "@/features/data/domain/RankingService";
+import { LevelDistributionService } from "@/features/data/domain/LevelDistributionService";
 import type { RankableUser } from "@/features/data/types/data";
+
+const rankingService = new RankingService();
+const distributionService = new LevelDistributionService();
+const rankUsers = (users: RankableUser[]) => rankingService.rankUsers(users);
+const buildDistribution = (levels: number[]) =>
+  distributionService.buildDistribution(levels);
 
 // 100〜999 の有効な GRANレベルを生成するジェネレータ。
 const granLevelArb = fc.integer({ min: 100, max: 999 });

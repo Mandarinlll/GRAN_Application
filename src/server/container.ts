@@ -25,6 +25,8 @@ import { AuthApplicationService } from "@/features/auth/application/AuthApplicat
 import type { PasswordHasher } from "@/features/auth/application/AuthApplicationService";
 import { CurrentUserService } from "@/features/auth/application/CurrentUserService";
 import { hashPassword, verifyPassword } from "@/lib/password";
+import { SqliteDataRepository } from "@/features/data/infrastructure/SqliteDataRepository";
+import { DataViewService } from "@/features/data/application/DataViewService";
 
 // 共有の Unit of Work を生成する。各 Application Service はこれを注入して
 // トランザクション境界（§6.1）を得る。
@@ -125,4 +127,11 @@ export function createAuthApplicationService(): AuthApplicationService {
 // 現在ユーザー解決サービスを配線して返す。
 export function createCurrentUserService(): CurrentUserService {
   return new CurrentUserService(sqliteUserRepository);
+}
+
+// --- data（FEAT-003 で本格 OOP 化） ---
+
+// データタブのビューモデル組み立てサービスを配線して返す。
+export function createDataViewService(): DataViewService {
+  return new DataViewService(new SqliteDataRepository(db));
 }

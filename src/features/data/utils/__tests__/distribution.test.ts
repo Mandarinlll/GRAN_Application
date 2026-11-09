@@ -1,8 +1,12 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import { buildDistribution } from "@/features/data/utils/distribution";
+import { LevelDistributionService } from "@/features/data/domain/LevelDistributionService";
 import type { TournamentTier } from "@/features/tournaments/types/tournament";
+
+const distributionService = new LevelDistributionService();
+const buildDistribution = (levels: number[]) =>
+  distributionService.buildDistribution(levels);
 
 // 8 段階の規定階級境界（設計 / requirements 7.2 に一致）。
 //   A:850〜999 / AB:750〜849 / B:650〜749 / BC:550〜649 /

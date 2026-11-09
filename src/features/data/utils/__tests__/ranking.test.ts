@@ -7,8 +7,11 @@
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 
-import { rankUsers } from "@/features/data/utils/ranking";
+import { RankingService } from "@/features/data/domain/RankingService";
 import type { RankableUser } from "@/features/data/types/data";
+
+const rankingService = new RankingService();
+const rankUsers = (users: RankableUser[]) => rankingService.rankUsers(users);
 
 // RankableUser を生成するジェネレータ。
 // - granLevel: 100〜999（査定済ユーザーの有効レンジ）

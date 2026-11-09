@@ -14,13 +14,21 @@ import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 
 import {
-  sortEntries,
-  filterEntries,
+  EntryHistoryService,
   type EntrySortKey,
   type SortDirection,
   type EntryFilter,
-} from "@/features/data/utils/entryHistory";
+} from "@/features/data/domain/EntryHistoryService";
 import type { EntryHistoryRow, ResultRank } from "@/features/data/types/data";
+
+const entryHistoryService = new EntryHistoryService();
+const sortEntries = (
+  rows: EntryHistoryRow[],
+  key: EntrySortKey,
+  direction: SortDirection,
+) => entryHistoryService.sortEntries(rows, key, direction);
+const filterEntries = (rows: EntryHistoryRow[], filter?: EntryFilter) =>
+  entryHistoryService.filterEntries(rows, filter);
 import type {
   TournamentCategory,
   TournamentTier,
