@@ -29,12 +29,36 @@ export class TournamentNotOpenError extends DomainError {
   readonly code = "TOURNAMENT_NOT_OPEN";
 }
 
+// 「見つからない」の文脈別表現（アダプタ層が文脈ごとの文言へマップする）。
+export type NotFoundContext = "entry" | "user" | "tournament" | "team";
+
 export class NotFoundError extends DomainError {
   readonly code = "NOT_FOUND";
+  constructor(readonly context: NotFoundContext) {
+    super();
+  }
+}
+
+// チーム必須種目で teamId が未指定（現行「申込チームを指定してください。」）。
+// 前提（入力）エラーであり権限例外ではないため PermissionDeniedError とは別クラスにする。
+export class TeamRequiredError extends DomainError {
+  readonly code = "TEAM_REQUIRED";
 }
 
 export class MemberCompositionError extends DomainError {
   readonly code = "INVALID_MEMBERS";
+  // 現行文言「出場メンバーは N〜M 名で登録してください。」の N / M を保持する。
+  constructor(
+    readonly min: number,
+    readonly max: number,
+  ) {
+    super();
+  }
+}
+
+// メンバー変更期限切れ（現行「メンバー変更は開催3日前までです。期限を過ぎています。」）。
+export class MemberUpdateDeadlineError extends DomainError {
+  readonly code = "MEMBER_UPDATE_DEADLINE";
 }
 
 // 権限エラーは操作別・種目別に異なるユーザー文言を持つため、context で文脈を保持する。

@@ -62,6 +62,31 @@ export interface EntryMember {
   updatedAt: string;
 }
 
+// EntrySummary.members 用の読み取り専用 DTO（oop-architecture.md §2.1・Finding 1）。
+// 現行 EntryMember interface のフィールドを 1:1 で引き継ぐ（名前変更のみ・形は不変）。
+// "use server" 境界を越える読み取りビュー値であり、書き込み系エンティティ
+// （entries/domain/EntryMember.ts の EntryMember クラス）とは別物として一意化する。
+export interface EntryMemberView {
+  id: string;
+  entryId: string;
+  memberType: MemberType;
+  userId: string | null;
+  guestName: string | null;
+  isPending: boolean;
+  orderNo: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// listSummaries の引数（oop-architecture.md §2.4）。
+// 現行 listEntrySummaries のインライン型を 1:1 で名前付き化したもの。
+// teamId は personal スコープでは省略（現行と同一の呼び出し形）。
+export interface ListSummaryParams {
+  userId: string;
+  teamId?: string | null;
+  scope: "personal" | "team";
+}
+
 // waitlists テーブル1行に対応するアプリ内部表現。
 export interface Waitlist {
   id: string;
@@ -112,5 +137,5 @@ export interface EntrySummary {
   teamName: string | null;
   isPast: boolean; // 開催日が過去か
   hasPendingMember: boolean; // 未定枠が残っているか（要メンバー登録表示用）
-  members: EntryMember[]; // メンバー構成
+  members: EntryMemberView[]; // メンバー構成（読み取り専用 DTO。クラスを境界越えさせない）
 }
