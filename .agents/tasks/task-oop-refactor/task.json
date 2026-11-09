@@ -1,0 +1,7 @@
+{
+  "task_id": "task-oop-refactor",
+  "task_description": "Behavior-preserving OOP refactor of the GRAN backend from module-level pure/repository functions to class-based OOP (Entities / Value Objects / Domain Services / Repository interface+SQLite impl / Application Services / thin 'use server' adapters), following the approved design docs/oop-architecture.md and closing the three unclosed design-review findings (A/B/C). Staged per design §10: (1) close carryover + shared foundation, (2) entries pilot, (3) horizontal rollout to auth/tournaments/teams/data/notifications, (4) frontend consistency unification, (5) final regulation/doc update. User-visible behavior, DB schema, and Server Action external contracts are unchanged throughout. Each feature keeps npm test / tsc --noEmit / npm run build green (build subject to the external SQLite-lock caveat in context.json).",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005"],
+  "blocked_reason": null
+}

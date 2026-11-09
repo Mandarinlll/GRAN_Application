@@ -1,0 +1,27 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "id": "A",
+      "severity": "MEDIUM",
+      "location": "§2.5 / §2.6 / §6.2 (submit) / §6.2.1 (submitWaitlist) / §6.2.2 (cancel step 1)",
+      "problem": "The document contradicts itself on which layer performs permission checks. §6.2 (submit) and §6.2.1 (submitWaitlist) throw PermissionDeniedError from inside the Application Service method body, implying permission logic lives in the Application Service. But §6.2.2 (cancel) step 1 states the permission check 'preserves the current structure where the adapter layer looks up Team and decides', placing it in the adapter. §4.2 only fixes that error->message conversion (toActionResult) is in the adapter, not where the check itself lives. §2.5 says the Application Service handles 'domain preconditions' and §2.6 limits adapter duties to session/Zod/wiring/exception-to-Result/revalidate — neither explicitly lists permission judgement (looking up User/Team and comparing leaderUserId). This forces the entries pilot implementer to decide, per use case, whether permission logic goes in EntryApplicationService or in actions.ts.",
+      "fix": "Pick one layer for all four use cases (submit/waitlist/cancel/updateMembers). Recommended (a): put permission judgement in the Application Service. Rewrite §6.2.2 cancel step 1 to 'EntryApplicationService.cancel decides owner/team-leader/admin using an injected TeamRepository; the current adapter judgement logic moves into the Application Service (behavior-preserving: same wording/branches, only relocated)', and add to the §2.5 duty list 'permission judgement as a domain precondition (self / team leader / admin, leader-only categories)'. This aligns with the submit/waitlist pseudocode that already throws inside the service. Alternative (b): centralize in the adapter and strip permission checks from the §6.2/§6.2.1 pseudocode, adding permission judgement to §2.6 adapter duties — but this conflicts with §2.5 and is not recommended."
+    },
+    {
+      "id": "B",
+      "severity": "NIT",
+      "location": "§3 / §10 step 6",
+      "problem": "§3 declares the OOP sub-directories domain/application/infrastructure as single lowercase words, explicitly deviating from regulation §2 which states directory names are kebab-case (with compound examples like tournament-detail/). This is the same class of 'deviation not reflected in the regulation body' that §1.2 extension resolved, but §10 step 6's regulation-revision plan (§1.2 promotion targets, §5.1 sample, §6 reference) does not include reconciling §2 directory naming, leaving a latent regulation/design mismatch that can force a mid-stream judgement during the pilot.",
+      "fix": "Add one item to §10 step 6: annotate regulation §2 ('directory names = kebab-case') that backend OOP layer directories domain/application/infrastructure (and existing server/types/utils) are single lowercase words, reflecting design §3's naming into the regulation body at the same granularity as the §1.2 extension."
+    },
+    {
+      "id": "C",
+      "severity": "NIT",
+      "location": "§6.2.1 (submitWaitlist pseudocode) / §6.2.2 (cancel step 1)",
+      "problem": "In §6.2.1 the identifiers role / isAdmin / team are referenced without being declared or showing where they are fetched (in real code via findUserById(session.sub) / findTeamById(data.teamId)), unlike §6.2 submit which shows this.<tournaments>.findById(...). In §6.2.2 the CancelFeePolicy instance passed to Entry.cancel(policy, when) has no stated creation site. The document labels these 'excerpt', so it is not fatal, but it compounds the Finding A ambiguity about which layer fetches User/Team.",
+      "fix": "Alongside the Finding A fix, add to §6.2.1 a line: 'user (this.users.findById(cmd.userId)) and team (this.teams.findById(cmd.teamId)) are obtained by the Application Service from injected repositories; role = user.role, isAdmin = user.isAdmin'. In §6.2.2 state that policy is created at the top of cancel via new CancelFeePolicy() (stateless VO)."
+    }
+  ],
+  "reviewDoc": "c:\\Users\\tanakaxj\\Documents\\Development\\Repositry\\GRAN_Application\\GRAN_Application\\.worktrees\\oop-refactor\\.agents\\tasks\\design-review.md"
+}
