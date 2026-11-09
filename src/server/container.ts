@@ -18,10 +18,7 @@ import type {
   UserRepository,
 } from "@/features/entries/domain/dependencies";
 import { SqliteTournamentRepository } from "@/features/tournaments/infrastructure/SqliteTournamentRepository";
-import {
-  findTeamById,
-  findTeamByLeader,
-} from "@/features/teams/server/teamRepository";
+import { SqliteTeamRepository } from "@/features/teams/infrastructure/SqliteTeamRepository";
 import { logNotification } from "@/features/notifications/server/notificationRepository";
 import { SqliteUserRepository } from "@/features/auth/infrastructure/SqliteUserRepository";
 import { AuthApplicationService } from "@/features/auth/application/AuthApplicationService";
@@ -61,14 +58,17 @@ const tournamentRepository: TournamentRepository = {
   },
 };
 
+// teams の本物の Repository 実装。entries の最小依存（TeamView）もこれ経由で解決する。
+const sqliteTeamRepository = new SqliteTeamRepository(db);
+
 const teamRepository: TeamRepository = {
   findById(teamId) {
-    const team = findTeamById(teamId);
+    const team = sqliteTeamRepository.findById(teamId);
     if (!team) return null;
     return { id: team.id, name: team.name, leaderUserId: team.leaderUserId };
   },
   findByLeader(userId) {
-    const team = findTeamByLeader(userId);
+    const team = sqliteTeamRepository.findByLeader(userId);
     if (!team) return null;
     return { id: team.id, name: team.name, leaderUserId: team.leaderUserId };
   },
