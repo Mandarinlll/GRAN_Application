@@ -1,4 +1,4 @@
-// GRANレベル初期査定の補助ロジック。
+﻿// GRANレベル初期査定の補助ロジック。
 // requirements-detail-user.md 1.1 の査定基準と register 画面の8段階レンジに準拠。
 //
 // 登録時点では管理者による正式査定前（is_level_calibrated = false）のため、
@@ -6,7 +6,10 @@
 
 import type { DeclaredClass } from "@/types/user";
 
-// 各申告階級の暫定レンジ [min, max]（register.html の classGuidanceMap 準拠）。
+// 各申告階級の暫定レンジ [min, max]（register 画面の案内レンジ準拠）。
+// ここでは「暫定初期値の中央値算出」専用のレンジを用いる。
+// 一方、確定後の数値 → 階級ラベル変換は classLabel.ts の連続境界（下限値判定）を正とする
+// （本レンジは一部オーバーラップ表記を含むため、階級判定には使用しないこと）。
 const CLASS_RANGE: Record<DeclaredClass, readonly [number, number]> = {
   A: [850, 999],
   AB: [750, 870],
@@ -25,3 +28,4 @@ export function estimateInitialGranLevel(declaredClass: DeclaredClass): number {
   const mid = Math.round((min + max) / 2);
   return Math.max(100, Math.min(999, mid));
 }
+
