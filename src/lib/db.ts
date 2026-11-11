@@ -243,6 +243,82 @@ function createDatabase(): DatabaseSync {
   db.exec("CREATE INDEX IF NOT EXISTS idx_waitlists_queue ON waitlists(tournament_id, status, queue_number ASC);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_cancellations_admin_alert ON cancellations(admin_status) WHERE is_paid = 1 AND admin_status IN ('UNCONTACTED', 'IN_CONSULTATION');");
 
+  // ------------------------------------------------------------------
+  // データタブ再構成用スキーマ（data-tab-restructure design.md "Data Models"）。
+  // 既存DBには CREATE TABLE IF NOT EXISTS でカラムが追加されないため、
+  // ensureColumn で存在確認してから ALTER TABLE ADD COLUMN する（冪等）。
+  // ------------------------------------------------------------------
+  const ensureColumn = (table: string, column: string, ddl: string): void => {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+    if (!cols.some((c) => c.name === column)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
+    }
+  };
+
+  // tournament_series（大会シリーズ）。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tournament_series (
+      id   TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE
+    );
+  `);
+
+  // tournaments への列追加（すべて NULL 許容）。
+  ensureColumn(
+    "tournaments",
+    "surface",
+    "TEXT CHECK (surface IN ('HARD','CLAY','ARTIFICIAL_GRASS','OTHER'))",
+  );
+  ensureColumn("tournaments", "series_id", "TEXT REFERENCES tournament_series(id)");
+  ensureColumn(
+    "tournaments",
+    "gender_division",
+    "TEXT CHECK (gender_division IN ('MEN','WOMEN','MIXED'))",
+  );
+
+  // tournament_matches（試合 / db-schema.md 3.9 準拠）。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tournament_matches (
+      id              TEXT PRIMARY KEY,
+      tournament_id   TEXT NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+      round_number    INTEGER NOT NULL,
+      match_number    INTEGER NOT NULL,
+      court_name      TEXT,
+      entry1_id       TEXT REFERENCES entries(id),
+      entry2_id       TEXT REFERENCES entries(id),
+      winner_entry_id TEXT REFERENCES entries(id),
+      score_detail    TEXT,
+      match_status    TEXT NOT NULL DEFAULT 'READY'
+                        CHECK (match_status IN ('READY','PLAYING','FINISHED')),
+      next_match_id   TEXT REFERENCES tournament_matches(id),
+      created_at      TEXT NOT NULL DEFAULT (datetime('now', '+9 hours')),
+      updated_at      TEXT NOT NULL DEFAULT (datetime('now', '+9 hours'))
+    );
+  `);
+
+  // tournament_results（大会結果・GRANレベル変動 / db-schema.md 3.10 準拠、ユーザー単位）。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tournament_results (
+      id              TEXT PRIMARY KEY,
+      tournament_id   TEXT NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+      team_id         TEXT REFERENCES teams(id),
+      user_id         TEXT NOT NULL REFERENCES users(id),
+      rank_type       TEXT NOT NULL
+                        CHECK (rank_type IN ('PARTICIPATED','L2_WINNER','T1_RUNNER_UP','T1_WINNER')),
+      awarded_points  INTEGER,
+      pre_gran_level  INTEGER NOT NULL,
+      gran_level_diff INTEGER NOT NULL,
+      post_gran_level INTEGER NOT NULL,
+      recorded_at     TEXT NOT NULL DEFAULT (datetime('now', '+9 hours')),
+      UNIQUE (tournament_id, user_id)
+    );
+  `);
+
+  db.exec("CREATE INDEX IF NOT EXISTS idx_entry_members_user ON entry_members(user_id, entry_id);");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_results_user_recorded ON tournament_results(user_id, recorded_at DESC);");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_matches_entry1 ON tournament_matches(entry1_id);");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_matches_entry2 ON tournament_matches(entry2_id);");
+
   return db;
 }
 
