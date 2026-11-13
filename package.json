@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test": "vitest --run",
     "seed": "node --experimental-strip-types scripts/seed.ts",
+    "seed:notification-demo": "node --experimental-strip-types scripts/seed-notification-demo.ts",
     "seed:data-test": "node --experimental-strip-types scripts/seed-data-test.ts"
   },
   "dependencies": {
