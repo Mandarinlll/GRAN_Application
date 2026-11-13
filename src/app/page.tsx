@@ -14,6 +14,7 @@ import { EnteredTournamentsCarousel } from "@/components/home/EnteredTournaments
 import { AppShell } from "@/components/layout/AppShell";
 import { AlertCircle, CalendarX } from "lucide-react";
 import { getCurrentUser } from "@/features/auth/server/currentUser";
+import { getUnreadNotificationCount } from "@/features/notifications/server/unreadCount";
 
 // 大会・エントリー機能は本タスクの対象外のため、表示用データは固定のまま読み込む。
 // 実ユーザーのエントリー履歴が実装されるまでの暫定表示。
@@ -34,7 +35,11 @@ export default async function HomePage() {
   };
 
   return (
-    <AppShell activeId="home" user={shellUser}>
+    <AppShell
+      activeId="home"
+      user={shellUser}
+      unreadNotifications={await getUnreadNotificationCount()}
+    >
       {/* 管理者バナー（管理者/運営者のときだけ表示） */}
       <AdminBanner
         role={currentUser.role === "OPERATOR" ? "OPERATOR" : "ADMIN"}

@@ -236,6 +236,26 @@ function createDatabase(): DatabaseSync {
   `);
 
   // インデックス（db-schema.md 4 準拠）。
+  // notifications（通知ページの受信箱）。notification_logs（送信ログ）とは別テーブル。
+  // dedupe_key の UNIQUE 制約で、同一の通知（リマインド／メンバー未定）を重複作成しない。
+  // resolved_at は要対応の解消日時（メンバー確定・キャンセル等）。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id            TEXT PRIMARY KEY,
+      user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      kind          TEXT NOT NULL CHECK (kind IN ('REMINDER','MEMBER_PENDING')),
+      category      TEXT NOT NULL CHECK (category IN ('ACTION','ENTRY','LEVEL','OTHER')),
+      title         TEXT NOT NULL,
+      body          TEXT NOT NULL,
+      tournament_id TEXT REFERENCES tournaments(id) ON DELETE CASCADE,
+      entry_id      TEXT REFERENCES entries(id) ON DELETE CASCADE,
+      dedupe_key    TEXT NOT NULL UNIQUE,
+      is_read       INTEGER NOT NULL DEFAULT 0,
+      resolved_at   TEXT,
+      created_at    TEXT NOT NULL DEFAULT (datetime('now', '+9 hours'))
+    );
+  `);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_tournaments_date_status ON tournaments(event_date ASC, status);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_entries_tournament_status ON entries(tournament_id, status);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_entries_user ON entries(user_id, applied_at DESC);");

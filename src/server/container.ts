@@ -29,6 +29,8 @@ import { CurrentUserService } from "@/features/auth/application/CurrentUserServi
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { SqliteDataRepository } from "@/features/data/infrastructure/SqliteDataRepository";
 import { DataViewService } from "@/features/data/application/DataViewService";
+import { SqliteInboxNotificationRepository } from "@/features/notifications/infrastructure/SqliteInboxNotificationRepository";
+import { InboxNotificationService } from "@/features/notifications/application/InboxNotificationService";
 
 // 共有の Unit of Work を生成する。各 Application Service はこれを注入して
 // トランザクション境界（§6.1）を得る。
@@ -142,4 +144,13 @@ export function createCurrentUserService(): CurrentUserService {
 // データタブのビューモデル組み立てサービスを配線して返す。
 export function createDataViewService(): DataViewService {
   return new DataViewService(new SqliteDataRepository(db));
+}
+
+// --- 通知ページ（受信箱） ---
+// リマインド・メンバー未定通知の生成と一覧取得を担うサービスを配線して返す。
+export function createInboxNotificationService(): InboxNotificationService {
+  return new InboxNotificationService(
+    createUnitOfWork(),
+    new SqliteInboxNotificationRepository(db),
+  );
 }

@@ -12,6 +12,7 @@ import { getEntryViewer } from "@/features/entries/server/entryViewData";
 import type { TournamentCardData } from "@/features/tournaments/types/view";
 import { formatEventDate, formatYen, isPastDate, monthOf } from "@/utils/date";
 import { TournamentSchedule } from "@/features/tournaments/components/TournamentSchedule";
+import { getUnreadNotificationCount } from "@/features/notifications/server/unreadCount";
 
 export default async function TournamentsPage() {
   // ログイン必須。
@@ -58,5 +59,11 @@ export default async function TournamentsPage() {
     isEntered: involved.has(t.id),
   }));
 
-  return <TournamentSchedule tournaments={cards} viewer={viewer} />;
+  return (
+    <TournamentSchedule
+      tournaments={cards}
+      viewer={viewer}
+      unreadNotifications={await getUnreadNotificationCount()}
+    />
+  );
 }

@@ -28,10 +28,9 @@ export const NAV_ITEMS: NavItemDef[] = [
   {
     id: "notifications",
     label: "通知",
-    href: "#",
+    href: "/notifications",
     icon: Bell,
-    implemented: false,
-    badge: 3,
+    implemented: true,
   },
   { id: "settings", label: "設定", href: "#", icon: Settings, implemented: false },
 ];

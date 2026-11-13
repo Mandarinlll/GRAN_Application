@@ -29,11 +29,16 @@ import type { EntrySummary } from "@/features/entries/types/entry";
 type Props = {
   tournaments: TournamentCardData[];
   viewer: EntryViewer;
+  unreadNotifications?: number;
 };
 
 type ViewMode = "table" | "cards";
 
-export function TournamentSchedule({ tournaments, viewer }: Props) {
+export function TournamentSchedule({
+  tournaments,
+  viewer,
+  unreadNotifications = 0,
+}: Props) {
   const router = useRouter();
   const { filters, update, reset, filtered, kpi } = useTournamentFilters(tournaments);
 
@@ -138,7 +143,11 @@ export function TournamentSchedule({ tournaments, viewer }: Props) {
   };
 
   return (
-    <AppShell activeId="schedule" user={shellUser}>
+    <AppShell
+      activeId="schedule"
+      user={shellUser}
+      unreadNotifications={unreadNotifications}
+    >
       <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-5 space-y-4 pb-24">
         {/* ページ見出し */}
         <div className="flex items-center gap-2.5">

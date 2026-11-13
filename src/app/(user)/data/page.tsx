@@ -14,6 +14,7 @@ import { getSession } from "@/lib/session";
 import { getCurrentUser } from "@/features/auth/server/currentUser";
 import { buildDataViewData } from "@/features/data/server/dataViewData";
 import { AppShell } from "@/components/layout/AppShell";
+import { getUnreadNotificationCount } from "@/features/notifications/server/unreadCount";
 import { DataTabView } from "@/features/data/components/DataTabView";
 
 export default async function DataPage() {
@@ -39,7 +40,11 @@ export default async function DataPage() {
   };
 
   return (
-    <AppShell activeId="data" user={shellUser}>
+    <AppShell
+      activeId="data"
+      user={shellUser}
+      unreadNotifications={await getUnreadNotificationCount()}
+    >
       <DataTabView data={data} />
     </AppShell>
   );

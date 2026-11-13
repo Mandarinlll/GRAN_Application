@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 import { Trophy, ChevronRight, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/features/auth/server/actions";
-import { NAV_ITEMS, type NavId } from "@/components/layout/navConfig";
+import { NAV_ITEMS, type NavId, type NavItemDef } from "@/components/layout/navConfig";
 import { granLevelToClassLabel } from "@/features/auth/utils/classLabel";
 
 // シェルが表示に必要とする最小のユーザー情報。
@@ -28,14 +28,34 @@ type Props = {
   activeId: NavId;
   user: ShellUser;
   children: React.ReactNode;
+  // 未読の通知件数（ナビの通知バッジ）。0/未指定なら非表示。
+  unreadNotifications?: number;
 };
 
-export function AppShell({ activeId, user, children }: Props) {
+export function AppShell({
+  activeId,
+  user,
+  children,
+  unreadNotifications = 0,
+}: Props) {
   const classLabel = granLevelToClassLabel(user.granLevel);
+  const navItems = NAV_ITEMS.map((item) =>
+    item.id === "notifications"
+      ? {
+          ...item,
+          badge: unreadNotifications > 0 ? unreadNotifications : undefined,
+        }
+      : item,
+  );
 
   return (
     <>
-      <Sidebar activeId={activeId} user={user} classLabel={classLabel} />
+      <Sidebar
+        activeId={activeId}
+        user={user}
+        classLabel={classLabel}
+        navItems={navItems}
+      />
 
       {/* サイドバー分の左余白（sm以上）。 */}
       <div className="sm:pl-60">
@@ -43,7 +63,7 @@ export function AppShell({ activeId, user, children }: Props) {
         {children}
       </div>
 
-      <BottomNav activeId={activeId} />
+      <BottomNav activeId={activeId} navItems={navItems} />
     </>
   );
 }
@@ -53,10 +73,12 @@ function Sidebar({
   activeId,
   user,
   classLabel,
+  navItems,
 }: {
   activeId: NavId;
   user: ShellUser;
   classLabel: string;
+  navItems: NavItemDef[];
 }) {
   return (
     <aside className="hidden sm:flex flex-col fixed top-0 bottom-0 left-0 w-60 bg-white border-r border-slate-200 z-40 shadow-sm">
@@ -77,7 +99,7 @@ function Sidebar({
       </div>
 
       <nav className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <NavLink key={item.id} item={item} active={item.id === activeId} />
         ))}
       </nav>
@@ -117,7 +139,7 @@ function Sidebar({
 }
 
 // サイドバーのリンク1件。未実装画面は無効スタイル + 案内。
-function NavLink({ item, active }: { item: (typeof NAV_ITEMS)[number]; active: boolean }) {
+function NavLink({ item, active }: { item: NavItemDef; active: boolean }) {
   const Icon = item.icon;
   const base =
     "flex items-center justify-between gap-3 px-3.5 min-h-[44px] rounded-xl text-xs font-bold transition";
@@ -225,11 +247,17 @@ function MobileHeader({
 }
 
 // --- モバイル用ボトムナビ（sm未満のみ・セーフエリア対応） ---
-function BottomNav({ activeId }: { activeId: NavId }) {
+function BottomNav({
+  activeId,
+  navItems,
+}: {
+  activeId: NavId;
+  navItems: NavItemDef[];
+}) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 sm:hidden pb-[env(safe-area-inset-bottom)]">
       <div className="grid grid-cols-5 h-14 text-xs font-medium text-slate-500">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const active = item.id === activeId;
           const content = (
