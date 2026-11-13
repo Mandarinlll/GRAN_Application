@@ -1,4 +1,4 @@
-// アプリ共通シェル（サイドバー + ヘッダー + ボトムナビ）。
+﻿// アプリ共通シェル（サイドバー + ヘッダー + ボトムナビ）。
 // ui-design-system.md のレイアウト規約に準拠：
 //  - PC（sm:640px以上）: 左固定サイドバー（w-60）、本文は sm:pl-60
 //  - モバイル: 下部固定ボトムナビ（5項目・セーフエリア対応）
@@ -17,6 +17,9 @@ import {
   type NavId,
 } from "@/components/layout/navConfig";
 import { granLevelToClassLabel } from "@/features/auth/utils/classLabel";
+
+// ロゴクリック時の遷移先（ホーム）。
+const HOME_HREF = "/";
 
 // シェルが表示に必要とする最小のユーザー情報。
 export interface ShellUser {
@@ -72,7 +75,11 @@ function Sidebar({
   return (
     <aside className="hidden sm:flex flex-col fixed top-0 bottom-0 left-0 w-60 bg-white border-r border-slate-200 z-40 shadow-sm">
       <div className="h-14 px-4 flex items-center border-b border-slate-100">
-        <div className="flex items-center gap-2.5">
+        <Link
+          href={HOME_HREF}
+          aria-label="ホームに戻る"
+          className="flex items-center gap-2.5 min-h-[44px] rounded-lg hover:opacity-80 transition"
+        >
           <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-sm">
             <Trophy className="w-4 h-4" />
           </div>
@@ -84,7 +91,7 @@ function Sidebar({
               2026 Season
             </span>
           </div>
-        </div>
+        </Link>
       </div>
 
       <nav className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
@@ -222,7 +229,11 @@ function MobileHeader({
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm sm:hidden">
       <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+        <Link
+          href={HOME_HREF}
+          aria-label="ホームに戻る"
+          className="flex items-center gap-2.5 min-h-[44px] rounded-lg hover:opacity-80 transition"
+        >
           <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-sm">
             <Trophy className="w-4 h-4" />
           </div>
@@ -234,7 +245,7 @@ function MobileHeader({
               2026
             </span>
           </div>
-        </div>
+        </Link>
 
         <Link
           href={SETTINGS_HREF}
