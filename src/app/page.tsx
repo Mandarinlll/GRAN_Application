@@ -14,6 +14,8 @@ import { EnteredTournamentsCarousel } from "@/components/home/EnteredTournaments
 import { AppShell } from "@/components/layout/AppShell";
 import { AlertCircle, CalendarX } from "lucide-react";
 import { getCurrentUser } from "@/features/auth/server/currentUser";
+import { getSession } from "@/lib/session";
+import { getUnreadCountSynced } from "@/features/notifications/server/inboxService";
 
 // 大会・エントリー機能は本タスクの対象外のため、表示用データは固定のまま読み込む。
 // 実ユーザーのエントリー履歴が実装されるまでの暫定表示。
@@ -31,6 +33,7 @@ export default async function HomePage() {
     granLevel: currentUser.granLevel,
     avatarText: currentUser.avatarText,
     teamName: currentUser.teamName || null,
+    unreadNotifications: getUnreadCountSynced((await getSession())!.sub),
   };
 
   return (

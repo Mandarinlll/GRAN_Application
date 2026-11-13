@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentUser } from "@/features/auth/server/currentUser";
+import { getSession } from "@/lib/session";
+import { getUnreadCountSynced } from "@/features/notifications/server/inboxService";
 import { DataTabs } from "@/features/data/components/DataTabs";
 
 export default async function DataLayout({
@@ -19,6 +21,7 @@ export default async function DataLayout({
     granLevel: user.granLevel,
     avatarText: user.avatarText,
     teamName: user.teamName || null,
+    unreadNotifications: getUnreadCountSynced((await getSession())!.sub),
   };
 
   return (
