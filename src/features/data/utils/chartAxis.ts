@@ -40,7 +40,26 @@ function build(dataMin: number, dataMax: number, step: number): number[] {
   return ticks;
 }
 
-export function niceTicks(dataMin: number, dataMax: number, targetCount = 5): NiceTicks {
+/** 縦軸の余白とクランプ。クランプ（floor/ceil）が余白より優先。 */
+export function paddedLevelRange(
+  min: number,
+  max: number,
+  padding = 50,
+  floor = 100,
+  ceil = 999,
+): { lo: number; hi: number } {
+  return {
+    lo: Math.max(floor, min - padding),
+    hi: Math.min(ceil, max + padding),
+  };
+}
+
+export function niceTicks(
+  dataMin: number,
+  dataMax: number,
+  targetCount = 5,
+  bounds?: { floor?: number; ceil?: number },
+): NiceTicks {
   const lo = Math.min(dataMin, dataMax);
   const hi = Math.max(dataMin, dataMax);
   const intervals = Math.max(1, targetCount - 1);
@@ -48,6 +67,18 @@ export function niceTicks(dataMin: number, dataMax: number, targetCount = 5): Ni
   let ticks = build(lo, hi, step);
 
   while (ticks.length < 3 && step > 1) {
+    step = smallerStep(step);
+    ticks = build(lo, hi, step);
+  }
+
+  // 境界を超える場合は step を1段階ずつ縮めて境界内に収める（切り詰めない）
+  const floorB = bounds?.floor;
+  const ceilB = bounds?.ceil;
+  while (
+    step > 1 &&
+    ((floorB !== undefined && ticks[0] < floorB && lo >= floorB) ||
+      (ceilB !== undefined && ticks[ticks.length - 1] > ceilB && hi <= ceilB))
+  ) {
     step = smallerStep(step);
     ticks = build(lo, hi, step);
   }

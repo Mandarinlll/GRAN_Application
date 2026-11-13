@@ -40,6 +40,8 @@ function createDatabase(): DatabaseSync {
   const db = new DatabaseSync(DB_PATH);
 
   // 外部キー制約を有効化し、書き込み耐性の高い WAL モードにする。
+  // 並行プロセス（ビルド時の複数ワーカー等）による書き込み競合を待機で吸収する。
+  db.exec("PRAGMA busy_timeout = 5000;");
   db.exec("PRAGMA foreign_keys = ON;");
   db.exec("PRAGMA journal_mode = WAL;");
 

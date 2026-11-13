@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ChartPointDto } from "../../types/dto";
-import { dateTicks, niceTicks } from "../../utils/chartAxis";
+import { dateTicks, niceTicks, paddedLevelRange } from "../../utils/chartAxis";
 import { NOTE_CLASS, formatDateTime } from "./shared";
 
 const H = 280;
@@ -53,7 +53,8 @@ export function GranChart({ points }: { points: ChartPointDto[] }) {
   const levels = points.map((p) => p.postLevel);
   const lMin = Math.min(...levels);
   const lMax = Math.max(...levels);
-  const yAxis = niceTicks(lMin, lMax);
+  const { lo, hi } = paddedLevelRange(lMin, lMax);
+  const yAxis = niceTicks(lo, hi, 5, { floor: 100, ceil: 999 });
   const ySpan = yAxis.max - yAxis.min || 1;
 
   const dates = points.map((p) => p.recordedAt.slice(0, 10));

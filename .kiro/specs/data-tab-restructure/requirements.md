@@ -100,8 +100,10 @@ GRANアプリのナビゲーション「データ」タブ（`src/components/lay
 11. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL グラフの横軸に、確定日付の目盛りと「YYYY/MM/DD」または「M/D」形式の目盛りラベルを、1つの形式に統一して3個以上表示する。ただし、反映する確定日付の種類が3種類未満の場合は、その種類数分の目盛りラベルを表示する。
 12. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL グラフの縦軸に、GRANレベルの目盛りと整数の目盛りラベルを、等間隔で3個以上表示する。
 13. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL グラフ内に縦軸の各目盛りに対応する水平の補助線を、目盛りと同数表示する。
-14. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL 縦軸の範囲を、グラフに反映する変動後レベルの最小値と最大値をすべて含む範囲にし、最小値および最大値の点が軸の範囲内に収まって表示されるようにする。
-15. THE My_Data_Page SHALL GRAN_Levelの推移グラフの全データを一覧にした専用のデータ表を提供しない。履歴一覧（基準1、2、8）は専用のデータ表には含まれない。
+14. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL グラフの縦軸の表示範囲の目標を、グラフに反映する変動後レベルの最小値から50を引いた値（目標下端）から、最大値に50を足した値（目標上端）までとする。
+15. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL 縦軸の下端を100以上、上端を999以下とし、目標下端が100未満の場合は下端を100、目標上端が999超の場合は上端を999とする（GRAN_Levelの定義域へのクランプを、基準14の目標範囲より優先する）。
+16. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL 目盛りを整数のきりの良い値にそろえるため、クランプ後の範囲を、その範囲を含む最小のきりの良い値まで広げてよい。ただし、広げた後も下端は100以上、上端は999以下とし、最小値および最大値の点が軸の範囲内に収まって表示されるようにする。
+17. THE My_Data_Page SHALL GRAN_Levelの推移グラフの全データを一覧にした専用のデータ表を提供しない。履歴一覧（基準1、2、8）は専用のデータ表には含まれない。
 
 ### Requirement 4: 通算勝敗と直近試合の表示（マイデータ）
 

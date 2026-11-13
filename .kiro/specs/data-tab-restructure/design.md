@@ -194,11 +194,22 @@ export function formatDelta(diff: number): { text: string; direction: "up" | "do
 
 // chartAxis.ts（GranChart の軸計算。描画から独立した純粋関数）
 export interface NiceTicks { ticks: number[]; min: number; max: number; step: number } // min=ticks[0], max=ticks[last]
-export function niceTicks(dataMin: number, dataMax: number, targetCount?: number /* 既定5 */): NiceTicks;
+export function niceTicks(dataMin: number, dataMax: number, targetCount?: number /* 既定5 */,
+  bounds?: { floor?: number; ceil?: number } /* 目盛りの下限・上限。GranChart は { floor: 100, ceil: 999 } を渡す */): NiceTicks;
 // - 刻み幅 step は 1・2・5 × 10^k の正の整数（step >= 1）。ticks は min から max まで step 間隔の整数列（等間隔）。
 // - min = floor(dataMin / step) * step、max = ceil(dataMax / step) * step（データ範囲をすべて含む）。
 // - ticks が3個未満になる場合（dataMin = dataMax、または範囲が狭い）は、step を 1・2・5 系列で1段階ずつ縮めて3個以上にする。
-//   dataMin = dataMax で step=1 でも足りない場合は [v-1, v, v+1] とする。
+//   dataMin = dataMax で step=1 でも足りない場合は [v-1, v, v+1] とする（bounds 指定時は余白適用後の範囲が常に幅を持つため到達しない）。
+// - bounds 指定時: 上記で得た min < floor または max > ceil になる場合は、step を 1・2・5 系列で1段階ずつ縮めて
+//   floor <= min かつ max <= ceil を満たすまで再計算する（切り詰めず、等間隔と3個以上を維持する）。step=1 なら
+//   dataMin/dataMax が [floor, ceil] 内であるかぎり必ず満たされるため、ループは必ず終了する。
+
+// 余白とクランプ（要件3.14, 3.15）。GranChart が niceTicks に渡す前に適用する。
+export function paddedLevelRange(min: number, max: number, padding = 50, floor = 100, ceil = 999): { lo: number; hi: number };
+// - lo = max(floor, min − padding)、hi = min(ceil, max + padding)。クランプ（3.15）が余白（3.14）より優先。
+// - 入力は 100 <= min <= max <= 999 の整数（変動後レベル）。出力は floor <= lo <= min、max <= hi <= ceil。
+// - GranChart: const { lo, hi } = paddedLevelRange(lMin, lMax); const yAxis = niceTicks(lo, hi, 5, { floor: 100, ceil: 999 });
+//   最終的な縦軸範囲 [yAxis.min, yAxis.max] は [lo, hi] を含み、100〜999 に収まる（要件3.16）。
 export interface DateTick { date: string /* YYYY-MM-DD */; label: string }
 export function dateTicks(dates: string[] /* 確定日付 YYYY-MM-DD、重複・未整列可 */, maxCount?: number /* 既定5 */): DateTick[];
 // - 重複を除いた日付種類数 n に対し、n <= maxCount なら全種類、n > maxCount なら先頭・末尾を含み添字を等分割で maxCount 個選ぶ（個数は min(n, maxCount)、n>=3 なら3以上）。
@@ -278,9 +289,9 @@ interface State<T> {
 - `RegionState`: `<Skeleton/>`・`<ErrorPanel onRetry/>`・`<EmptyState/>` を提供。エラー時も周囲のタブ/ナビは維持（要件1.8）。
 - `LevelCard`: GRANレベル、階級（`is_level_calibrated=false` は「査定前」表示）、昇格差、進捗バー（`role="progressbar"` + 数値テキスト）。
 - `GranHistory` / `GranChart`: 一覧20件+「もっと見る」。`GranChart` は自前SVG折れ線。各点は `tabindex=0` / `role="button"` でフォーカス・選択でき（44px以上の当たり判定の透明円）、選択点の日付（YYYY/MM/DD）・大会名・変動後レベルをテキスト表示（要件3.6）。
-  - **軸と補助線（要件3.11〜3.14）**: 縦軸は `niceTicks(最小変動後レベル, 最大変動後レベル)` の `ticks` を等間隔の整数ラベルとして左に描画し、軸範囲は `[ticks[0], ticks[last]]`（データの最小・最大を必ず含む）。Y座標は `ticks[0]`〜`ticks[last]` を描画域の下端〜上端へ線形に割り当てる。各目盛りに水平補助線（`<line data-gridline>`）を引き、本数は目盛りラベル数と同数。横軸は `dateTicks(全点の確定日付)` の各 `date` に対応するX位置（時刻に比例）へ目盛り線とラベルを描画する（形式は1種類に統一、日付種類が3未満ならその数）。補助線は `stroke` に `slate-200 / dark:slate-700` を使い、軸ラベルは `text-slate-700 dark:text-slate-300` の12px以上とする。
+  - **軸と補助線（要件3.11〜3.16）**: 縦軸は、まず `paddedLevelRange(最小変動後レベル, 最大変動後レベル)`（既定: 余白±50、下限100、上限999）で目標範囲 `[lo, hi]` を求め（クランプが余白より優先、要件3.14, 3.15）、次に `niceTicks(lo, hi, 5, { floor: 100, ceil: 999 })` の `ticks` を等間隔の整数ラベルとして左に描画する。軸範囲は `[ticks[0], ticks[last]]` で、`[lo, hi]` を含む最小のきりの良い範囲に広がってよいが、100〜999 を超えない（要件3.16）。データの最小・最大の点は必ず軸範囲内に収まる。Y座標は `ticks[0]`〜`ticks[last]` を描画域の下端〜上端へ線形に割り当てる。各目盛りに水平補助線（`<line data-gridline>`）を引き、本数は目盛りラベル数と同数。横軸は `dateTicks(全点の確定日付)` の各 `date` に対応するX位置（時刻に比例）へ目盛り線とラベルを描画する（形式は1種類に統一、日付種類が3未満ならその数）。補助線は `stroke` に `slate-200 / dark:slate-700` を使い、軸ラベルは `text-slate-700 dark:text-slate-300` の12px以上とする。
   - **サイズ**: SVGは `viewBox` の縮小でフォントが12px未満にならないよう、`ResizeObserver` でコンテナ実幅（最小280px）を取得し、`viewBox` 幅を実幅に一致させる（縮小率1）。左余白は縦軸ラベル幅、下余白は横軸ラベル幅を確保する。横ラベルが重なる幅では `dateTicks` の `maxCount` を幅から算出して減らす（ただし3個以上、日付種類が3未満ならその数）。
-  - **データ表は設けない（要件3.15, 10.7）**: 従来の `<details>`「グラフの全データを表で見る」と全点データ表は**削除**する。グラフの値は、縦軸・横軸の目盛りラベル、点の選択表示、同一画面内の履歴一覧（`GranHistory`）で確認する。履歴一覧はグラフ専用の表ではなく、グラフの全点を含む保証もない（初期20件+もっと見る）ため、専用表とは扱わない。
+  - **データ表は設けない（要件3.17, 10.7）**: 従来の `<details>`「グラフの全データを表で見る」と全点データ表は**削除**する。グラフの値は、縦軸・横軸の目盛りラベル、点の選択表示、同一画面内の履歴一覧（`GranHistory`）で確認する。履歴一覧はグラフ専用の表ではなく、グラフの全点を含む保証もない（初期20件+もっと見る）ため、専用表とは扱わない。
 - `RecordSummary` / `RecentMatches`: 勝敗は「勝」「敗」の文字+色の両方（要件4.4）。Participation_Pageへのリンク。
 - `WinRateByCondition`: 条件選択は**プルダウン**（ネイティブ `<select>` + `<label htmlFor>`「条件」。選択肢は種目・会場・サーフェス・季節・対戦相手（団体戦）・大会シリーズの6つをこの順で）。タブ（`role="tablist"`）は使わない（要件5.1）。`onChange` で `dimension` を更新し、変更前の集計結果を変更後の結果に置き換える（要件5.12）。`select` は `min-h-[44px]`、`text-sm` 以上、`rounded-xl`、`ui-design-system.md` の入力トークン（`border-slate-200 dark:border-slate-800`、フォーカスリング `emerald`）を使う。再読み込みは現在の `dimension` で再取得する（要件5.13）。区分ごとに「試合数/勝/敗/勝率(整数%)」の行と、勝率に比例した幅の横棒（0試合は「-」・幅0）。種目を選んだ場合の区分は男子・女子・混合の3行のみで「未設定」行は出さない。「未設定」行はサーフェス・大会シリーズに限り（要件5.8）、試合があるときだけ末尾に表示する。会場は `tournaments.venue` が必須列のため「未設定」を持たず、空文字の会場名は会場別集計から除外する。
 - `ParticipationTable`: md以上は表、md未満は「開催年月日・会場・結果」の3項目のカード行で横スクロールなし（要件6.6）。行は `role="button"` `tabIndex=0`、Enter/Spaceで選択、`min-h-[44px]`（要件7.6）。
@@ -442,7 +453,7 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 
 *A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
 
-プロパティ・リフレクションの結果: 「履歴の降順」「出場履歴のページング」「ランキングの50件ページング」は同一の `slicePage` 性質に統合した。「3.5の符号表記」と「7.4の変動表記」は `formatDelta` に統合した。「勝率の算出」「勝率の整数表示/0試合」は `winRate` の性質に統合した。階級別と種目別のレベル一致は、ランキングDTOの生成元が同一であることとして1つにまとめた。グラフ軸（縦軸の整数・等間隔・範囲包含・3個以上）は `niceTicks` の1性質に、スライダー（往復変換・スナップ・端のクランプ・初期値）は Tier⇔スライダー値の1性質に統合した。補助線の本数一致（要件3.13）は `ticks` から生成する構造により Property 17 に帰着させ、描画上の本数は例示テストで確認する。
+プロパティ・リフレクションの結果: 「履歴の降順」「出場履歴のページング」「ランキングの50件ページング」は同一の `slicePage` 性質に統合した。「3.5の符号表記」と「7.4の変動表記」は `formatDelta` に統合した。「勝率の算出」「勝率の整数表示/0試合」は `winRate` の性質に統合した。階級別と種目別のレベル一致は、ランキングDTOの生成元が同一であることとして1つにまとめた。グラフ軸（縦軸の整数・等間隔・範囲包含・3個以上）は `niceTicks` の1性質に、スライダー（往復変換・スナップ・端のクランプ・初期値）は Tier⇔スライダー値の1性質に統合した。補助線の本数一致（要件3.13）は `ticks` から生成する構造により Property 17 に帰着させ、描画上の本数は例示テストで確認する。縦軸の余白とクランプ（要件3.14〜3.16）は `paddedLevelRange` と `niceTicks` の合成として Property 20 にまとめた。
 
 ### Property 1: 階級判定と昇格情報の整合
 
@@ -542,9 +553,9 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 
 ### Property 17: 縦軸の目盛りは整数・等間隔・3個以上でデータ範囲を含む
 
-*For any* 整数の最小値 `dataMin` と最大値 `dataMax`（`dataMin ≤ dataMax`、同値を含む）に対し、`niceTicks` が返す `ticks` は (a) 3個以上、(b) すべて整数、(c) 隣接する目盛りの差がすべて等しい正の値（`step`）、(d) `ticks[0] ≤ dataMin` かつ `dataMax ≤ ticks[last]`、(e) `min = ticks[0]`、`max = ticks[last]` である。これにより、水平補助線の本数（`ticks` と同数）と範囲内に収まる最小・最大の点が保証される。
+*For any* 整数の最小値 `dataMin` と最大値 `dataMax`（`dataMin ≤ dataMax`、同値を含む）に対し、`niceTicks` が返す `ticks` は (a) 3個以上、(b) すべて整数、(c) 隣接する目盛りの差がすべて等しい正の値（`step`）、(d) `ticks[0] ≤ dataMin` かつ `dataMax ≤ ticks[last]`、(e) `min = ticks[0]`、`max = ticks[last]` である。さらに、`bounds = { floor: 100, ceil: 999 }` を指定し `100 ≤ dataMin ≤ dataMax ≤ 999` の場合は (f) `100 ≤ ticks[0]` かつ `ticks[last] ≤ 999` も成り立つ（(a)〜(e) は維持される）。これにより、水平補助線の本数（`ticks` と同数）と範囲内に収まる最小・最大の点が保証される。
 
-**Validates: Requirements 3.12, 3.13, 3.14**
+**Validates: Requirements 3.12, 3.13, 3.16**
 
 ### Property 18: 横軸の日付目盛りは個数・形式・順序を満たす
 
@@ -557,6 +568,12 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 *For any* Tier に対し、`sliderValueToTier(tierToSliderValue(tier)) = tier` が成り立ち、`tierToSliderValue` は 8 つの Tier を 0〜7 の相異なる整数に写し、上位の Tier ほど大きい値になる（DE=0, A=7）。*For any* 実数 `raw` に対し、`snapSliderValue(raw)` は 0〜7 の整数であり、`raw` が 0〜7 の範囲内なら元の `raw` との距離が全整数位置のうち最小（最寄りの離散位置）である。*For any* 値 0〜7 と `delta ∈ {+1, −1}` に対し、`stepSliderValue` は範囲内なら `value + delta`、端（0 で −1、7 で +1）を超える場合は値を変えない。*For any* Tier または `null` に対し、`initialSliderTier(null) = "A"`、`initialSliderTier(tier) = tier` である。
 
 **Validates: Requirements 8.1, 8.2, 8.12, 8.13, 8.14**
+
+### Property 20: 縦軸範囲は ±50 の余白と 100〜999 のクランプを満たす
+
+*For any* 整数の `lMin ≤ lMax`（ともに 100〜999）に対し、`{ lo, hi } = paddedLevelRange(lMin, lMax)` は (a) `lo = max(100, lMin − 50)`、`hi = min(999, lMax + 50)`、(b) `100 ≤ lo ≤ lMin` かつ `lMax ≤ hi ≤ 999` である。さらに `yAxis = niceTicks(lo, hi, 5, { floor: 100, ceil: 999 })` について、(c) `100 ≤ yAxis.min ≤ lo` かつ `hi ≤ yAxis.max ≤ 999`（最小値・最大値の点が範囲内に収まる）、(d) 広がり幅は刻み幅未満（`lo − yAxis.min < step` かつ `yAxis.max − hi < step`、ただし 100〜999 の境界に達している側を除く）、(e) `ticks` は Property 17 の (a)〜(c) を満たす（3個以上・整数・等間隔）。
+
+**Validates: Requirements 3.14, 3.15, 3.16**
 
 ## Error Handling
 
@@ -593,7 +610,7 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 
 ### プロパティテスト
 
-- 対象は Property 1〜19。各プロパティを**単一のプロパティテスト**で実装し、`fc.assert(..., { numRuns: 100 })` 以上（最小100回）で実行する。
+- 対象は Property 1〜20。各プロパティを**単一のプロパティテスト**で実装し、`fc.assert(..., { numRuns: 100 })` 以上（最小100回）で実行する。
 - 各テストにタグコメントを付ける。形式: `// Feature: data-tab-restructure, Property {番号}: {プロパティ名}`。
 - Property 10 はインメモリ `new DatabaseSync(":memory:")` に必要テーブルを作成し、`createDataRepository(db)` に注入して実行する（`NOW_JST` 依存の日付は固定の過去日で生成）。反復1回あたりが軽いため100回実行する。
 - Property 15, 16 は DTO 変換関数/`opponentLabel` に対して、任意文字列の氏名・メールなどを生成して検査する。
@@ -605,7 +622,7 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 - 出場詳細: 未確定時の表示、GRAN変動の表示、未出場大会の404。
 - `useRemoteResource`: フェイクタイマーで10秒タイムアウト、3回連続失敗、`keepStaleOnError` の有無（要件2.9, 10.2〜10.4）。
 - コンポーネント: タブの順序と `aria-current`、勝敗の文字+色併用、行のキーボード操作（Enter/Space）、ダイアログのEsc/戻る/フォーカス復帰、ランキングのモード切替後の選択状態の復元（要件1.1, 4.4, 7.5, 7.6, 9.6）。
-- `GranChart`: 縦軸ラベルが3個以上、水平補助線（`[data-gridline]`）の本数が縦軸ラベル数と一致、横軸ラベルの形式が1種類、`<table>` / `<details>` が存在しない、点の選択でYYYY/MM/DD・大会名・変動後レベルが表示される（要件3.6, 3.11〜3.15, 10.7）。日付種類が2のとき横ラベルが2個になる境界例も確認する。
+- `GranChart`: 縦軸ラベルが3個以上、水平補助線（`[data-gridline]`）の本数が縦軸ラベル数と一致、横軸ラベルの形式が1種類、`<table>` / `<details>` が存在しない、点の選択でYYYY/MM/DD・大会名・変動後レベルが表示される（要件3.6, 3.11〜3.17, 10.7）。日付種類が2のとき横ラベルが2個になる境界例も確認する。縦軸は、変動後レベルの最小・最大に ±50 の余白がある例（例: 400〜500 → 範囲が 350〜550 を含む）、下端クランプの例（最小 120 → 下端 100）、上端クランプの例（最大 980 → 上端 999 以下）で、ラベルの最小値・最大値が 100〜999 に収まり全点が範囲内に描画されることを確認する。
 - `WinRateByCondition`: `<select>` に `<label>` が関連付けられ、選択肢が6つで順序どおり、`role="tablist"` が存在しない。種目を選んだときの行は男子・女子・混合のみで「未設定」が出ない。サーフェス・大会シリーズでは未登録試合があるときだけ「未設定」が出る。条件変更で表示が置き換わり、再読み込みが現在の条件で再取得する（要件5.1〜5.3, 5.8, 5.12, 5.13）。
 - `TierSlider` / `RankingView`: 階級別で `input[type=range]`（min=0, max=7, step=1）が1つあり、階級を表すタブが存在しない。`aria-valuetext` が「◯級」、選択中Tier名がスライダー近傍に表示される。現在Tier不明（`null`）で初期値A。←↓/→↑ の `keydown` 相当の操作で1段階移動し、DE・Aの端で変化しない。値変更で順位表のリクエストURLの `tier` が変わる。該当者0人・取得失敗でもスライダーが `disabled` でない（要件8.1〜8.3, 8.7, 8.11〜8.14）。ネイティブ `range` のドラッグ時スナップはブラウザ実装のため、自動テストではなく手動確認とする。
 - `ensureColumn` / 補完: 団体戦の既存行で `gender_division` が `category` から補完され、2回実行しても結果が変わらない。`SINGLES`/`DOUBLES` で `gender_division` 未指定の大会登録が 400 になる。

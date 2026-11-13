@@ -181,13 +181,13 @@
     - `niceTicks(dataMin, dataMax, targetCount = 5)` を実装する。刻み幅は 1・2・5 × 10^k の正の整数、目盛りは整数の等間隔、`min = floor(dataMin / step) * step`、`max = ceil(dataMax / step) * step` でデータ範囲を含める
     - 目盛りが3個未満になる場合は、刻み幅を 1・2・5 系列で1段階ずつ縮めて3個以上にする。`dataMin = dataMax` で `step = 1` でも足りない場合は `[v-1, v, v+1]` とする
     - `dateTicks(dates, maxCount = 5)` を実装する。重複を除いて昇順にし、種類数が `maxCount` 以下なら全種類、超える場合は先頭と末尾を含めて添字を等分割で `maxCount` 個選ぶ。ラベルは全日付が同一年なら `M/D`、年をまたぐなら `YYYY/MM/DD` に統一する
-    - _Requirements: 3.11, 3.12, 3.14_
+    - _Requirements: 3.11, 3.12, 3.14, 3.15, 3.16_
 
   - [ ]* 9.2 軸計算のプロパティテストを書く
     - **Property 17: 縦軸の目盛りは整数・等間隔・3個以上でデータ範囲を含む**
     - **Property 18: 横軸の日付目盛りは個数・形式・順序を満たす**
     - `dataMin = dataMax` の同値ケース、日付の重複・未整列・年またぎを生成器に含める
-    - **Validates: Requirements 3.11, 3.12, 3.13, 3.14**
+    - **Validates: Requirements 3.11, 3.12, 3.13, 3.14, 3.15, 3.16**
 
   - [x] 9.3 `GranChart.tsx` に縦軸・横軸・水平補助線を追加し、データ表を削除する
     - 縦軸は `niceTicks(最小変動後レベル, 最大変動後レベル)` の `ticks` を左に整数ラベルで描画し、Y座標は `ticks[0]`〜`ticks[last]` を描画域の下端〜上端へ線形に割り当てる
@@ -195,11 +195,11 @@
     - 横軸は `dateTicks(全点の確定日付)` の各日付に対応するX位置（時刻に比例）へ目盛り線とラベルを描画する
     - `ResizeObserver` でコンテナ実幅（最小280px）を取得して `viewBox` 幅に一致させ、縦軸ラベル幅の左余白と横軸ラベル用の下余白を確保する。幅が狭いときは `dateTicks` の `maxCount` を幅から算出して減らす（3個以上、日付種類が3未満ならその数）
     - `<details>`「グラフの全データを表で見る」と全点データ表を削除する。点のフォーカス選択表示は維持する
-    - _Requirements: 3.3, 3.4, 3.6, 3.11, 3.12, 3.13, 3.14, 3.15, 10.5, 10.7, 10.9_
+    - _Requirements: 3.3, 3.4, 3.6, 3.11, 3.12, 3.13, 3.14, 3.15, 3.16, 3.17, 10.5, 10.7, 10.9_
 
   - [ ]* 9.4 `GranChart` の例示テストを書く
     - 水平補助線の本数が縦軸の目盛りラベル数と一致すること、全点の最小・最大が軸範囲内に収まること、データ表（`<details>` / `<table>`）が存在しないことを確認する
-    - _Requirements: 3.13, 3.14, 3.15, 10.7_
+    - _Requirements: 3.13, 3.14, 3.15, 3.16, 3.17, 10.7_
 
 - [x] 10. 条件別勝率のプルダウン化と種目「未設定」区分の廃止
   - [x] 10.1 `utils/aggregate.ts` を更新して種目の「未設定」区分を廃止する
@@ -278,6 +278,36 @@
 - [x] 12. Final checkpoint - ビルド・型チェック・テストの確認
   - `npm run build` と型チェック（`npx tsc --noEmit`）、`npm run test` がすべて通ることを確認する。問題があればユーザーに確認する。
 
+- [x] 13. 縦軸範囲の余白（±50）とGRANレベル定義域（100〜999）へのクランプ
+  - [x] 13.1 `utils/chartAxis.ts` に `paddedLevelRange` を実装し、`niceTicks` に `bounds` 引数を追加する
+    - `paddedLevelRange(min, max, padding = 50, floor = 100, ceil = 999)` を実装する。`lo = max(floor, min − padding)`、`hi = min(ceil, max + padding)` とし、クランプを余白より優先する
+    - `niceTicks(dataMin, dataMax, targetCount = 5, bounds?: { floor?: number; ceil?: number })` に任意の `bounds` 引数を追加する。`bounds` 未指定時は従来の動作を維持する
+    - `bounds` 指定時、`min = floor(dataMin / step) * step` または `max = ceil(dataMax / step) * step` が境界（`floor` 未満、`ceil` 超）を超える場合は、刻み幅を 1・2・5 系列で1段階ずつ縮めて再計算し、境界内に収める
+    - 縮めて再計算した後も、目盛りは整数の等間隔で3個以上、`ticks[0] ≤ dataMin` かつ `dataMax ≤ ticks[last]` を維持する
+    - _Requirements: 3.12, 3.14, 3.15, 3.16_
+
+  - [ ]* 13.2 Property 17 の(f)を追加し、Property 20 のプロパティテストを書く
+    - **Property 17: 縦軸の目盛りは整数・等間隔・3個以上でデータ範囲を含む**（(f) を追加: `bounds = { floor: 100, ceil: 999 }` かつ `100 ≤ dataMin ≤ dataMax ≤ 999` のとき `100 ≤ ticks[0]` かつ `ticks[last] ≤ 999`。(a)〜(e) は維持）
+    - **Property 20: 縦軸範囲は ±50 の余白と 100〜999 のクランプを満たす**（`paddedLevelRange` の (a)(b) と、`niceTicks(lo, hi, 5, { floor: 100, ceil: 999 })` の (c)(d) を検証）
+    - 生成器に下端付近（`lMin` が 100〜150）、上端付近（`lMax` が 949〜999）、`lMin = lMax` の同値を含める
+    - **Validates: Requirements 3.12, 3.14, 3.15, 3.16**
+
+  - [x] 13.3 `GranChart.tsx` で `paddedLevelRange` の結果を `niceTicks` に渡すよう変更する
+    - 変動後レベルの最小値・最大値から `const { lo, hi } = paddedLevelRange(lMin, lMax)` を求め、`niceTicks(lo, hi, 5, { floor: 100, ceil: 999 })` に渡して縦軸を描画する
+    - Y座標は `ticks[0]`〜`ticks[last]` を描画域の下端〜上端へ線形に割り当て、水平補助線は `ticks` と同数のまま維持する
+    - 最小値・最大値の点が軸範囲内に収まり、軸が100未満・999超にならないことを保つ
+    - _Requirements: 3.13, 3.14, 3.15, 3.16_
+
+  - [ ]* 13.4 `GranChart` の縦軸範囲の例示テストを書く
+    - 最小400・最大500 のとき、縦軸が約350〜550を含む範囲（±50の余白）になること
+    - 最小120 のとき、下端が100にクランプされ（70にならず）、100未満の目盛りが存在しないこと
+    - 最大980 のとき、上端が999にクランプされ（1030にならず）、999超の目盛りが存在しないこと
+    - いずれの場合も、水平補助線の本数が目盛りラベル数と一致し、最小・最大の点が軸範囲内に収まること
+    - _Requirements: 3.13, 3.14, 3.15, 3.16_
+
+- [x] 14. Final checkpoint - ビルド・型チェック・テストの確認
+  - `npm run build`、型チェック（`npx tsc --noEmit`）、`npm run test` がすべて通ることを確認する。問題があればユーザーに確認する。
+
 ## Notes
 
 - `*` 付きのサブタスクは任意で、MVP を優先する場合はスキップできる
@@ -301,7 +331,10 @@
     { "id": 7, "tasks": ["9.1", "10.1", "10.3", "10.5", "11.1"] },
     { "id": 8, "tasks": ["9.2", "9.3", "10.2", "10.4", "10.6", "11.2", "11.3"] },
     { "id": 9, "tasks": ["9.4", "10.7", "11.4"] },
-    { "id": 10, "tasks": ["10.8", "11.5"] }
+    { "id": 10, "tasks": ["10.8", "11.5"] },
+    { "id": 11, "tasks": ["13.1"] },
+    { "id": 12, "tasks": ["13.2", "13.3"] },
+    { "id": 13, "tasks": ["13.4"] }
   ]
 }
 ```
