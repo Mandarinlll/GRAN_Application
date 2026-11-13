@@ -189,4 +189,43 @@ export function rowToUser(row: UserRow): User {
   return toUser(row);
 }
 
+// 自分以外のユーザーが同じメールアドレスを使っているか判定する（プロフィール変更用）。
+export function emailTakenByOther(email: string, selfId: string): boolean {
+  const row = db
+    .prepare("SELECT 1 FROM users WHERE email = ? AND id <> ? LIMIT 1")
+    .get(email.toLowerCase(), selfId);
+  return row !== undefined;
+}
+
+// プロフィール変更の入力。
+export interface UpdateProfileParams {
+  realName: string;
+  kanaName: string;
+  nickname: string;
+  phoneNumber: string | null;
+  email: string;
+}
+
+// プロフィールを更新する。
+export function updateUserProfile(id: string, p: UpdateProfileParams): void {
+  db.prepare(
+    `UPDATE users SET real_name = ?, kana_name = ?, nickname = ?, phone_number = ?, email = ?, updated_at = ${NOW_JST} WHERE id = ?`,
+  ).run(p.realName, p.kanaName, p.nickname, p.phoneNumber, p.email.toLowerCase(), id);
+}
+
+// 現在のパスワードハッシュを取得する（パスワード変更時の照合用）。
+export function findPasswordHashById(id: string): string | null {
+  const row = db
+    .prepare("SELECT password_hash FROM users WHERE id = ?")
+    .get(id) as { password_hash: string } | undefined;
+  return row ? row.password_hash : null;
+}
+
+// パスワードハッシュを更新する。
+export function updatePasswordHash(id: string, passwordHash: string): void {
+  db.prepare(
+    `UPDATE users SET password_hash = ?, updated_at = ${NOW_JST} WHERE id = ?`,
+  ).run(passwordHash, id);
+}
+
 export type { UserRow };

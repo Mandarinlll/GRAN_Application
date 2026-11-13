@@ -24,6 +24,7 @@ import {
   toJstString,
 } from "@/features/notifications/utils/schedule";
 import { formatEventDate } from "@/utils/date";
+import { getSettings } from "@/features/settings/server/settingsRepository";
 
 // 画面表示時に呼ぶ: 指定ユーザー宛ての通知を最新状態に同期する。
 export function syncNotificationsForUser(
@@ -33,12 +34,18 @@ export function syncNotificationsForUser(
   const nowJst = toJstString(now);
   const today = nowJst.slice(0, 10);
 
+  // ユーザーの通知設定（OFFの種別は新規生成しない。既存の通知はそのまま残る）。
+  const settings = getSettings(userId);
   const entries = listUpcomingConfirmedEntries(today, "9999-12-31");
 
   for (const e of entries) {
     // 1) 7日前 9:00 のリマインド（申込者 + 登録ユーザーのメンバー）。
     const recipients = new Set([e.ownerUserId, ...e.registeredMemberIds]);
-    if (recipients.has(userId) && isReminderDue(e.eventDate, nowJst)) {
+    if (
+      settings.notifyReminder &&
+      recipients.has(userId) &&
+      isReminderDue(e.eventDate, nowJst)
+    ) {
       createNotificationIfAbsent({
         userId,
         kind: "REMINDER_7DAYS",
@@ -52,7 +59,11 @@ export function syncNotificationsForUser(
     }
 
     // 2) 未定枠が残っている団体戦等: 申込者へメンバー指定を促す。
-    if (e.ownerUserId === userId && e.pendingCount > 0) {
+    if (
+      settings.notifyMemberAssign &&
+      e.ownerUserId === userId &&
+      e.pendingCount > 0
+    ) {
       const key = `MEMBER_ASSIGN:${e.entryId}`;
       const created = createNotificationIfAbsent({
         userId,
