@@ -158,6 +158,7 @@ export const FIXTURE_TOURNAMENTS = {
   t03: tournament(3, "夏季男子団体戦 BC級", "MEN_TEAM", "MEN", "BC", "2025-07-19", "横浜テニスクラブ", "ARTIFICIAL_GRASS", S.classic.id),
   t04: tournament(4, "晩夏シングルス C級", "SINGLES", "MEN", "C", "2025-08-30", "有明テニスの森公園", "HARD", null),
   t05: tournament(5, "秋季ミックス団体戦 B級", "MIX_TEAM", "MIXED", "B", "2025-10-11", "有明テニスの森公園", "OTHER", S.classic.id),
+  // 旧データ: サーフェス NULL（集計から除外される）
   t06: tournament(6, "冬季男子ダブルス C級", "DOUBLES", "MEN", "C", "2025-12-06", "昭和の森テニスセンター", null, S.gran.id),
   t07: tournament(7, "女子シングルス BC級", "SINGLES", "WOMEN", "BC", "2026-01-24", "駒沢オリンピック公園", "HARD", S.gran.id),
   t08: tournament(8, "春季男子団体戦 C級", "MEN_TEAM", "MEN", "C", "2026-03-14", "横浜テニスクラブ", "ARTIFICIAL_GRASS", S.classic.id),
@@ -227,7 +228,7 @@ export const FIXTURE_ENTRIES = {
   t05Taro: entry(T.t05, U.taro, [U.taro, U.abClass], { teamId: TM.taro.id }),
   t05Mix: entry(T.t05, U.hanako, [U.hanako, U.cdClass], { teamId: TM.mix.id }),
   t05NoTeam: entry(T.t05, U.bClass, [U.bClass, U.dClass]),
-  // t06 男子ダブルス（サーフェス未設定）
+  // t06 男子ダブルス（旧データ: サーフェス NULL（集計から除外される））
   t06Taro: entry(T.t06, U.taro, [U.taro, U.sameLevel]),
   t06B: entry(T.t06, U.bClass, [U.bClass, U.deClass]),
   t06A: entry(T.t06, U.aClass, [U.aClass, { guest: "高橋ゲスト" }]),

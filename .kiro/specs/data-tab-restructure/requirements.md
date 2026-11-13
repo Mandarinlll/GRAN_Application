@@ -19,8 +19,8 @@ GRANアプリのナビゲーション「データ」タブ（`src/components/lay
 
 以下は現行DBスキーマに直接のカラムが無い、または仕様が未確定の項目である。設計フェーズで確定する。
 
-- サーフェス（コート種別）: `tournaments` にカラムが無い。追加が必要。
-- 大会シリーズ: `tournaments` にカラムが無い。追加が必要。
+- サーフェス（コート種別）: `tournaments` にカラムが無い。追加が必要。今後は大会登録時にサーフェスを必須入力とする（管理者の大会登録画面およびAPIの変更は設計フェーズで確定する）。サーフェスが未登録の既存試合は、サーフェス別の集計から除外する。
+- 大会シリーズ: `tournaments` にカラムが無い。追加が必要。大会シリーズが未登録の試合は、「その他」区分に集計する。
 - 季節: `tournaments.event_date` の月から導出する。月と季節の対応は用語集で定義する。
 - 対戦相手別（団体戦）: `tournament_matches.entry1_id` / `entry2_id` と `entries.team_id` から導出する。
 - 昇格ポイント: 階級レンジが重複している（例: A級850〜999、AB級750〜870）ため、境界の定義を設計で確定する。
@@ -40,8 +40,10 @@ GRANアプリのナビゲーション「データ」タブ（`src/components/lay
 - **Promotion_Threshold**: 現在の階級から1つ上の階級へ昇格するために必要なGRANレベルの下限値。
 - **Category**: 種目。男子、女子、混合。団体戦に加え、単・複の別を持つ。
 - **Season**: 季節。春（3〜5月）、夏（6〜8月）、秋（9〜11月）、冬（12〜2月）。`tournaments.event_date` の月から導出する。
-- **Surface**: 試合会場のコート種別（ハード、クレー、人工芝など）。
+- **Surface**: 試合会場のコート種別。登録値はハード、クレー、人工芝、その他（OTHER）などとし、大会登録時に必須とする。「未設定」という区分は持たない。
 - **Tournament_Series**: 複数の大会をまとめる大会シリーズ。
+- **Unregistered_Series_Group**: 大会シリーズが未登録の試合を集計する「その他」区分。登録済みシリーズの名称が「その他」であっても、その区分とは別に扱わず混同しない。未登録分は1つの「その他」区分にまとめる。
+- **Chart_Tooltip**: GRANレベル推移グラフの点の近くに表示する、日付・大会名・変動後レベルを示すツールチップ。
 - **Win_Rate**: 勝利数 ÷ 試合数 × 100 を小数第1位まで四捨五入した値（%）。試合数が0の場合は算出不能とする。
 - **Rated_Match**: GRANレベルの変動対象となった公式戦。`tournament_results` に記録される。
 - **GRAN_Level_History**: `tournament_results` の `pre_gran_level`、`gran_level_diff`、`post_gran_level`、`recorded_at` から構成される変動履歴。
@@ -92,7 +94,7 @@ GRANアプリのナビゲーション「データ」タブ（`src/components/lay
 3. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL GRAN_Levelの推移を、横軸を確定日時、縦軸を変動後レベルとする時系列の折れ線グラフで表示する。
 4. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL 初期表示件数や「もっと見る」の追加読み込み状況にかかわらず、取得可能な全件の履歴を確定日時の古い順にグラフへ反映する。
 5. THE My_Data_Page SHALL 履歴の各行について、変動値が正の場合は「+」記号と上向きアイコン、負の場合は「−」記号と下向きアイコン、0の場合は「±0」の表記を、色に加えて表示する。
-6. WHEN User がグラフ上の点を選択する, THE My_Data_Page SHALL その時点の確定日付（YYYY/MM/DD 形式）、大会名、変動後レベルを表示する。
+6. WHEN User がマウスカーソルをグラフ上の点にかざす（ホバーする）, THE My_Data_Page SHALL その点の近くにChart_Tooltipを表示し、その時点の確定日付（YYYY/MM/DD 形式）、大会名、変動後レベルを示す。
 7. WHERE GRAN_Level_Historyが0件である, THE My_Data_Page SHALL 現在のGRAN_Levelのみを表示し、履歴が存在しないことを示すメッセージを表示し、グラフと履歴一覧は表示しない。
 8. WHEN 履歴の件数が20件を超える, THE My_Data_Page SHALL 「もっと見る」操作を表示し、操作ごとに次の最大20件を一覧の末尾に追加表示する。
 9. IF 履歴の取得に失敗する, THEN THE My_Data_Page SHALL 履歴の取得に失敗したことを示すエラーメッセージと再読み込み操作を表示し、すでに表示済みの履歴を保持する。
@@ -104,6 +106,14 @@ GRANアプリのナビゲーション「データ」タブ（`src/components/lay
 15. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL 縦軸の下端を100以上、上端を999以下とし、目標下端が100未満の場合は下端を100、目標上端が999超の場合は上端を999とする（GRAN_Levelの定義域へのクランプを、基準14の目標範囲より優先する）。
 16. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL 目盛りを整数のきりの良い値にそろえるため、クランプ後の範囲を、その範囲を含む最小のきりの良い値まで広げてよい。ただし、広げた後も下端は100以上、上端は999以下とし、最小値および最大値の点が軸の範囲内に収まって表示されるようにする。
 17. THE My_Data_Page SHALL GRAN_Levelの推移グラフの全データを一覧にした専用のデータ表を提供しない。履歴一覧（基準1、2、8）は専用のデータ表には含まれない。
+18. WHEN User がキーボード操作でグラフ上の点にフォーカスする, THE My_Data_Page SHALL 基準6と同じ内容のChart_Tooltipをその点の近くに表示する。
+19. WHEN User がホバーを持たないタッチ端末でグラフ上の点をタップする, THE My_Data_Page SHALL 基準6と同じ内容のChart_Tooltipをその点の近くに表示する。
+20. THE My_Data_Page SHALL Chart_Tooltipの表示位置を、グラフの描画領域の内側に収める。グラフの端に位置する点では、Chart_Tooltipの位置を内側に寄せる。
+21. THE My_Data_Page SHALL 選択された点の日付などの情報を、グラフの描画領域の外（グラフ下部を含む）に表示しない。
+22. WHEN マウスカーソルがChart_Tooltipを表示中の点から外れる, THE My_Data_Page SHALL そのChart_Tooltipを閉じる。
+23. WHEN Chart_Tooltipを表示中の点からキーボードフォーカスが外れる, THE My_Data_Page SHALL そのChart_Tooltipを閉じる。
+24. WHEN ホバーを持たないタッチ端末でUser がChart_Tooltipを表示中の点以外の場所をタップする, THE My_Data_Page SHALL そのChart_Tooltipを閉じる。
+25. WHILE Chart_Tooltipが表示されている, THE My_Data_Page SHALL 同時に表示するChart_Tooltipを1個以下とする。別の点のChart_Tooltipを表示する場合は、先に表示されていたChart_Tooltipを閉じる。
 
 ### Requirement 4: 通算勝敗と直近試合の表示（マイデータ）
 
@@ -134,12 +144,15 @@ GRANアプリのナビゲーション「データ」タブ（`src/components/lay
 5. WHEN 条件として対戦相手（団体戦）が選択される, THE My_Data_Page SHALL 団体戦の対戦チームごとにWin_Rateを表示し、個人戦の試合は集計対象から除外する。
 6. THE My_Data_Page SHALL 各区分のWin_Rateを、小数点以下を四捨五入した0〜100%の整数値の数値表示と、その値に比例した長さの横棒グラフ（0%の長さを0、100%の長さを横棒グラフ表示領域の全幅とする）の両方で表示する。
 7. IF 選択した条件の値で試合数が0である, THEN THE My_Data_Page SHALL その値のWin_Rateを「-」で表示し、横棒グラフの長さを0とする。
-8. IF 試合のサーフェスまたは大会シリーズが未登録である, THEN THE My_Data_Page SHALL その試合を「未設定」区分に集計する。種目は常に男子、女子、混合のいずれかであるため、「未設定」区分は、サーフェスと大会シリーズの条件に限って表示する。
+8. IF 試合のサーフェスが未登録である, THEN THE My_Data_Page SHALL その試合をサーフェス別の集計から除外し、「未設定」を含む未登録用の区分を表示しない。
 9. THE My_Data_Page SHALL 条件別Win_Rateの集計対象を、結果が確定（`match_status` が `FINISHED`）した試合に限定する。
 10. WHEN 条件別Win_Rateの集計対象となる試合が全条件を通じて0件である, THE My_Data_Page SHALL 全区分のWin_Rateを「-」で表示し、集計対象の試合がないことを示すメッセージを表示する。
 11. IF 条件別Win_Rateのデータ取得に失敗する, THEN THE My_Data_Page SHALL 取得に失敗したことを示すエラーメッセージと再読み込み操作を表示し、直前に表示していた集計結果を保持する。
 12. WHEN User がプルダウンで選択する条件を変更する, THE My_Data_Page SHALL 変更前の条件の集計結果を、変更後の条件の集計結果の表示に置き換える。
 13. WHEN User が再読み込み操作を実行する, THE My_Data_Page SHALL 現在選択中の条件でデータを再取得し、取得に成功した場合はエラーメッセージを消去して最新の集計結果を表示する。
+14. IF 試合の大会シリーズが未登録である, THEN THE My_Data_Page SHALL その試合をUnregistered_Series_Groupとして1つの「その他」区分に集計し、大会シリーズ別の一覧の末尾（登録済みシリーズの全区分より後）に表示する。登録済みシリーズの名称が「その他」である場合も、THE My_Data_Page SHALL 未登録分の「その他」区分と登録済みシリーズの区分を別々の区分として扱い、登録済みシリーズの「その他」区分は登録済みシリーズの並びの中に表示し、2つの区分の試合数、勝利数、敗北数、Win_Rateを合算しない。
+15. THE My_Data_Page SHALL 条件別Win_Rateのいずれの条件（種目、サーフェス、大会シリーズを含む）においても、「未設定」という区分名を表示しない。
+16. WHEN 条件としてサーフェスが選択される, THE My_Data_Page SHALL サーフェスが登録されている試合のみを対象に、登録値（ハード、クレー、人工芝、その他（OTHER）など）ごとの区分でWin_Rateを表示する。
 
 ### Requirement 6: 出場履歴の一覧表示（出場データ）
 
@@ -224,7 +237,7 @@ GRANアプリのナビゲーション「データ」タブ（`src/components/lay
 4. IF 同一領域で再試行が連続して3回失敗する, THEN THE Data_Tab SHALL 再試行操作の表示を維持したまま、時間をおいて再度お試しいただく旨のメッセージを表示する。
 5. THE Data_Tab SHALL 本文テキストを14px以上、注釈テキストを12px以上で、画面幅320px以上のすべての表示環境で表示する。
 6. THE Data_Tab SHALL 勝敗や増減を色のみで伝えず、文字・記号・アイコンのいずれかを併用する。
-7. THE Data_Tab SHALL グラフ専用のデータ表を設けず、グラフの値を、軸の目盛りラベル、グラフ上の点を選択したときの表示、および同一画面内のGRAN_Level_History一覧で確認できるようにする。
+7. THE Data_Tab SHALL グラフ専用のデータ表を設けず、グラフの値を、軸の目盛りラベル、グラフ上の点のホバー、フォーカス、またはタップで表示されるChart_Tooltip、および同一画面内のGRAN_Level_History一覧で確認できるようにする。
 8. THE Data_Tab SHALL `docs/ui-design-system.md` のカラートークン、角丸、タイポグラフィ規定に従う。
 9. WHILE ダークモードが有効である, THE Data_Tab SHALL ダークモード用のカラートークンで表示し、本文テキストと背景のコントラスト比、および注釈テキストと背景のコントラスト比をいずれも4.5:1以上に保つ。
 

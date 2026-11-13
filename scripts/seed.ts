@@ -83,6 +83,11 @@ interface SeedTournament {
   dummyConfirmed: number;
 }
 
+type Surface = "HARD" | "CLAY" | "ARTIFICIAL_GRASS" | "OTHER";
+
+// 通常シードの大会に割り当てるサーフェス（インデックス順に循環）。
+const SEED_SURFACES: readonly Surface[] = ["HARD", "CLAY", "ARTIFICIAL_GRASS", "OTHER"];
+
 const SEED_TOURNAMENTS: SeedTournament[] = [
   {
     title: "第14回 GRANカップ秋季ミックス団体戦",
@@ -429,7 +434,7 @@ interface DataSeedTournament {
   tier: Tier;
   offsetDays: number;
   venue: string;
-  surface: "HARD" | "CLAY" | "ARTIFICIAL_GRASS" | "OTHER" | null;
+  surface: Surface;
   series: string | null;
   genderDivision: "MEN" | "WOMEN" | "MIXED" | null;
 }
@@ -438,8 +443,8 @@ const DATA_SEED_TOURNAMENTS: DataSeedTournament[] = [
   { key: "t1", title: "第1戦 シングルス", category: "SINGLES", tier: "C", offsetDays: -150, venue: "駒沢オリンピック公園", surface: "HARD", series: "GRANシリーズ", genderDivision: "MEN" },
   { key: "t2", title: "ミックスダブルス", category: "DOUBLES", tier: "C", offsetDays: -100, venue: "川崎リバーサイドTC", surface: "CLAY", series: "GRANシリーズ", genderDivision: "MIXED" },
   { key: "t3", title: "男子団体戦", category: "MEN_TEAM", tier: "BC", offsetDays: -60, venue: "横浜テニスクラブ", surface: "ARTIFICIAL_GRASS", series: "クラシックシリーズ", genderDivision: "MEN" },
-  // 結果未確定・サーフェス/シリーズ未設定（個人戦の性別区分は必須のため設定する）。
-  { key: "t4", title: "未設定シングルス", category: "SINGLES", tier: "C", offsetDays: -30, venue: "昭和の森テニスセンター", surface: null, series: null, genderDivision: "MEN" },
+  // 結果未確定・シリーズ未設定（サーフェスは必須。個人戦の性別区分も必須のため設定する）。
+  { key: "t4", title: "未設定シングルス", category: "SINGLES", tier: "C", offsetDays: -30, venue: "昭和の森テニスセンター", surface: "HARD", series: null, genderDivision: "MEN" },
   { key: "t5", title: "ミックス団体戦", category: "MIX_TEAM", tier: "B", offsetDays: -10, venue: "有明テニスの森公園", surface: "OTHER", series: "クラシックシリーズ", genderDivision: "MIXED" },
   // キャンセル／キャンセル待ち（出場履歴に現れないこと）。
   { key: "t6", title: "キャンセル済み大会", category: "SINGLES", tier: "D", offsetDays: -45, venue: "千葉ベイサイドTC", surface: "HARD", series: null, genderDivision: "WOMEN" },
@@ -756,8 +761,8 @@ async function main(): Promise<void> {
         id, title, category, tier, event_date, start_time, end_time,
         venue, court_info, image_url, description, capacity,
         team_size_min, team_size_max, entry_fee, status,
-        entry_start_at, entry_end_at, alert_threshold, gender_division, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ${NOW_JST}, ${NOW_JST})`,
+        entry_start_at, entry_end_at, alert_threshold, gender_division, surface, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ${NOW_JST}, ${NOW_JST})`,
     ).run(
       tournamentId,
       t.title,
@@ -777,6 +782,7 @@ async function main(): Promise<void> {
       entryStart,
       entryEnd,
       divisionOfCategory(t.category, t.genderDivision),
+      SEED_SURFACES[SEED_TOURNAMENTS.indexOf(t) % SEED_SURFACES.length],
     );
 
     // ダミー確定エントリー（残枠・満員の見た目用）。各ダミーユーザーで1件ずつ。

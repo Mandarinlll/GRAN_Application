@@ -12,7 +12,7 @@ import {
 } from "@/test/fixtures/dataTabFixture";
 import { createDataRepository, type DataRepository } from "../dataRepository";
 import { ApiError } from "../handlers";
-import { aggregateByDimension } from "../../utils/aggregate";
+import { aggregateByDimension, UNREGISTERED_SERIES_KEY } from "../../utils/aggregate";
 
 let db: DatabaseSync;
 let repo: DataRepository;
@@ -110,12 +110,14 @@ describe("マイデータ: 条件別の勝率", () => {
     expect(buckets.find((b) => b.key === "MIXED")).toMatchObject({ matches: 4, wins: 3, losses: 1 });
   });
 
-  it("サーフェス・大会シリーズの未登録は「未設定」区分に入る", () => {
+  it("サーフェス未登録の試合はサーフェス別集計から除外され、大会シリーズ未登録は「未設定」区分に入る", () => {
     const matches = repo.getDecidedMatches(U.taro.id);
-    const surfaceUnset = aggregateByDimension(matches, "surface").find((b) => b.key === "UNSET");
-    const seriesUnset = aggregateByDimension(matches, "series").find((b) => b.key === "UNSET");
-    expect(surfaceUnset?.matches).toBe(2);
+    const surfaceBuckets = aggregateByDimension(matches, "surface");
+    const seriesUnset = aggregateByDimension(matches, "series").find((b) => b.key === UNREGISTERED_SERIES_KEY);
+    expect(surfaceBuckets.find((b) => b.key === "UNSET")).toBeUndefined();
+    expect(surfaceBuckets.reduce((s, b) => s + b.matches, 0)).toBe(matches.length - 2);
     expect(seriesUnset?.matches).toBe(1);
+    expect(aggregateByDimension(matches.map((m) => ({ ...m, surface: null })), "surface")).toEqual([]);
   });
 
   it("季節別の試合数の合計は通算試合数と一致する", () => {

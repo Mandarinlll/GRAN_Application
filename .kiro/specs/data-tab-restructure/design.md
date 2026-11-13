@@ -30,8 +30,8 @@
 
 | 項目 | 決定 | 根拠 |
 | --- | --- | --- |
-| サーフェス | `tournaments.surface` 追加（`HARD` / `CLAY` / `ARTIFICIAL_GRASS` / `OTHER`、NULL可）。NULLは「未設定」に集計 | 要件5.8。既存データを壊さないNULL許容 |
-| 大会シリーズ | 新テーブル `tournament_series(id, name)` と `tournaments.series_id`（NULL可・FK）。NULLは「未設定」 | 名称変更を1箇所で反映できる正規化 |
+| サーフェス | `tournaments.surface` 追加（`HARD` / `CLAY` / `ARTIFICIAL_GRASS` / `OTHER`）。**今後の大会登録・更新ではアプリ層（zod）で必須**。DB列はNULL許容のまま。既存のNULLデータは**サーフェス別集計から除外**（「未設定」区分は作らない） | 要件5.8, 5.15, 5.16。SQLiteは既存列へNOT NULLを後付けできないため `gender_division` と同方式 |
+| 大会シリーズ | 新テーブル `tournament_series(id, name)` と `tournaments.series_id`（NULL可・FK）。NULL（未登録）は専用キー `UNREGISTERED_SERIES_KEY` の**「その他」区分**（`Unregistered_Series_Group`）に集計し、一覧の末尾に置く。登録済みシリーズに「その他」という名称があっても別区分で合算しない | 要件5.14, 5.15。名称変更を1箇所で反映できる正規化。区分キーを名称と分離して衝突を防ぐ |
 | 季節 | `event_date` の月から導出。春3–5/夏6–8/秋9–11/冬12–2。DBカラムは持たない | 要件の用語集どおり。純粋関数 `seasonOf(month)` |
 | 昇格ポイント境界 | `granLevelToTier` の下限値を採用。Promotion_Threshold = 次階級の下限値（DE→D: 250, D→CD: 350, CD→C: 450, C→BC: 550, BC→B: 650, B→AB: 750, AB→A: 850。Aは最上位で閾値なし）。差 = 閾値 − 現在値（常に1以上）。進捗 = (現在値 − 現階級下限) ÷ (閾値 − 現階級下限) を0–100%に丸め | docsの査定レンジは重複しているが（例: A 850–999 / AB 750–870）、それは**初期査定の目安**。実判定は既存実装の連続境界で行われており、表示と一貫させる |
 | 種目別ランキングの集計単位 | **性別による区分**。順位の元は常に `users.gran_level` の1値。男子=`gender='MALE'`、女子=`gender='FEMALE'`、混合=全ユーザー（性別未設定・OTHER含む） | 種目別レーティングはDBに存在せず、要件9.7（階級別と同じ値）を満たす最小構成。種目別Eloは将来拡張 |
@@ -46,6 +46,17 @@
 - `ensureColumn` で列を追加する際、既存行には `category` が団体戦の行のみ `gender_division` を一括補完する（`UPDATE ... SET gender_division = CASE category WHEN 'MEN_TEAM' THEN 'MEN' ...`、冪等）。SQLite は `ALTER TABLE ADD COLUMN` で NOT NULL を後付けできないため、列定義は NULL 許容のまま残し、必須性はアプリ層で担保する。
 - 既存データに残る「`SINGLES`/`DOUBLES` かつ `gender_division` が NULL」の行は、種目を判別できない不正データとして**種目の集計から除外**する（「未設定」区分は作らない）。他の条件（会場・サーフェス・季節・対戦相手・シリーズ）の集計と、通算勝敗には引き続き含める。
 - 出場履歴の種目絞り込みも、同じ理由で「未設定」選択肢を持たない（男子/女子/混合のみ）。
+
+#### サーフェスを必須とする方針（「未設定」区分の廃止）
+
+要件5.8 / 5.15 / 5.16 に基づき、サーフェスの「未設定」区分は設けない。種目（`gender_division`）と同じ方針で扱う。
+
+- **登録・更新経路（調査結果）**: 大会の登録・更新の検証は `src/features/tournaments/types/schema.ts`（`tournamentCreateSchema` / `validateTournamentUpdate` / `requireGenderDivisionForIndividual`）にあり、現状は `gender_division` のみ検証している。`createTournament`（`src/features/tournaments/server/tournamentRepository.ts`）は `tournamentCreateSchema.parse` を呼ぶが、`CreateTournamentParams` に `surface` / `seriesId` が無く、INSERT も `surface` / `series_id` を書いていない。同ファイルのコメントのとおり本番の**管理者向け大会登録のUI・APIは未実装（別スコープ）**で、呼び出し元は現状ない（`createTournament(` の参照が定義のみ）。
+- **本機能で行う変更**: (1) `schema.ts` に `surfaceSchema = z.enum(["HARD","CLAY","ARTIFICIAL_GRASS","OTHER"])` を追加し、`tournamentCreateSchema` で `surface` を**必須**（未指定・`null` は拒否、`path: ["surface"]`）にする。`validateTournamentUpdate` は入力が無ければ既存値（`existing.surface`）で最終検証する（既存値が NULL の旧データを更新する場合は、`surface` を指定しない更新を拒否する。`gender_division` と同じ扱い）。(2) `CreateTournamentParams` に `surface` を必須で追加し、INSERT に `surface` を含める（`seriesId` は任意で追加し、`series_id` を書き込む）。管理者向けの登録画面・APIそのものは別スコープのため、本機能では作らない。将来それらを実装する際は、この zod スキーマを共通で通す。
+- **DB**: `surface` 列は NULL 許容のまま（`ensureColumn` の定義は変更しない）。既存 NULL データは補完せず、**サーフェス別集計から除外**する。通算勝敗と他の条件（種目・会場・季節・対戦相手・大会シリーズ）の集計には含める。
+- **シード/フィクスチャ**: 「サーフェスが NULL の大会」は、以後は新規登録では作れない**旧データを再現する目的**に限る。
+  - `scripts/seed.ts` の `DATA_SEED_TOURNAMENTS` は、現状 `t4`（`surface: null, series: null`）が「未設定」を再現している。`t4` のサーフェスは通常の値（例: `HARD`）に変更し、`series: null` は「その他」区分（`Unregistered_Series_Group`）の確認用に残す。`DataSeedTournament.surface` の型は `Surface | null` から `Surface` に狭める。旧データ（サーフェス NULL）の除外確認は、フィクスチャ側で担保する（シードは「登録できる状態のデータ」のみ作る方針）。通常シードの大会（`scripts/seed.ts` 758行付近の INSERT）は `surface` を書かない（NULL）ため、`surface` を指定して挿入する（ユーザー画面の大会表示用データのため値は任意の登録可能な値でよい）。
+  - `src/test/fixtures/dataTabFixture.ts` の `t06`（`surface: null`、コメント「サーフェス未設定」）は**旧データ（サーフェス NULL）として維持**する。生SQLでの挿入のためスキーマ検証を通らず、除外動作の検証に使える。コメントは「旧データ: サーフェス NULL（集計から除外される）」に更新する。`tournament()` ヘルパーの `surface` 型は `Surface | null` のまま（旧データを表現するため）。
 
 > 種目の意味は2種類ある。**統計・出場履歴の種目**は大会の部門（上表）、**ランキングの種目**はユーザーの性別区分である。UI上の名称は同じ「男子/女子/混合」だが、混同しないよう型を `GenderDivision`（大会側）と `RankingCategory`（ランキング側）に分ける。
 
@@ -120,6 +131,7 @@ src/features/data/
     aggregate.ts               # 条件別勝率の区分集計
     history.ts                 # 履歴ソート/グラフ点列/差分表記
     chartAxis.ts               # 縦軸 niceTicks / 横軸 dateTicks（純粋関数）
+    chartTooltip.ts            # Chart_Tooltip の配置計算 tooltipPosition（純粋関数）
     participation.ts           # 絞り込み・並べ替え・結果ラベル
     pagination.ts              # offset/limit スライス
     ranking.ts                 # 階級内順位・競技順位
@@ -177,15 +189,23 @@ export interface DecidedMatch {            // 勝者が確定した FINISHED 試
   matchId: string; isWin: boolean;
   tournamentCategory: TournamentCategory;
   genderDivision: GenderDivision | null;   // 団体戦は category から導出。SINGLES/DOUBLES で null は不正データ（種目集計から除外）
-  venue: string; surface: Surface | null; seriesName: string | null;
+  venue: string; surface: Surface | null; seriesName: string | null; // surface=null は旧データ（サーフェス別集計から除外）
   eventDate: string; opponentTeamName: string | null; // 団体戦のみ非null
 }
 export interface Bucket { key: string; label: string; matches: number; wins: number; losses: number }
+export const UNREGISTERED_SERIES_KEY: string;   // 大会シリーズ未登録（NULL/空）の専用区分キー。登録済みシリーズ名と衝突しない値にする
+export const UNREGISTERED_SERIES_LABEL = "その他"; // 表示名
 export function aggregateByDimension(matches: DecidedMatch[], dim: Dimension): Bucket[];
 // 固定区分（category: 男子/女子/混合の3区分のみ、season: 春夏秋冬）は試合0件でも全区分を返す。
 // category に「未設定」区分は存在しない。部門を判別できない試合（SINGLES/DOUBLES かつ genderDivision=null）は category 集計から除外する。
-// 動的区分（venue/surface/series/opponent）は試合のある値のみ。"未設定" 区分は surface と series の欠損に限る（category・venue には適用しない。空の会場名は venue 集計から除外）。
-// opponent は団体戦（opponentTeamName != null）のみ対象。
+// 動的区分（venue/surface/series/opponent）は試合のある値のみ。「未設定」区分（旧 UNSET_KEY / UNSET_LABEL）は全次元で廃止する。
+// - surface: surface=null の試合は集計から除外する（区分を作らない）。区分は登録値（ハード/クレー/人工芝/その他(OTHER)）のみ。
+// - series: seriesName が null/空の試合は UNREGISTERED_SERIES_KEY の1区分（label「その他」）に集計し、一覧の末尾（登録済みシリーズの全区分より後）に置く。
+//   区分キーは「登録済みシリーズ名そのもの」ではなく名前空間付きのキーで管理する（例: 登録済みは `series:${name}`、未登録は UNREGISTERED_SERIES_KEY = "unregistered"
+//   のように、登録済みキーと決して一致しない形式）。登録済みシリーズの名称が「その他」でも、label「その他」の区分が2つ並ぶだけで合算しない
+//   （登録済み側は登録済みの並びの中、未登録側は末尾）。
+// - 空の会場名は venue 集計から除外。opponent は団体戦（opponentTeamName != null）のみ対象。
+// 動的区分の並び順: 試合数降順 → ラベル昇順。ただし series の UNREGISTERED_SERIES_KEY は試合数にかかわらず常に末尾。
 
 // history.ts
 export function sortHistoryDesc<T extends { recordedAt: string; seq: number }>(rows: T[]): T[]; // 日時降順、同一日時は seq 降順
@@ -214,6 +234,22 @@ export interface DateTick { date: string /* YYYY-MM-DD */; label: string }
 export function dateTicks(dates: string[] /* 確定日付 YYYY-MM-DD、重複・未整列可 */, maxCount?: number /* 既定5 */): DateTick[];
 // - 重複を除いた日付種類数 n に対し、n <= maxCount なら全種類、n > maxCount なら先頭・末尾を含み添字を等分割で maxCount 個選ぶ（個数は min(n, maxCount)、n>=3 なら3以上）。
 // - 昇順で返す。label は全目盛りで1形式に統一: 全日付が同一年なら "M/D"、年をまたぐなら "YYYY/MM/DD"。
+
+// chartTooltip.ts（Chart_Tooltip の位置計算。DOMに依存しない純粋関数）
+export interface Rect { left: number; top: number; right: number; bottom: number }
+export interface TooltipPlacement { left: number; top: number; placement: "above" | "below" }
+export function tooltipPosition(args: {
+  anchor: { x: number; y: number };        // 点の中心（描画領域と同じ座標系）
+  size: { width: number; height: number }; // ツールチップの実寸（描画後に測定）
+  bounds: Rect;                            // グラフの描画領域（plot area）
+  gap?: number;                            // 点とツールチップの間隔。既定 12
+}): TooltipPlacement;
+// - 前提: size.width <= bounds の幅 かつ size.height <= bounds の高さ（呼び出し側が max-width と文言の折り返しで保証する。超える場合は left/top を bounds.left / bounds.top に固定）。
+// - 水平: 点の中心に揃える left = anchor.x − width/2 を、[bounds.left, bounds.right − width] にクランプする（端の点では内側へ寄せる。要件3.20）。
+// - 垂直: まず点の上側 top = anchor.y − gap − height（placement="above"）に置く。top < bounds.top で収まらない場合は点の下側 top = anchor.y + gap（placement="below"）に置く。
+//   下側でも bottom を超える場合は [bounds.top, bounds.bottom − height] にクランプする（どちらにも収まらない極端な場合でも領域外へ出さない）。
+// - 出力の矩形 [left, top, left+width, top+height] は常に bounds に収まる（前提を満たす入力のとき）。
+// - 点が bounds 内で、上側に収まるときは placement="above"、収まらず下側に収まるときは "below"。
 
 // participation.ts
 export interface ParticipationFilter { division?: GenderDivision; tier?: TournamentTier; year?: number }
@@ -288,12 +324,19 @@ interface State<T> {
 - `DataTabs`（Client）: 「マイデータ / 出場データ / ランキング」を左から1行で常時表示。`usePathname()` で選択中を判定し、`aria-current="page"` と下線+背景色で強調（要件1.1, 1.3）。`Link` による遷移。
 - `RegionState`: `<Skeleton/>`・`<ErrorPanel onRetry/>`・`<EmptyState/>` を提供。エラー時も周囲のタブ/ナビは維持（要件1.8）。
 - `LevelCard`: GRANレベル、階級（`is_level_calibrated=false` は「査定前」表示）、昇格差、進捗バー（`role="progressbar"` + 数値テキスト）。
-- `GranHistory` / `GranChart`: 一覧20件+「もっと見る」。`GranChart` は自前SVG折れ線。各点は `tabindex=0` / `role="button"` でフォーカス・選択でき（44px以上の当たり判定の透明円）、選択点の日付（YYYY/MM/DD）・大会名・変動後レベルをテキスト表示（要件3.6）。
+- `GranHistory` / `GranChart`: 一覧20件+「もっと見る」。`GranChart` は自前SVG折れ線。各点は `tabindex=0` / `role="button"` でフォーカスでき（44px以上の当たり判定の透明円）、**点の近くの Chart_Tooltip** に日付（YYYY/MM/DD）・大会名・変動後レベルを表示する（要件3.6, 3.18〜3.25）。従来の「グラフ下部に選択点の情報を表示する `<p aria-live>` と、未選択時の案内文『グラフの点を選択すると詳細が表示されます。』」は**削除**する（要件3.21）。グラフ下部の `NOTE_CLASS` の期間・レベル範囲（先頭〜末尾の確定日時、最小〜最大レベル）は選択点の情報ではないため維持する。
+  - **Chart_Tooltip（要件3.6, 3.18〜3.25）**:
+    - **状態**: `activeIndex: number | null` を単一の状態として持つ。1つの state で表すため、同時に表示されるツールチップは構造的に1個以下になる。別の点で表示するときは `activeIndex` を置き換えるだけで、前のツールチップは閉じる（要件3.25）。
+    - **開く/閉じる**: (1) ホバー: 点の `<g>` の `onPointerEnter` で開き、`onPointerLeave` で閉じる（`pointerType === "mouse" | "pen"` のときのみ。タッチでは合成の enter/leave を無視する。要件3.6, 3.22）。(2) キーボード: `onFocus` で開き、`onBlur` で閉じる。ただし `blur` は `activeIndex` がそのフォーカス点と一致するときだけ閉じる（要件3.18, 3.23）。(3) タッチ: 点の `onPointerDown`（`pointerType === "touch"`）で開く（要件3.19）。外側タップで閉じるため、`activeIndex !== null` の間だけ `document` に `pointerdown` リスナーを登録し、`pointerType === "touch"` かつイベント対象が現在の点の `<g>` の外であれば閉じる。別の点をタップした場合は、その点の `onPointerDown` が `activeIndex` を置き換える（要件3.24, 3.25）。リスナーは `useEffect` のクリーンアップで解除する。
+    - **描画**: ツールチップはSVG外の絶対配置の `<div>`（ラッパー `div` が `relative`）として描画し、`pointer-events-none` にする（ホバー中の点を覆って `pointerleave` を発火させないため）。ラッパーの座標系と SVG の `viewBox` は縮小率1で一致する（サイズ項の `ResizeObserver` で `viewBox` 幅を実幅に一致させているため）。
+    - **位置**: 点の中心 `(xs[i], ys[i])`、描画領域 `bounds = { left: MARGIN_L, top: MARGIN_T, right: W − MARGIN_R, bottom: MARGIN_T + plotH }`、`useLayoutEffect` で測定したツールチップ実寸を `tooltipPosition` に渡し、返った `left` / `top` を `style` に設定する（測定前は `visibility: hidden` にしてちらつきを防ぐ）。幅は `max-width: min(240px, plotW)` とし、大会名が長い場合は折り返す（`break-words`）。これにより「実寸 ≦ 描画領域」の前提を満たす。グラフの左右端の点では内側に寄せ、上端付近の点では下側に置く（要件3.20）。
+    - **内容と書式**: 「YYYY/MM/DD」（日付のみ。時刻は表示しない）、大会名、「変動後レベル N」を3行で表示。日付の整形は `shared.ts` に日付のみの整形関数（例: `formatDate`）が無ければ追加する（既存 `formatDateTime` は時刻を含むため流用しない）。ツールチップの文字は 12px 以上、`bg-white dark:bg-slate-900`・`text-slate-900 dark:text-slate-100`・`border-slate-200 dark:border-slate-700`・`rounded-xl`・影付きとし、コントラスト 4.5:1 以上を保つ（要件10.8, 10.9）。
+    - **アクセシビリティ**: ツールチップ要素に `role="tooltip"` と、`useId()` で生成した一意の `id` を付ける。表示中の点の `<g>` に `aria-describedby={tooltipId}` を付ける（非表示の点には付けない。存在しない要素を参照しないため）。点の `aria-label`（日付・大会名・変動後レベル）は維持する。従来の `aria-pressed`（選択状態）は選択の概念が無くなるため削除する。色だけに依存せず、アクティブな点は塗りつぶしと半径拡大（現状の `isSel` 表現）で示す（要件10.6）。
   - **軸と補助線（要件3.11〜3.16）**: 縦軸は、まず `paddedLevelRange(最小変動後レベル, 最大変動後レベル)`（既定: 余白±50、下限100、上限999）で目標範囲 `[lo, hi]` を求め（クランプが余白より優先、要件3.14, 3.15）、次に `niceTicks(lo, hi, 5, { floor: 100, ceil: 999 })` の `ticks` を等間隔の整数ラベルとして左に描画する。軸範囲は `[ticks[0], ticks[last]]` で、`[lo, hi]` を含む最小のきりの良い範囲に広がってよいが、100〜999 を超えない（要件3.16）。データの最小・最大の点は必ず軸範囲内に収まる。Y座標は `ticks[0]`〜`ticks[last]` を描画域の下端〜上端へ線形に割り当てる。各目盛りに水平補助線（`<line data-gridline>`）を引き、本数は目盛りラベル数と同数。横軸は `dateTicks(全点の確定日付)` の各 `date` に対応するX位置（時刻に比例）へ目盛り線とラベルを描画する（形式は1種類に統一、日付種類が3未満ならその数）。補助線は `stroke` に `slate-200 / dark:slate-700` を使い、軸ラベルは `text-slate-700 dark:text-slate-300` の12px以上とする。
   - **サイズ**: SVGは `viewBox` の縮小でフォントが12px未満にならないよう、`ResizeObserver` でコンテナ実幅（最小280px）を取得し、`viewBox` 幅を実幅に一致させる（縮小率1）。左余白は縦軸ラベル幅、下余白は横軸ラベル幅を確保する。横ラベルが重なる幅では `dateTicks` の `maxCount` を幅から算出して減らす（ただし3個以上、日付種類が3未満ならその数）。
-  - **データ表は設けない（要件3.17, 10.7）**: 従来の `<details>`「グラフの全データを表で見る」と全点データ表は**削除**する。グラフの値は、縦軸・横軸の目盛りラベル、点の選択表示、同一画面内の履歴一覧（`GranHistory`）で確認する。履歴一覧はグラフ専用の表ではなく、グラフの全点を含む保証もない（初期20件+もっと見る）ため、専用表とは扱わない。
+  - **データ表は設けない（要件3.17, 10.7）**: 従来の `<details>`「グラフの全データを表で見る」と全点データ表は**削除**する。グラフの値は、縦軸・横軸の目盛りラベル、点のホバー/フォーカス/タップで表示される Chart_Tooltip、同一画面内の履歴一覧（`GranHistory`）で確認する。履歴一覧はグラフ専用の表ではなく、グラフの全点を含む保証もない（初期20件+もっと見る）ため、専用表とは扱わない。
 - `RecordSummary` / `RecentMatches`: 勝敗は「勝」「敗」の文字+色の両方（要件4.4）。Participation_Pageへのリンク。
-- `WinRateByCondition`: 条件選択は**プルダウン**（ネイティブ `<select>` + `<label htmlFor>`「条件」。選択肢は種目・会場・サーフェス・季節・対戦相手（団体戦）・大会シリーズの6つをこの順で）。タブ（`role="tablist"`）は使わない（要件5.1）。`onChange` で `dimension` を更新し、変更前の集計結果を変更後の結果に置き換える（要件5.12）。`select` は `min-h-[44px]`、`text-sm` 以上、`rounded-xl`、`ui-design-system.md` の入力トークン（`border-slate-200 dark:border-slate-800`、フォーカスリング `emerald`）を使う。再読み込みは現在の `dimension` で再取得する（要件5.13）。区分ごとに「試合数/勝/敗/勝率(整数%)」の行と、勝率に比例した幅の横棒（0試合は「-」・幅0）。種目を選んだ場合の区分は男子・女子・混合の3行のみで「未設定」行は出さない。「未設定」行はサーフェス・大会シリーズに限り（要件5.8）、試合があるときだけ末尾に表示する。会場は `tournaments.venue` が必須列のため「未設定」を持たず、空文字の会場名は会場別集計から除外する。
+- `WinRateByCondition`: 条件選択は**プルダウン**（ネイティブ `<select>` + `<label htmlFor>`「条件」。選択肢は種目・会場・サーフェス・季節・対戦相手（団体戦）・大会シリーズの6つをこの順で）。タブ（`role="tablist"`）は使わない（要件5.1）。`onChange` で `dimension` を更新し、変更前の集計結果を変更後の結果に置き換える（要件5.12）。`select` は `min-h-[44px]`、`text-sm` 以上、`rounded-xl`、`ui-design-system.md` の入力トークン（`border-slate-200 dark:border-slate-800`、フォーカスリング `emerald`）を使う。再読み込みは現在の `dimension` で再取得する（要件5.13）。区分ごとに「試合数/勝/敗/勝率(整数%)」の行と、勝率に比例した幅の横棒（0試合は「-」・幅0）。種目を選んだ場合の区分は男子・女子・混合の3行のみで「未設定」行は出さない。どの条件でも「未設定」行は表示しない（要件5.15）。サーフェスはサーフェスが登録された試合のみを登録値ごとに表示し、未登録（NULL）の試合は除外する（要件5.8, 5.16）。大会シリーズは、シリーズ未登録の試合があるときだけ「その他」行（`UNREGISTERED_SERIES_KEY`）を登録済みシリーズの全行の後ろ（末尾）に表示し、登録済みシリーズに「その他」があっても別の行として並べる（要件5.14）。行の React `key` には `Bucket.key`（名前空間付き）を使うため、同じ表示名「その他」の行が2つあっても衝突しない。会場は `tournaments.venue` が必須列のため「未設定」を持たず、空文字の会場名は会場別集計から除外する。サーフェスで全試合がサーフェス NULL の場合など、区分が0件になるときは既存の「集計対象の試合がありません。」の空状態を表示する。
 - `ParticipationTable`: md以上は表、md未満は「開催年月日・会場・結果」の3項目のカード行で横スクロールなし（要件6.6）。行は `role="button"` `tabIndex=0`、Enter/Spaceで選択、`min-h-[44px]`（要件7.6）。
 - `ParticipationDetail`: `role="dialog"` `aria-modal`。開くとき `history.pushState({ detail: tournamentId }, "")`、`popstate`・Esc・閉じるボタンで閉じ、直前に押下した行へ `focus()` を戻す。一覧コンポーネントはマウントしたまま背面に残すため、スクロール位置と絞り込み状態が保持される（要件7.5, 7.7）。
 - `RankingView`（`src/components/ranking/RankingView.tsx`）: 上部1か所に「階級別 / 種目別」切替（モード切替は2タブのまま）。階級別では**8個のTierタブを廃止**し `TierSlider` を表示する。種目別は従来どおり種目タブ（男子/女子/混合）。選択状態は親の `useState`（`{ mode, tier, category }`）に保持し、モード切替で破棄しない（要件9.6）。初期の階級は `initialSliderTier(現在のTier | null)`（`page.tsx` が現在Tierを判定できない場合は `null` を渡し、A を初期選択する。要件8.14）、初期の種目は男子。
@@ -324,7 +367,8 @@ CREATE TABLE IF NOT EXISTS tournament_series (
   name TEXT NOT NULL UNIQUE
 );
 
--- tournaments への列追加（DB上はすべてNULL許容。surface/series_id は未設定を許容、gender_division はアプリ層で必須）
+-- tournaments への列追加（DB上はすべてNULL許容。series_id は未登録を許容し「その他」区分に集計、
+-- surface / gender_division はアプリ層（zod）で必須。既存の surface NULL は集計から除外し補完しない）
 ALTER TABLE tournaments ADD COLUMN surface TEXT
   CHECK (surface IN ('HARD','CLAY','ARTIFICIAL_GRASS','OTHER'));
 ALTER TABLE tournaments ADD COLUMN series_id TEXT REFERENCES tournament_series(id);
@@ -453,7 +497,7 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 
 *A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
 
-プロパティ・リフレクションの結果: 「履歴の降順」「出場履歴のページング」「ランキングの50件ページング」は同一の `slicePage` 性質に統合した。「3.5の符号表記」と「7.4の変動表記」は `formatDelta` に統合した。「勝率の算出」「勝率の整数表示/0試合」は `winRate` の性質に統合した。階級別と種目別のレベル一致は、ランキングDTOの生成元が同一であることとして1つにまとめた。グラフ軸（縦軸の整数・等間隔・範囲包含・3個以上）は `niceTicks` の1性質に、スライダー（往復変換・スナップ・端のクランプ・初期値）は Tier⇔スライダー値の1性質に統合した。補助線の本数一致（要件3.13）は `ticks` から生成する構造により Property 17 に帰着させ、描画上の本数は例示テストで確認する。縦軸の余白とクランプ（要件3.14〜3.16）は `paddedLevelRange` と `niceTicks` の合成として Property 20 にまとめた。
+プロパティ・リフレクションの結果: 「履歴の降順」「出場履歴のページング」「ランキングの50件ページング」は同一の `slicePage` 性質に統合した。「3.5の符号表記」と「7.4の変動表記」は `formatDelta` に統合した。「勝率の算出」「勝率の整数表示/0試合」は `winRate` の性質に統合した。階級別と種目別のレベル一致は、ランキングDTOの生成元が同一であることとして1つにまとめた。グラフ軸（縦軸の整数・等間隔・範囲包含・3個以上）は `niceTicks` の1性質に、スライダー（往復変換・スナップ・端のクランプ・初期値）は Tier⇔スライダー値の1性質に統合した。補助線の本数一致（要件3.13）は `ticks` から生成する構造により Property 17 に帰着させ、描画上の本数は例示テストで確認する。縦軸の余白とクランプ（要件3.14〜3.16）は `paddedLevelRange` と `niceTicks` の合成として Property 20 にまとめた。Chart_Tooltip の位置（要件3.20）は `tooltipPosition` の1性質として Property 21 にまとめた。開閉の状態遷移（ホバー/フォーカス/タップ/外側タップ、同時1個以下。要件3.6, 3.18, 3.19, 3.21〜3.25）と `role="tooltip"` / `aria-describedby` は、入力空間が小さくUIイベントに依存するため、プロパティではなくコンポーネントの例示テストで検証する。
 
 ### Property 1: 階級判定と昇格情報の整合
 
@@ -469,9 +513,9 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 
 ### Property 3: 条件別集計は試合を丁度1区分に分類する
 
-*For any* 勝者確定済み試合の集合と任意の `Dimension` に対し、`aggregateByDimension` が返す区分について、(a) 各区分で `wins + losses = matches`、(b) 区分の `matches` の合計は対象試合数と等しい（`opponent` は団体戦のみ、`category` は部門を判別できる試合のみ、`venue` は会場名が空でない試合のみ）、(c) `surface`/`series` が未登録の試合は「未設定」区分に入り、`category`・`season`・`opponent`・`venue` の結果に「未設定」区分（キー `UNSET`）は現れない、(d) `category` はどの入力に対しても男子・女子・混合の3区分のみ（この順）、`season` は春夏秋冬の4区分を常に返す。団体戦（`MEN_TEAM`/`WOMEN_TEAM`/`MIX_TEAM`）は `genderDivision` が `null` でも `category` から部門が決まる。入力に `FINISHED` でない試合や個人戦（`opponent` 次元）は含まれない（呼び出し側のフィルタ後を前提に、集計関数は入力を過不足なく数える）。
+*For any* 勝者確定済み試合の集合と任意の `Dimension` に対し、`aggregateByDimension` が返す区分について、(a) 各区分で `wins + losses = matches`、(b) 区分の `matches` の合計は対象試合数と等しい（`opponent` は団体戦のみ、`category` は部門を判別できる試合のみ、`venue` は会場名が空でない試合のみ、`surface` は `surface` が登録されている試合のみ。`surface` が `null` の試合は合計に含まれない）、(c) どの `Dimension` の結果にも「未設定」という `label` の区分は現れない、(d) `category` はどの入力に対しても男子・女子・混合の3区分のみ（この順）、`season` は春夏秋冬の4区分を常に返す。団体戦（`MEN_TEAM`/`WOMEN_TEAM`/`MIX_TEAM`）は `genderDivision` が `null` でも `category` から部門が決まる。(e) `series` では、シリーズ未登録の試合の数を `u` とすると `u > 0` のときちょうど1つの区分（`key = UNREGISTERED_SERIES_KEY`、`label = "その他"`、`matches = u`）が存在し、その区分は結果の末尾にある。`u = 0` のとき、その区分は存在しない。(f) 登録済みシリーズの名称が「その他」の試合が含まれていても、その試合の区分は `UNREGISTERED_SERIES_KEY` の区分とは別のキーで集計され、2つの区分の `matches` / `wins` / `losses` は合算されない（登録済み区分の試合数は、登録名が「その他」の試合数と等しい）。入力に `FINISHED` でない試合や個人戦（`opponent` 次元）は含まれない（呼び出し側のフィルタ後を前提に、集計関数は入力を過不足なく数える）。
 
-**Validates: Requirements 5.2, 5.3, 5.4, 5.5, 5.8, 5.9**
+**Validates: Requirements 5.2, 5.3, 5.4, 5.5, 5.8, 5.9, 5.14, 5.15, 5.16**
 
 ### Property 4: 季節は月の全域写像
 
@@ -575,6 +619,12 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 
 **Validates: Requirements 3.14, 3.15, 3.16**
 
+### Property 21: Chart_Tooltip は常に描画領域内に収まる
+
+*For any* 描画領域 `bounds`（幅・高さが正）、その領域内の任意の点 `anchor`、`bounds` の幅・高さ以下の任意のツールチップ実寸 `size`、非負の `gap` に対し、`tooltipPosition` が返す矩形 `[left, top, left + width, top + height]` は (a) 常に `bounds` に完全に収まる（4辺とも）、(b) `anchor` が左右端付近でも水平方向は内側へ寄せられ、領域に収まる場合は点の中心に揃う（`left = anchor.x − width/2`）、(c) 点の上側に収まるとき `placement = "above"` で `top = anchor.y − gap − height`、上側に収まらず下側に収まるとき `placement = "below"` で `top = anchor.y + gap`、(d) どちらにも収まらない場合も (a) を満たす。
+
+**Validates: Requirements 3.20**
+
 ## Error Handling
 
 | 事象 | サーバー | クライアント表示 |
@@ -610,7 +660,7 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 
 ### プロパティテスト
 
-- 対象は Property 1〜20。各プロパティを**単一のプロパティテスト**で実装し、`fc.assert(..., { numRuns: 100 })` 以上（最小100回）で実行する。
+- 対象は Property 1〜21。各プロパティを**単一のプロパティテスト**で実装し、`fc.assert(..., { numRuns: 100 })` 以上（最小100回）で実行する。
 - 各テストにタグコメントを付ける。形式: `// Feature: data-tab-restructure, Property {番号}: {プロパティ名}`。
 - Property 10 はインメモリ `new DatabaseSync(":memory:")` に必要テーブルを作成し、`createDataRepository(db)` に注入して実行する（`NOW_JST` 依存の日付は固定の過去日で生成）。反復1回あたりが軽いため100回実行する。
 - Property 15, 16 は DTO 変換関数/`opponentLabel` に対して、任意文字列の氏名・メールなどを生成して検査する。
@@ -622,9 +672,15 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 - 出場詳細: 未確定時の表示、GRAN変動の表示、未出場大会の404。
 - `useRemoteResource`: フェイクタイマーで10秒タイムアウト、3回連続失敗、`keepStaleOnError` の有無（要件2.9, 10.2〜10.4）。
 - コンポーネント: タブの順序と `aria-current`、勝敗の文字+色併用、行のキーボード操作（Enter/Space）、ダイアログのEsc/戻る/フォーカス復帰、ランキングのモード切替後の選択状態の復元（要件1.1, 4.4, 7.5, 7.6, 9.6）。
-- `GranChart`: 縦軸ラベルが3個以上、水平補助線（`[data-gridline]`）の本数が縦軸ラベル数と一致、横軸ラベルの形式が1種類、`<table>` / `<details>` が存在しない、点の選択でYYYY/MM/DD・大会名・変動後レベルが表示される（要件3.6, 3.11〜3.17, 10.7）。日付種類が2のとき横ラベルが2個になる境界例も確認する。縦軸は、変動後レベルの最小・最大に ±50 の余白がある例（例: 400〜500 → 範囲が 350〜550 を含む）、下端クランプの例（最小 120 → 下端 100）、上端クランプの例（最大 980 → 上端 999 以下）で、ラベルの最小値・最大値が 100〜999 に収まり全点が範囲内に描画されることを確認する。
-- `WinRateByCondition`: `<select>` に `<label>` が関連付けられ、選択肢が6つで順序どおり、`role="tablist"` が存在しない。種目を選んだときの行は男子・女子・混合のみで「未設定」が出ない。サーフェス・大会シリーズでは未登録試合があるときだけ「未設定」が出る。条件変更で表示が置き換わり、再読み込みが現在の条件で再取得する（要件5.1〜5.3, 5.8, 5.12, 5.13）。
+- `GranChart`: 縦軸ラベルが3個以上、水平補助線（`[data-gridline]`）の本数が縦軸ラベル数と一致、横軸ラベルの形式が1種類、`<table>` / `<details>` が存在しない（要件3.11〜3.17, 10.7）。**Chart_Tooltip のテスト（要件3.6, 3.18〜3.25）**: (1) 点に `pointerenter`（mouse）で `role="tooltip"` が表示され、YYYY/MM/DD・大会名・変動後レベルを含み、`pointerleave` で消える。(2) 点への `focus` で同内容が表示され、`blur` で消える。(3) `pointerType: "touch"` の `pointerdown` で表示され、点以外への touch `pointerdown` で消える。(4) 別の点を表示すると前のツールチップが消え、`role="tooltip"` 要素は常に1個以下（ホバーA→ホバーB、フォーカスA→タップB の組み合わせを含む）。(5) 表示中の点に `aria-describedby` がツールチップの `id` と一致して付き、非表示の点には付かない。(6) グラフ下部に選択点の情報を示す要素（旧 `aria-live` の段落と案内文）が存在しない（要件3.21）。(7) 左端・右端・最小/最大レベルの点でツールチップの `left` / `top` が描画領域内に収まる（`getBoundingClientRect` はjsdomで0になるため、`tooltipPosition` をモックせず、`offsetWidth` / `offsetHeight` を固定値で差し込むか、位置の検証はProperty 21に委ね、コンポーネントテストでは `style` が `tooltipPosition` の出力と一致することのみ確認する）。日付種類が2のとき横ラベルが2個になる境界例も確認する。縦軸は、変動後レベルの最小・最大に ±50 の余白がある例（例: 400〜500 → 範囲が 350〜550 を含む）、下端クランプの例（最小 120 → 下端 100）、上端クランプの例（最大 980 → 上端 999 以下）で、ラベルの最小値・最大値が 100〜999 に収まり全点が範囲内に描画されることを確認する。
+- `WinRateByCondition`: `<select>` に `<label>` が関連付けられ、選択肢が6つで順序どおり、`role="tablist"` が存在しない。種目を選んだときの行は男子・女子・混合のみで「未設定」が出ない。どの条件でも「未設定」が出ない。サーフェスはサーフェス NULL の試合が行にならず、大会シリーズは未登録の試合があるときだけ末尾に「その他」行が出て、登録済みシリーズの「その他」は別の行として登録済みの並びの中に出る（要件5.8, 5.14〜5.16）。条件変更で表示が置き換わり、再読み込みが現在の条件で再取得する（要件5.1〜5.3, 5.8, 5.12, 5.13）。
 - `TierSlider` / `RankingView`: 階級別で `input[type=range]`（min=0, max=7, step=1）が1つあり、階級を表すタブが存在しない。`aria-valuetext` が「◯級」、選択中Tier名がスライダー近傍に表示される。現在Tier不明（`null`）で初期値A。←↓/→↑ の `keydown` 相当の操作で1段階移動し、DE・Aの端で変化しない。値変更で順位表のリクエストURLの `tier` が変わる。該当者0人・取得失敗でもスライダーが `disabled` でない（要件8.1〜8.3, 8.7, 8.11〜8.14）。ネイティブ `range` のドラッグ時スナップはブラウザ実装のため、自動テストではなく手動確認とする。
+- **大会登録・更新のスキーマ（`src/features/tournaments/types/__tests__/schema.test.ts` に追加）**: `tournamentCreateSchema` が `surface` の未指定・`null`・不正値（例: `"UNSET"`）を拒否し、4つの登録値を受け付ける。`validateTournamentUpdate` は、`surface` を指定しない更新で既存値が有効なら成功し、既存値が NULL（旧データ）なら拒否する。`createTournament` が `surface` / `series_id` を INSERT し、`surface` 未指定で `ZodError` になる。
+- **リポジトリ単体テストの更新（`src/features/data/server/__tests__/dataRepository.test.ts`）**: 既存テスト「サーフェス・大会シリーズの未登録は『未設定』区分に入る」は新仕様と矛盾するため、次の2テストに置き換える（フィクスチャの `t06` はサーフェス NULL の旧データ、`t04` はシリーズ未登録のまま利用する）。
+  - 「サーフェス未登録（旧データ）の試合はサーフェス別集計から除外される」: `aggregateByDimension(matches, "surface")` に `key === "UNSET"` の区分と `label === "未設定"` の区分が無いこと、区分の `matches` 合計が「通算試合数（14） − `t06` の試合数（2）」と一致すること、`getRecord` の通算試合数は 14 のまま（サーフェス NULL の試合も通算には含む）ことを検証する。
+  - 「シリーズ未登録の試合は末尾の『その他』区分に入る」: `"series"` の結果の末尾が `key === UNREGISTERED_SERIES_KEY` かつ `label === "その他"` で `matches === 1`（`t04`）であること、どの区分も `label === "未設定"` でないことを検証する。
+  - 追加: 「登録済みシリーズ『その他』と未登録の『その他』は合算されない」。フィクスチャに名称「その他」の登録済みシリーズ（例: `FIXTURE_SERIES.other`）を足すと既存の他テストの件数が変わるため、既存大会のシリーズは変更せず、`aggregateByDimension` に `seriesName: "その他"` の `DecidedMatch` と `seriesName: null` の `DecidedMatch` を直接与える純粋関数テスト（`aggregate.test.ts`）で検証する。リポジトリ層ではDBの `LEFT JOIN tournament_series` の結果（`series_name` が NULL）が `seriesName: null` に写ることのみを確認する。
+  - 他の既存テスト（種目3区分、季節の合計14、対戦相手別）は変更しない。
 - `ensureColumn` / 補完: 団体戦の既存行で `gender_division` が `category` から補完され、2回実行しても結果が変わらない。`SINGLES`/`DOUBLES` で `gender_division` 未指定の大会登録が 400 になる。
 - スケルトン表示が取得開始の同一レンダーで出ること（200ms以内の保証は実装構造で担保）。
 
@@ -637,4 +693,4 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 
 ### 開発用データ
 
-`scripts/seed.ts` に、試合・結果・シリーズ・サーフェス・性別区分を含むサンプルデータ投入を追加し、全画面の手動確認に使えるようにする（ゲスト、不戦、未確定結果、引き分け、同値レベルのケースを含める）。
+`scripts/seed.ts` に、試合・結果・シリーズ・サーフェス・性別区分を含むサンプルデータ投入を追加し、全画面の手動確認に使えるようにする（ゲスト、不戦、未確定結果、引き分け、同値レベルのケースを含める）。サーフェスは全大会に登録可能な値を設定する（`t4` も含む。必須化後は NULL を作らない）。大会シリーズ未登録（`series: null`）の大会は「その他」区分の確認用に残す。サーフェス NULL の旧データは `src/test/fixtures/dataTabFixture.ts` の `t06` のみで再現する。

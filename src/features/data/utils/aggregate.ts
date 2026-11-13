@@ -31,8 +31,9 @@ export interface Bucket {
   losses: number;
 }
 
-export const UNSET_KEY = "UNSET";
-export const UNSET_LABEL = "未設定";
+// 大会シリーズ未登録の試合の区分。登録済みシリーズのキーは `series:${name}` のため決して一致しない
+export const UNREGISTERED_SERIES_KEY = "series-unregistered";
+export const UNREGISTERED_SERIES_LABEL = "その他";
 
 const DIVISION_LABEL: Record<GenderDivision, string> = {
   MEN: "男子",
@@ -85,11 +86,11 @@ function add(map: Map<string, Bucket>, key: string, label: string, isWin: boolea
   else b.losses += 1;
 }
 
-// 動的区分: 試合数降順 → ラベル昇順。「未設定」は末尾
+// 動的区分: 試合数降順 → ラベル昇順。シリーズ未登録区分は件数にかかわらず末尾
 function sortDynamic(buckets: Bucket[]): Bucket[] {
   return buckets.sort((a, b) => {
-    const au = a.key === UNSET_KEY ? 1 : 0;
-    const bu = b.key === UNSET_KEY ? 1 : 0;
+    const au = a.key === UNREGISTERED_SERIES_KEY ? 1 : 0;
+    const bu = b.key === UNREGISTERED_SERIES_KEY ? 1 : 0;
     if (au !== bu) return au - bu;
     if (b.matches !== a.matches) return b.matches - a.matches;
     return a.label < b.label ? -1 : a.label > b.label ? 1 : 0;
@@ -132,16 +133,16 @@ export function aggregateByDimension(
     }
     case "surface": {
       for (const m of matches) {
+        // サーフェス未登録(null)の試合はサーフェス別集計から除外（「未設定」区分は作らない）
         if (m.surface) add(map, m.surface, SURFACE_LABEL[m.surface], m.isWin);
-        else add(map, UNSET_KEY, UNSET_LABEL, m.isWin);
       }
       return sortDynamic([...map.values()]);
     }
     case "series": {
       for (const m of matches) {
         const s = m.seriesName?.trim();
-        if (s) add(map, s, s, m.isWin);
-        else add(map, UNSET_KEY, UNSET_LABEL, m.isWin);
+        if (s) add(map, `series:${s}`, s, m.isWin);
+        else add(map, UNREGISTERED_SERIES_KEY, UNREGISTERED_SERIES_LABEL, m.isWin);
       }
       return sortDynamic([...map.values()]);
     }
