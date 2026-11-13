@@ -365,6 +365,20 @@ export function openDatabase(
     );
   `);
   db.exec("CREATE INDEX IF NOT EXISTS idx_inbox_notifications_user ON inbox_notifications(user_id, created_at DESC);");
+  // user_settings（アプリ設定：通知・文字サイズ・カラーモード）。
+  // 行が無いユーザーは既定値（全通知ON / 標準 / 端末連動）として扱う。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_settings (
+      user_id                TEXT    PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      notify_reminder        INTEGER NOT NULL DEFAULT 1,
+      notify_member_assign   INTEGER NOT NULL DEFAULT 1,
+      font_size              TEXT    NOT NULL DEFAULT 'MEDIUM'
+                               CHECK (font_size IN ('SMALL','MEDIUM','LARGE')),
+      color_mode             TEXT    NOT NULL DEFAULT 'SYSTEM'
+                               CHECK (color_mode IN ('LIGHT','DARK','SYSTEM')),
+      updated_at             TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours'))
+    );
+  `);
   db.exec("CREATE INDEX IF NOT EXISTS idx_entry_members_user ON entry_members(user_id, entry_id);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_results_user_recorded ON tournament_results(user_id, recorded_at DESC);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_matches_entry1 ON tournament_matches(entry1_id);");

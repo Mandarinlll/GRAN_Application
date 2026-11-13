@@ -11,7 +11,11 @@ import { usePathname } from "next/navigation";
 import { Trophy, ChevronRight, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/features/auth/server/actions";
-import { NAV_ITEMS, type NavId } from "@/components/layout/navConfig";
+import {
+  NAV_ITEMS,
+  SETTINGS_HREF,
+  type NavId,
+} from "@/components/layout/navConfig";
 import { granLevelToClassLabel } from "@/features/auth/utils/classLabel";
 
 // シェルが表示に必要とする最小のユーザー情報。
@@ -95,7 +99,17 @@ function Sidebar({
       </nav>
 
       <div className="p-3 border-t border-slate-100 space-y-2">
-        <div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+        <Link
+          href={SETTINGS_HREF}
+          aria-label="設定を開く"
+          aria-current={activeId === "settings" ? "page" : undefined}
+          className={cn(
+            "flex items-center gap-2.5 p-2 min-h-[44px] rounded-xl border transition hover:bg-slate-100",
+            activeId === "settings"
+              ? "bg-emerald-50 border-emerald-200"
+              : "bg-slate-50 border-slate-200/80",
+          )}
+        >
           <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
             {user.avatarText}
           </div>
@@ -112,7 +126,7 @@ function Sidebar({
             </div>
           </div>
           <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-        </div>
+        </Link>
 
         <form action={logoutAction}>
           <button
@@ -222,7 +236,11 @@ function MobileHeader({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 py-1 px-2.5 rounded-full">
+        <Link
+          href={SETTINGS_HREF}
+          aria-label="設定を開く"
+          className="flex items-center gap-2 bg-slate-50 border border-slate-200 py-1 px-2.5 min-h-[44px] rounded-full hover:bg-slate-100 transition"
+        >
           <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
             {user.avatarText}
           </div>
@@ -238,7 +256,7 @@ function MobileHeader({
               ({classLabel})
             </div>
           </div>
-        </div>
+        </Link>
       </div>
     </header>
   );
