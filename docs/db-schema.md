@@ -1,4 +1,4 @@
-﻿# データベース定義書
+# データベース定義書
 
 > **【実装同期に関する注記（最終更新で追記）】**
 > 本定義書は本来 Supabase（PostgreSQL）を前提に記述している（ENUM / UUID / TIMESTAMPTZ 等）。
@@ -44,7 +44,16 @@
    ├─ pre_gran_level（新規追加）: 試合前のGRANレベル（イロレーティング監査用）
    ├─ gran_level_diff: 1試合ごとのElo変動値（±数pt）
    ├─ post_gran_level（新規追加）: 試合後のGRANレベル
-   └─ user_id: 個人レート計算のため NOT NULL 制約へ変更
+   ├─ user_id: 個人レート計算のため NOT NULL 制約へ変更
+   └─ UNIQUE (tournament_id, user_id)（新規追加）: 1大会1ユーザー1結果を保証
+
+4. tournament_series（大会シリーズ / 新規追加）
+   └─ id, name（UNIQUE）
+
+5. tournaments への追加列（データタブ再構成 / すべてNULL許容）
+   ├─ surface: コート種別（HARD / CLAY / ARTIFICIAL_GRASS / OTHER）
+   ├─ series_id: tournament_series(id) 参照
+   └─ gender_division: 部門の性別区分（MEN / WOMEN / MIXED）
 ```
 
 ### 1. `users` テーブルの差分
@@ -64,6 +73,20 @@
 * **`point` $\rightarrow$ `awarded_points`（名称変更）**：チーム/個人に加算される固定順位ポイント（1pt: 参加 / 2pt: 2位L優勝・1位準優勝 / 3pt: 1位優勝）であることを明確化。
 * **`pre_gran_level` / `post_gran_level`（SMALLINT / 新規追加）**：対戦前後のレートを記録し、レーティング計算の透明性と履歴追跡性を担保。
 * **`user_id`（NULL許容 $\rightarrow$ NOT NULL）**：個人のイロレーティング（GRANレベル）を計算・更新するために必須化。
+* **`UNIQUE (tournament_id, user_id)`（新規追加）**：1大会に1ユーザーの結果が複数紐づく曖昧さを防ぎ、出場詳細で結果を一意に特定するため。
+
+### 4. `tournament_series` テーブル（新規追加）と `tournaments` の追加列
+
+* **`tournament_series`**：複数の大会をまとめる大会シリーズのマスタ。`id`（PK）、`name`（UNIQUE）を持つ。
+* **`tournaments.surface`（NULL許容）**：コート種別。`HARD` / `CLAY` / `ARTIFICIAL_GRASS` / `OTHER`（CHECK制約）。NULLは条件別勝率で「未設定」に集計。
+* **`tournaments.series_id`（NULL許容 / FK）**：`tournament_series(id)` 参照。NULLは「未設定」に集計。
+* **`tournaments.gender_division`（NULL許容）**：`MEN` / `WOMEN` / `MIXED`（CHECK制約）。単・複の男女区分判別用。
+
+### 5. 実DB（SQLite, `src/lib/db.ts`）との差異
+
+* **`users.declared_tier` $\rightarrow$ 実DBでは `declared_class`**：本書の論理名 `declared_tier` に対し、実DBおよびアプリコード（`userRepository.ts`）の物理カラム名は `declared_class`（TEXT、CHECK: `A`/`AB`/`B`/`BC`/`C`/`CD`/`D`/`DE`、NULL許容）。
+* **ENUM / 型**：SQLiteにENUMは無いためCHECK制約で表現。UUIDはTEXT、TIMESTAMPTZ/DATEはJST文字列のTEXT、BOOLEANは0/1のINTEGER。
+* **既存DBへの列追加**：`ensureColumn`（`PRAGMA table_info` で存在確認後 `ALTER TABLE ADD COLUMN`）で冪等に適用する。
 
 
 
@@ -95,6 +118,8 @@ erDiagram
     tournament_matches ||--o{ tournament_matches : "親対戦 (next_match_id)"
     entries ||--o{ tournament_matches : "対戦エントリー1"
     entries ||--o{ tournament_matches : "対戦エントリー2"
+
+    tournament_series ||--o{ tournaments : "大会シリーズ (series_id)"
 
     teams ||--o{ tournament_results : "結果チーム"
     users ||--o{ tournament_results : "結果個人"
@@ -131,6 +156,14 @@ erDiagram
         varchar tier "A-DE 8段階"
         varchar status
         text draw_pdf_url
+        varchar surface "コート種別(NULL可)"
+        uuid series_id FK "大会シリーズ(NULL可)"
+        varchar gender_division "MEN/WOMEN/MIXED(NULL可)"
+    }
+
+    tournament_series {
+        uuid id PK
+        varchar name UK
     }
 
     entries {
@@ -175,6 +208,7 @@ erDiagram
         smallint gran_level_diff "Elo変動値"
         smallint post_gran_level "変動後レート"
     }
+    %% tournament_results: UNIQUE (tournament_id, user_id)
 
     yearly_rankings {
         uuid id PK
@@ -343,7 +377,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 | 電話番号 | `phone_number` | VARCHAR(15) | **NO** | - | **連絡先電話番号（登録必須）**
  
  |
-| **申告階級** | `declared_tier` | tournament_tier_enum | YES | - | **自己申告階級（8段階: A, AB, B, BC, C, CD, D, DE）**
+| **申告階級** | `declared_tier` | tournament_tier_enum | YES | - | **自己申告階級（8段階: A, AB, B, BC, C, CD, D, DE）**<br>**※実DB（SQLite）の物理カラム名は `declared_class`（TEXT + CHECK）**
 
  |
 | **GRANレベル** | `gran_level` | SMALLINT | NO | - | 初期査定値（CHECK: 100〜999）。DBデフォルト `100`。登録時はアプリ側で自己申告階級の中央値を明示設定。 |
@@ -447,6 +481,12 @@ CREATE TYPE notification_type_enum AS ENUM (
  |
 | ドロー表PDF URL | `draw_pdf_url` | TEXT | YES | - | 管理者が出力したドロー表PDFのパス
 
+ |
+| **サーフェス** | `surface` | VARCHAR(20) | YES | - | **コート種別（CHECK: `HARD` / `CLAY` / `ARTIFICIAL_GRASS` / `OTHER`）。NULLは「未設定」**
+ |
+| **大会シリーズID** | `series_id` | UUID | YES | FK | **`tournament_series(id)` 参照。NULLは「未設定」**
+ |
+| **部門の性別区分** | `gender_division` | VARCHAR(10) | YES | - | **CHECK: `MEN` / `WOMEN` / `MIXED`。単・複の男女判別用**
  |
 | 作成日時 | `created_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
 | 更新日時 | `updated_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
@@ -626,6 +666,16 @@ CREATE TYPE notification_type_enum AS ENUM (
 | **GRANレベル変動値** | `gran_level_diff` | SMALLINT | NO | - | **イロレーティング増減値（例: +8, -6）**<br> |
 | **変動後GRANレベル** | `post_gran_level` | **SMALLINT** | **NO** | - | **【変更】計算後の新レート** |
 | 確定日時 | `recorded_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
+| *複合一意制約* | - | - | - | UK | **`(tournament_id, user_id)`（1大会1ユーザー1結果）**<br> |
+
+---
+
+#### 3.10a tournament_series（大会シリーズ）【新規追加】
+
+| 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
+| --- | --- | --- | --- | --- | --- |
+| シリーズID | `id` | UUID | NO | PK | `gen_random_uuid()` |
+| シリーズ名 | `name` | VARCHAR(100) | NO | UK | 大会シリーズ名称（名称変更を1箇所で反映） |
 
 ---
 
@@ -705,9 +755,10 @@ WHERE is_paid = TRUE AND admin_status IN ('UNCONTACTED', 'IN_CONSULTATION');
 -- 8. GRANレベル分布・規定レベル内順位検索用
 CREATE INDEX idx_users_gran_level ON users(gran_level DESC);
 
+-- 9. データタブ（試合・GRANレベル履歴）用
+CREATE INDEX idx_entry_members_user ON entry_members(user_id, entry_id);
+CREATE INDEX idx_results_user_recorded ON tournament_results(user_id, recorded_at DESC);
+CREATE INDEX idx_matches_entry1 ON tournament_matches(entry1_id);
+CREATE INDEX idx_matches_entry2 ON tournament_matches(entry2_id);
+
 ```
-
-
-
-
-
