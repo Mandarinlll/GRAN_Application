@@ -14,9 +14,11 @@ import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
 import fs from "node:fs";
 
-// DB ファイルの保存先。プロジェクト直下の data/gran.db に置く。
-const DATA_DIR = path.join(process.cwd(), "data");
-const DB_PATH = path.join(DATA_DIR, "gran.db");
+// DB ファイルの既定の保存先。プロジェクト直下の data/gran.db に置く。
+// 環境変数 GRAN_DB_PATH で差し替えられる（単体テストでは ":memory:" を指定し、
+// 開発用の data/gran.db に触れないようにする。vitest.config.ts で設定）。
+const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "gran.db");
+const IN_MEMORY = ":memory:";
 
 // 現在日時を日本標準時（JST, UTC+9）で返す SQLite の式。
 // SQLite の datetime('now') は UTC を返すため、+9時間して JST に補正する。
@@ -31,19 +33,33 @@ declare global {
   var __granDb: DatabaseSync | undefined;
 }
 
-function createDatabase(): DatabaseSync {
-  // data ディレクトリが無ければ作成する。
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+/**
+ * 指定パスの SQLite DB を開き、スキーマを（冪等に）適用して返す。
+ * filePath に ":memory:" を渡すとインメモリDBになる（単体テスト用。呼ぶたびに独立したDB）。
+ */
+export function openDatabase(
+  filePath: string = process.env.GRAN_DB_PATH || DEFAULT_DB_PATH,
+): DatabaseSync {
+  const inMemory = filePath === IN_MEMORY;
+
+  // 保存先ディレクトリが無ければ作成する（インメモリでは不要）。
+  if (!inMemory) {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
   }
 
-  const db = new DatabaseSync(DB_PATH);
+  const db = new DatabaseSync(filePath);
 
   // 外部キー制約を有効化し、書き込み耐性の高い WAL モードにする。
   // 並行プロセス（ビルド時の複数ワーカー等）による書き込み競合を待機で吸収する。
+  // （インメモリDBは WAL を使えないため設定しない）
   db.exec("PRAGMA busy_timeout = 5000;");
   db.exec("PRAGMA foreign_keys = ON;");
-  db.exec("PRAGMA journal_mode = WAL;");
+  if (!inMemory) {
+    db.exec("PRAGMA journal_mode = WAL;");
+  }
 
   // users テーブル（db-schema.md 3.1 準拠）。
   // ENUM は SQLite に無いため CHECK 制約で表現する。
@@ -358,7 +374,7 @@ function createDatabase(): DatabaseSync {
 }
 
 // 既存インスタンスがあれば再利用、無ければ生成する。
-export const db: DatabaseSync = globalThis.__granDb ?? createDatabase();
+export const db: DatabaseSync = globalThis.__granDb ?? openDatabase();
 
 if (process.env.NODE_ENV !== "production") {
   globalThis.__granDb = db;
