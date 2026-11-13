@@ -165,6 +165,9 @@ export interface CreateTournamentParams {
   alertThreshold?: number | null;
   // SINGLES / DOUBLES では必須（団体戦は category から補完される）
   genderDivision?: "MEN" | "WOMEN" | "MIXED" | null;
+  // 必須（未指定は ZodError）
+  surface: "HARD" | "CLAY" | "ARTIFICIAL_GRASS" | "OTHER";
+  seriesId?: string | null;
 }
 
 export function createTournament(params: CreateTournamentParams): Tournament {
@@ -172,6 +175,7 @@ export function createTournament(params: CreateTournamentParams): Tournament {
   tournamentCreateSchema.parse({
     category: params.category,
     genderDivision: params.genderDivision,
+    surface: params.surface,
   });
   const id = randomUUID();
   db.prepare(
@@ -179,8 +183,9 @@ export function createTournament(params: CreateTournamentParams): Tournament {
       id, title, category, tier, event_date, start_time, end_time,
       venue, court_info, image_url, description, capacity,
       team_size_min, team_size_max, entry_fee, status,
-      entry_start_at, entry_end_at, alert_threshold, gender_division, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${NOW_JST}, ${NOW_JST})`,
+      entry_start_at, entry_end_at, alert_threshold, gender_division,
+      surface, series_id, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${NOW_JST}, ${NOW_JST})`,
   ).run(
     id,
     params.title,
@@ -209,6 +214,8 @@ export function createTournament(params: CreateTournamentParams): Tournament {
           : params.category === "MIX_TEAM"
             ? "MIXED"
             : null),
+    params.surface,
+    params.seriesId ?? null,
   );
   const row = db
     .prepare("SELECT * FROM tournaments WHERE id = ?")

@@ -308,8 +308,88 @@
 - [x] 14. Final checkpoint - ビルド・型チェック・テストの確認
   - `npm run build`、型チェック（`npx tsc --noEmit`）、`npm run test` がすべて通ることを確認する。問題があればユーザーに確認する。
 
+- [x] 15. サーフェス必須化と「未設定」区分の廃止（サーフェス）
+  - [x] 15.1 `utils/aggregate.ts` でサーフェス NULL の試合をサーフェス別集計から除外する
+    - `surface` 次元は `surface = null` の試合を集計対象から除外し、区分は登録値（ハード/クレー/人工芝/その他(OTHER)）のみとする
+    - 通算勝敗と他の次元（種目・会場・季節・対戦相手・大会シリーズ）には、サーフェス NULL の試合も引き続き含める
+    - 全試合がサーフェス NULL の場合は区分0件（空状態）を返す
+    - _Requirements: 5.8, 5.15, 5.16_
+
+  - [x] 15.2 `src/features/tournaments/types/schema.ts` と `tournamentRepository.ts` に `surface` を必須で追加する
+    - `schema.ts` に `surfaceSchema = z.enum(["HARD","CLAY","ARTIFICIAL_GRASS","OTHER"])` を追加し、`tournamentCreateSchema` で `surface` を必須にする（未指定・`null` は拒否、`path: ["surface"]`）
+    - `validateTournamentUpdate` は入力に `surface` が無ければ既存値（`existing.surface`）で最終検証する。既存値が NULL の旧データを `surface` 未指定で更新する場合は拒否する（`gender_division` と同じ扱い）
+    - `CreateTournamentParams` に `surface` を必須、`seriesId` を任意で追加し、`createTournament` の INSERT に `surface`（と `series_id`）を含める
+    - DB の `surface` 列定義（NULL 許容）は変更しない。管理者向けの登録画面・API は作らない
+    - _Requirements: 5.8, 5.15, 5.16_
+
+  - [x] 15.3 `scripts/seed.ts` とフィクスチャのサーフェス関連を更新する
+    - `DATA_SEED_TOURNAMENTS` の `t4` の `surface` を通常値（例: `HARD`）に変更し、`series: null` は「その他」区分の確認用に残す。`DataSeedTournament.surface` の型を `Surface | null` から `Surface` に狭める
+    - 通常シードの大会 INSERT も `surface` を指定して挿入する（登録可能な値）
+    - `src/test/fixtures/dataTabFixture.ts` の `t06`（`surface: null`）は旧データとして維持し、コメントを「旧データ: サーフェス NULL（集計から除外される）」に更新する
+    - _Requirements: 5.8, 5.15, 5.16_
+
+  - [ ]* 15.4 `schema.test.ts` に `surface` 必須のテストを追加する
+    - `tournamentCreateSchema` が `surface` 未指定・`null`・範囲外の値を拒否し（`path: ["surface"]`）、4つの登録値を受理することを確認する
+    - `validateTournamentUpdate` が、既存 `surface` が NULL かつ入力に `surface` が無い更新を拒否し、既存値があれば受理することを確認する
+    - _Requirements: 5.8, 5.16_
+
+- [x] 16. 大会シリーズ未登録の「その他」区分
+  - [x] 16.1 `utils/aggregate.ts` の `UNSET_KEY` / `UNSET_LABEL` を廃止し `UNREGISTERED_SERIES_KEY` を導入する
+    - `UNREGISTERED_SERIES_KEY`（登録済みキーと決して一致しない値）と `UNREGISTERED_SERIES_LABEL = "その他"` を定義し、`UNSET_KEY` / `UNSET_LABEL` を削除する
+    - `series` 次元は、シリーズ未登録（null/空）の試合を `UNREGISTERED_SERIES_KEY` の1区分に集計し、試合数にかかわらず一覧の末尾（登録済みの全区分より後）に置く。未登録の試合が0件ならこの区分は返さない
+    - 登録済みシリーズの区分キーは名前空間付き（例: `series:${name}`）とし、登録済みシリーズ名が「その他」でも未登録の区分と合算しない
+    - 並び順は試合数降順 → ラベル昇順（`UNREGISTERED_SERIES_KEY` のみ常に末尾）
+    - _Requirements: 5.14, 5.15_
+
+  - [x] 16.2 `UNSET` を参照している箇所を更新する
+    - `WinRateByCondition.tsx` ほか `UNSET_KEY` / `UNSET_LABEL` / `"UNSET"` を参照するコード（`grep` で洗い出す）を更新する。「未設定」行は表示せず、大会シリーズは未登録の試合があるときだけ末尾に「その他」行を表示し、登録済みの「その他」は別の行として並べる。行の React `key` には `Bucket.key` を使う
+    - サーフェスで区分が0件のときは既存の空状態「集計対象の試合がありません。」を表示する
+    - _Requirements: 5.8, 5.14, 5.15, 5.16_
+
+  - [ ]* 16.3 条件別集計のテストを更新する
+    - **Property 3: 条件別集計は試合を丁度1区分に分類する**（更新版: (c) どの次元にも「未設定」区分が無い、(b) `surface` が NULL の試合は合計に含まれない、(e) 未登録シリーズは `UNREGISTERED_SERIES_KEY` の末尾1区分、(f) 登録済み「その他」は未登録の区分と合算しない）。生成器にサーフェス NULL、シリーズ未登録、登録名「その他」の試合を加える
+    - `aggregate.test.ts` に、登録済みシリーズ「その他」と未登録シリーズが別々の区分（label はどちらも「その他」、key は異なる）になり合算されない例示テストを追加する
+    - **Validates: Requirements 5.8, 5.14, 5.15, 5.16**
+
+- [ ] 17. `dataRepository.test.ts` の未設定区分テストの置き換え
+  - [-] 17.1 「サーフェス・大会シリーズの未登録は『未設定』区分に入る」テストを2テストに置き換える
+    - (1) サーフェス NULL の大会（`t06` 等の旧データ）の試合が、サーフェス別集計に含まれず、通算勝敗・他の次元の集計には含まれることを確認するテスト
+    - (2) シリーズ未登録の大会の試合が「その他」区分（`UNREGISTERED_SERIES_KEY`）に集計され、一覧の末尾に置かれることを確認するテスト
+    - 既存のアサーション（「未設定」区分を期待するもの）をすべて削除し、`UNSET` への参照を残さない
+    - _Requirements: 5.8, 5.14, 5.15, 5.16_
+
+- [x] 18. Chart_Tooltip の実装
+  - [x] 18.1 `utils/chartTooltip.ts` に `tooltipPosition` を実装し、日付整形関数を用意する
+    - `Rect`、`TooltipPlacement`、`tooltipPosition({ anchor, size, bounds, gap = 12 })` を実装する。水平は `anchor.x − width/2` を `[bounds.left, bounds.right − width]` にクランプ、垂直はまず点の上側（`placement="above"`、`top = anchor.y − gap − height`）、収まらなければ下側（`"below"`、`top = anchor.y + gap`）、それでも収まらなければ `[bounds.top, bounds.bottom − height]` にクランプする。`size` が `bounds` を超える場合は `left` / `top` を `bounds.left` / `bounds.top` に固定する
+    - `shared.ts` に日付のみ（`YYYY/MM/DD`、時刻なし）の整形関数 `formatDate` が無ければ追加する（既存 `formatDateTime` は流用しない）
+    - _Requirements: 3.6, 3.20, 3.21_
+
+  - [ ]* 18.2 `tooltipPosition` のプロパティテストを書く
+    - **Property 21: Chart_Tooltip は常に描画領域内に収まる**
+    - 生成器に左右端・上端・下端付近の `anchor`、`size` が `bounds` と同寸の例、`gap = 0` を含める。(a) 4辺とも `bounds` に収まる、(b) 収まるとき水平は点の中心、(c) `above` / `below` の条件と `top` の値、(d) 極端な場合も (a) を満たす、を検証する
+    - **Validates: Requirements 3.20**
+
+  - [x] 18.3 `GranChart.tsx` に Chart_Tooltip を実装し、グラフ下部の選択点表示を削除する
+    - グラフ下部の選択点情報（`<p aria-live>`）と未選択時の案内文「グラフの点を選択すると詳細が表示されます。」、点の `aria-pressed` を削除する。期間・レベル範囲の `NOTE_CLASS` の表示は維持する
+    - `activeIndex: number | null` の単一 state で管理し、別の点を開くと置き換わる（同時に表示されるツールチップは1個以下）
+    - ホバー: 点の `onPointerEnter` / `onPointerLeave`（`pointerType` が `mouse` / `pen` のときのみ）。キーボード: `onFocus` で開き、`onBlur` は `activeIndex` がそのフォーカス点と一致するときだけ閉じる。タッチ: `onPointerDown`（`pointerType === "touch"`）で開き、`activeIndex !== null` の間だけ `document` に `pointerdown` リスナーを登録して、タッチかつ現在の点の `<g>` の外なら閉じる（`useEffect` のクリーンアップで解除）
+    - ツールチップは SVG 外の絶対配置 `<div>`（ラッパーは `relative`、ツールチップは `pointer-events-none`）。`useLayoutEffect` で実寸を測定して `tooltipPosition` に渡し、測定前は `visibility: hidden`。幅は `max-width: min(240px, plotW)`、`break-words`
+    - 内容は 3 行（`YYYY/MM/DD`、大会名、「変動後レベル N」）。文字は 12px 以上、`bg-white dark:bg-slate-900` / `text-slate-900 dark:text-slate-100` / `border-slate-200 dark:border-slate-700` / `rounded-xl` / 影付き
+    - アクセシビリティ: ツールチップに `role="tooltip"` と `useId()` の `id`、表示中の点の `<g>` に `aria-describedby`（非表示の点には付けない）。点の `aria-label` は維持し、アクティブな点は塗りつぶしと半径拡大で示す
+    - _Requirements: 3.6, 3.18, 3.19, 3.20, 3.21, 3.22, 3.23, 3.24, 3.25, 10.6, 10.8, 10.9_
+
+  - [ ]* 18.4 `GranChart` の Chart_Tooltip の例示テストを書く
+    - ホバー（mouse）で開閉、フォーカス/ブラーで開閉、タッチのタップで開き外側タップで閉じること、別の点で開くと前のツールチップが閉じ同時に1個以下であること
+    - `role="tooltip"` と、表示中の点の `aria-describedby` が一致し、非表示の点には付かないこと。グラフ下部の選択点表示・案内文・`aria-pressed` が存在しないこと
+    - jsdom ではレイアウト寸法が 0 になるため、`offsetWidth` / `offsetHeight` を固定値で差し込み、`style` が `tooltipPosition` の出力と一致することのみ確認する
+    - _Requirements: 3.6, 3.18, 3.19, 3.21, 3.22, 3.23, 3.24, 3.25_
+
+- [~] 19. Final checkpoint - ビルド・型チェック・テストの確認
+  - `npm run build`、型チェック（`npx tsc --noEmit`）、`npm run test` がすべて通ることを確認する。問題があればユーザーに確認する。
+
 ## Notes
 
+- タスク10.1・10.7・2.3 に含まれる「サーフェス/大会シリーズの『未設定』区分」の記述は、要件5.8の変更（サーフェス NULL は除外）と5.14〜5.16の追加により、タスク15・16・17で置き換えられる（完了状態は変更しない）
 - `*` 付きのサブタスクは任意で、MVP を優先する場合はスキップできる
 - 各タスクは要件番号で追跡できる
 - プロパティテストは `fc.assert(..., { numRuns: 100 })` 以上で実行し、`// Feature: data-tab-restructure, Property {番号}: {名称}` のタグコメントを付ける
@@ -334,7 +414,11 @@
     { "id": 10, "tasks": ["10.8", "11.5"] },
     { "id": 11, "tasks": ["13.1"] },
     { "id": 12, "tasks": ["13.2", "13.3"] },
-    { "id": 13, "tasks": ["13.4"] }
+    { "id": 13, "tasks": ["13.4"] },
+    { "id": 14, "tasks": ["15.1", "15.2", "15.3", "18.1"] },
+    { "id": 15, "tasks": ["15.4", "16.1", "18.2"] },
+    { "id": 16, "tasks": ["16.2", "16.3", "17.1", "18.3"] },
+    { "id": 17, "tasks": ["18.4"] }
   ]
 }
 ```

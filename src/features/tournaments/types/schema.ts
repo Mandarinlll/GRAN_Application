@@ -14,6 +14,8 @@ export const TOURNAMENT_CATEGORIES = [
 
 export const genderDivisionSchema = z.enum(["MEN", "WOMEN", "MIXED"]);
 
+export const surfaceSchema = z.enum(["HARD", "CLAY", "ARTIFICIAL_GRASS", "OTHER"]);
+
 const GENDER_DIVISION_REQUIRED_MESSAGE =
   "シングルス・ダブルスでは種目（男子・女子・混合）の指定が必要です";
 
@@ -39,6 +41,8 @@ export const tournamentCreateSchema = z
   .object({
     category: z.enum(TOURNAMENT_CATEGORIES),
     genderDivision: genderDivisionSchema.nullish(),
+    // サーフェスは必須（未指定・null は拒否。path: ["surface"]）
+    surface: surfaceSchema,
   })
   .passthrough()
   .superRefine(requireGenderDivisionForIndividual);
@@ -48,13 +52,18 @@ export const tournamentUpdateSchema = z
   .object({
     category: z.enum(TOURNAMENT_CATEGORIES).optional(),
     genderDivision: genderDivisionSchema.nullish(),
+    surface: surfaceSchema.nullish(),
   })
   .passthrough();
 
 // 更新時、最終的な category / genderDivision（入力が無ければ既存値）で検証する。
 export function validateTournamentUpdate(
   input: unknown,
-  existing: { category: string; genderDivision: string | null },
+  existing: {
+    category: string;
+    genderDivision: string | null;
+    surface: string | null;
+  },
 ): z.ZodSafeParseResult<unknown> {
   const parsed = tournamentUpdateSchema.safeParse(input);
   if (!parsed.success) return parsed;
@@ -65,6 +74,8 @@ export function validateTournamentUpdate(
       parsed.data.genderDivision === undefined
         ? existing.genderDivision
         : parsed.data.genderDivision,
+    surface:
+      parsed.data.surface === undefined ? existing.surface : parsed.data.surface,
   };
   return tournamentCreateSchema.safeParse(merged);
 }

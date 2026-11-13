@@ -624,6 +624,175 @@
         "chatSessionId": "sess_4dc61216-3b5d-4291-9e89-a6f64bc3d888",
         "timestamp": 1794537415803
       }
+    ],
+    "15.1 `utils/aggregate.ts` でサーフェス NULL の試合をサーフェス別集計から除外する": [
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553140796
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553149216
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553408098
+      }
+    ],
+    "15.2 `src/features/tournaments/types/schema.ts` と `tournamentRepository.ts` に `surface` を必須で追加する": [
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553140888
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553149876
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553409232
+      }
+    ],
+    "15.3 `scripts/seed.ts` とフィクスチャのサーフェス関連を更新する": [
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553140957
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553150503
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553409762
+      }
+    ],
+    "16.1 `utils/aggregate.ts` の `UNSET_KEY` / `UNSET_LABEL` を廃止し `UNREGISTERED_SERIES_KEY` を導入する": [
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553141032
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553419656
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553476952
+      }
+    ],
+    "16.2 `UNSET` を参照している箇所を更新する": [
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553141124
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553480232
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553586345
+      }
+    ],
+    "17.1 「サーフェス・大会シリーズの未登録は『未設定』区分に入る」テストを2テストに置き換える": [
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553141199
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553481113
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553562931
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553567912
+      }
+    ],
+    "18.1 `utils/chartTooltip.ts` に `tooltipPosition` を実装し、日付整形関数を用意する": [
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553141270
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553151147
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553411075
+      }
+    ],
+    "18.3 `GranChart.tsx` に Chart_Tooltip を実装し、グラフ下部の選択点表示を削除する": [
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553141336
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553481699
+      },
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553586736
+      }
+    ],
+    "19. Final checkpoint - ビルド・型チェック・テストの確認": [
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553141401
+      }
+    ],
+    "15. サーフェス必須化と「未設定」区分の廃止（サーフェス）": [
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553409957
+      }
+    ],
+    "16. 大会シリーズ未登録の「その他」区分": [
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553586537
+      }
+    ],
+    "18. Chart_Tooltip の実装": [
+      {
+        "executionId": "8e10ddd8-e38e-4fcd-b545-6975762e70aa",
+        "chatSessionId": "sess_af988177-d80b-4529-bbee-4c0fad5ebe9c",
+        "timestamp": 1794553586887
+      }
     ]
   }
 }
