@@ -1,13 +1,15 @@
 // ログイン画面（/login）。
 // 既にログイン済みならホームへ飛ばす。
+// Cookie の署名だけでなく DB 上のユーザー存在も確認する。
+// （DB 再作成などで Cookie だけ残った場合に / ⇔ /login が無限リダイレクトになるのを防ぐ）
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+import { getCurrentUser } from "@/features/auth/server/currentUser";
 import { AuthBrandHeader } from "@/features/auth/components/AuthBrandHeader";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 
 export default async function LoginPage() {
-  const session = await getSession();
-  if (session) redirect("/");
+  const user = await getCurrentUser();
+  if (user) redirect("/");
 
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col justify-center px-4 py-8 sm:py-12">
