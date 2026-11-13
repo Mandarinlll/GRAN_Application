@@ -12,8 +12,15 @@ import { getEntryViewer } from "@/features/entries/server/entryViewData";
 import type { TournamentCardData } from "@/features/tournaments/types/view";
 import { formatEventDate, formatYen, isPastDate, monthOf } from "@/utils/date";
 import { TournamentSchedule } from "@/features/tournaments/components/TournamentSchedule";
+import { getUnreadCountSynced } from "@/features/notifications/server/inboxService";
 
-export default async function TournamentsPage() {
+export default async function TournamentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ editEntry?: string }>;
+}) {
+  // 通知ページからの遷移時: 指定エントリーのメンバー変更モーダルを開く。
+  const { editEntry } = await searchParams;
   // ログイン必須。
   const viewer = await getEntryViewer();
   if (!viewer) redirect("/login");
@@ -58,5 +65,12 @@ export default async function TournamentsPage() {
     isEntered: involved.has(t.id),
   }));
 
-  return <TournamentSchedule tournaments={cards} viewer={viewer} />;
+  return (
+    <TournamentSchedule
+      tournaments={cards}
+      viewer={viewer}
+      unreadNotifications={getUnreadCountSynced(viewer.userId)}
+      initialEditEntryId={typeof editEntry === "string" ? editEntry : null}
+    />
+  );
 }

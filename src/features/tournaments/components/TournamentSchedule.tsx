@@ -2,7 +2,7 @@
 // フィルター・ビュー切替・一括選択・各種モーダル・トーストを統括する。
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ListFilter, LayoutGrid } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -29,11 +29,19 @@ import type { EntrySummary } from "@/features/entries/types/entry";
 type Props = {
   tournaments: TournamentCardData[];
   viewer: EntryViewer;
+  unreadNotifications?: number;
+  // 指定されたエントリーのメンバー変更モーダルを初期表示で開く（通知ページからの導線）。
+  initialEditEntryId?: string | null;
 };
 
 type ViewMode = "table" | "cards";
 
-export function TournamentSchedule({ tournaments, viewer }: Props) {
+export function TournamentSchedule({
+  tournaments,
+  viewer,
+  unreadNotifications = 0,
+  initialEditEntryId = null,
+}: Props) {
   const router = useRouter();
   const { filters, update, reset, filtered, kpi } = useTournamentFilters(tournaments);
 
@@ -60,6 +68,25 @@ export function TournamentSchedule({ tournaments, viewer }: Props) {
   const [enteredOpen, setEnteredOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<EntrySummary | null>(null);
   const [editTarget, setEditTarget] = useState<EntrySummary | null>(null);
+
+  // 通知ページからの遷移: 該当エントリーのメンバー変更モーダルを開く。
+  useEffect(() => {
+    if (!initialEditEntryId) return;
+    let cancelled = false;
+    getMyEntriesAction().then((data) => {
+      if (cancelled) return;
+      const target = [...data.personal, ...data.team].find(
+        (e) => e.entryId === initialEditEntryId && e.kind === "CONFIRMED",
+      );
+      if (target) {
+        setMyEntries(data);
+        setEditTarget(target);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [initialEditEntryId]);
 
   const showToast = useCallback((message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -135,6 +162,7 @@ export function TournamentSchedule({ tournaments, viewer }: Props) {
     granLevel: viewer.granLevel,
     avatarText: viewer.realName.charAt(0) || "?",
     teamName: viewer.team?.name ?? null,
+    unreadNotifications,
   };
 
   return (

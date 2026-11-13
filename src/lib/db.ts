@@ -329,6 +329,26 @@ function createDatabase(): DatabaseSync {
     );
   `);
 
+  // inbox_notifications（アプリ内通知 / 通知ページ用の受信箱）。
+  // notification_logs は配信ログ（監査用）、こちらはユーザーに見せる通知本体。
+  // dedupe_key の UNIQUE 制約で、リマインド等の重複生成を DB 側で防ぐ。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS inbox_notifications (
+      id            TEXT    PRIMARY KEY,
+      user_id       TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      kind          TEXT    NOT NULL
+                      CHECK (kind IN ('REMINDER_7DAYS','MEMBER_ASSIGN')),
+      tournament_id TEXT    REFERENCES tournaments(id) ON DELETE CASCADE,
+      entry_id      TEXT    REFERENCES entries(id) ON DELETE CASCADE,
+      title         TEXT    NOT NULL,
+      body          TEXT    NOT NULL,
+      dedupe_key    TEXT    NOT NULL UNIQUE,
+      is_read       INTEGER NOT NULL DEFAULT 0,
+      is_resolved   INTEGER NOT NULL DEFAULT 0,
+      created_at    TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours'))
+    );
+  `);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_inbox_notifications_user ON inbox_notifications(user_id, created_at DESC);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_entry_members_user ON entry_members(user_id, entry_id);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_results_user_recorded ON tournament_results(user_id, recorded_at DESC);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_matches_entry1 ON tournament_matches(entry1_id);");
