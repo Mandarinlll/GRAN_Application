@@ -4,6 +4,7 @@
 
 import { randomUUID } from "node:crypto";
 import { db, NOW_JST } from "@/lib/db";
+import { tournamentCreateSchema } from "@/features/tournaments/types/schema";
 import type {
   Tournament,
   TournamentCategory,
@@ -162,17 +163,24 @@ export interface CreateTournamentParams {
   entryStartAt: string;
   entryEndAt: string;
   alertThreshold?: number | null;
+  // SINGLES / DOUBLES では必須（団体戦は category から補完される）
+  genderDivision?: "MEN" | "WOMEN" | "MIXED" | null;
 }
 
 export function createTournament(params: CreateTournamentParams): Tournament {
+  // SINGLES / DOUBLES で genderDivision 未指定なら ZodError（呼び出し側で 400 に変換）
+  tournamentCreateSchema.parse({
+    category: params.category,
+    genderDivision: params.genderDivision,
+  });
   const id = randomUUID();
   db.prepare(
     `INSERT INTO tournaments (
       id, title, category, tier, event_date, start_time, end_time,
       venue, court_info, image_url, description, capacity,
       team_size_min, team_size_max, entry_fee, status,
-      entry_start_at, entry_end_at, alert_threshold, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${NOW_JST}, ${NOW_JST})`,
+      entry_start_at, entry_end_at, alert_threshold, gender_division, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${NOW_JST}, ${NOW_JST})`,
   ).run(
     id,
     params.title,
@@ -193,6 +201,14 @@ export function createTournament(params: CreateTournamentParams): Tournament {
     params.entryStartAt,
     params.entryEndAt,
     params.alertThreshold ?? null,
+    params.genderDivision ??
+      (params.category === "MEN_TEAM"
+        ? "MEN"
+        : params.category === "WOMEN_TEAM"
+          ? "WOMEN"
+          : params.category === "MIX_TEAM"
+            ? "MIXED"
+            : null),
   );
   const row = db
     .prepare("SELECT * FROM tournaments WHERE id = ?")

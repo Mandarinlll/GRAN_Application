@@ -43,7 +43,7 @@ export const winRateQuerySchema = z.object({
 });
 
 export const participationsQuerySchema = z.object({
-  division: z.enum(["MEN", "WOMEN", "MIXED", "UNSET"]).optional(),
+  division: z.enum(["MEN", "WOMEN", "MIXED"]).optional(),
   tier: z.enum(TIERS).optional(),
   year: z
     .string()

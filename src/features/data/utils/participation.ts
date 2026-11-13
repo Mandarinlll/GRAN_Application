@@ -8,7 +8,7 @@ export interface ParticipationRowBase {
 }
 
 export interface ParticipationFilter {
-  division?: GenderDivision | "UNSET";
+  division?: GenderDivision;
   tier?: TournamentTier;
   year?: number;
 }
@@ -20,8 +20,7 @@ export function filterParticipations<T extends ParticipationRowBase>(
 ): T[] {
   return rows.filter((r) => {
     if (f.division !== undefined) {
-      const d = f.division === "UNSET" ? null : f.division;
-      if (r.genderDivision !== d) return false;
+      if (r.genderDivision !== f.division) return false;
     }
     if (f.tier !== undefined && r.tier !== f.tier) return false;
     if (f.year !== undefined && Number(r.eventDate.slice(0, 4)) !== f.year) {

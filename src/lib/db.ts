@@ -276,6 +276,19 @@ function createDatabase(): DatabaseSync {
     "TEXT CHECK (gender_division IN ('MEN','WOMEN','MIXED'))",
   );
 
+  // 団体戦の gender_division を category から補完する（冪等。NULL の行のみ対象）。
+  // SINGLES / DOUBLES は category から判別できないため補完しない。
+  db.exec(`
+    UPDATE tournaments
+       SET gender_division = CASE category
+             WHEN 'MEN_TEAM'   THEN 'MEN'
+             WHEN 'WOMEN_TEAM' THEN 'WOMEN'
+             WHEN 'MIX_TEAM'   THEN 'MIXED'
+           END
+     WHERE gender_division IS NULL
+       AND category IN ('MEN_TEAM','WOMEN_TEAM','MIX_TEAM');
+  `);
+
   // tournament_matches（試合 / db-schema.md 3.9 準拠）。
   db.exec(`
     CREATE TABLE IF NOT EXISTS tournament_matches (

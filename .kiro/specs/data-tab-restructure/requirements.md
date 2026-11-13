@@ -45,6 +45,7 @@ GRANアプリのナビゲーション「データ」タブ（`src/components/lay
 - **Win_Rate**: 勝利数 ÷ 試合数 × 100 を小数第1位まで四捨五入した値（%）。試合数が0の場合は算出不能とする。
 - **Rated_Match**: GRANレベルの変動対象となった公式戦。`tournament_results` に記録される。
 - **GRAN_Level_History**: `tournament_results` の `pre_gran_level`、`gran_level_diff`、`post_gran_level`、`recorded_at` から構成される変動履歴。
+- **Tier_Slider**: 階級別ランキングで表示するTierを選択するスライダー。A, AB, B, BC, C, CD, D, DE の8段階の離散値を持つ。
 - **Ranking_Entry**: ランキング1件分の情報（順位、ニックネーム、アイコン、GRANレベル）。
 
 ## Requirements
@@ -89,13 +90,18 @@ GRANアプリのナビゲーション「データ」タブ（`src/components/lay
 1. WHEN User がMy_Data_Pageを表示する, THE My_Data_Page SHALL GRAN_Level_Historyを確定日時の新しい順（降順）に最大20件を初期表示する。確定日時が同一の履歴が複数ある場合は、記録の登録が新しいものを先に表示する。
 2. THE My_Data_Page SHALL 履歴の各行に、確定日時（YYYY/MM/DD HH:mm 形式）、大会名、変動前レベル、変動値（符号付き）、変動後レベルを表示する。
 3. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL GRAN_Levelの推移を、横軸を確定日時、縦軸を変動後レベルとする時系列の折れ線グラフで表示する。
-4. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL 全件の履歴を古い順にグラフへ反映する。
+4. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL 初期表示件数や「もっと見る」の追加読み込み状況にかかわらず、取得可能な全件の履歴を確定日時の古い順にグラフへ反映する。
 5. THE My_Data_Page SHALL 履歴の各行について、変動値が正の場合は「+」記号と上向きアイコン、負の場合は「−」記号と下向きアイコン、0の場合は「±0」の表記を、色に加えて表示する。
-6. WHEN User がグラフ上の点を選択する, THE My_Data_Page SHALL その時点の確定日付、大会名、変動後レベルを表示する。
+6. WHEN User がグラフ上の点を選択する, THE My_Data_Page SHALL その時点の確定日付（YYYY/MM/DD 形式）、大会名、変動後レベルを表示する。
 7. WHERE GRAN_Level_Historyが0件である, THE My_Data_Page SHALL 現在のGRAN_Levelのみを表示し、履歴が存在しないことを示すメッセージを表示し、グラフと履歴一覧は表示しない。
-8. WHEN 履歴の件数が20件を超える, THE My_Data_Page SHALL 「もっと見る」操作を表示し、操作ごとに次の20件を一覧の末尾に追加表示する。
+8. WHEN 履歴の件数が20件を超える, THE My_Data_Page SHALL 「もっと見る」操作を表示し、操作ごとに次の最大20件を一覧の末尾に追加表示する。
 9. IF 履歴の取得に失敗する, THEN THE My_Data_Page SHALL 履歴の取得に失敗したことを示すエラーメッセージと再読み込み操作を表示し、すでに表示済みの履歴を保持する。
 10. IF 「もっと見る」操作による追加読み込みに失敗する, THEN THE My_Data_Page SHALL 追加読み込みに失敗したことを示すエラーメッセージを表示し、すでに表示済みの履歴を保持したまま「もっと見る」操作を再度実行可能にする。
+11. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL グラフの横軸に、確定日付の目盛りと「YYYY/MM/DD」または「M/D」形式の目盛りラベルを、1つの形式に統一して3個以上表示する。ただし、反映する確定日付の種類が3種類未満の場合は、その種類数分の目盛りラベルを表示する。
+12. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL グラフの縦軸に、GRANレベルの目盛りと整数の目盛りラベルを、等間隔で3個以上表示する。
+13. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL グラフ内に縦軸の各目盛りに対応する水平の補助線を、目盛りと同数表示する。
+14. WHILE GRAN_Level_Historyが2件以上存在する, THE My_Data_Page SHALL 縦軸の範囲を、グラフに反映する変動後レベルの最小値と最大値をすべて含む範囲にし、最小値および最大値の点が軸の範囲内に収まって表示されるようにする。
+15. THE My_Data_Page SHALL GRAN_Levelの推移グラフの全データを一覧にした専用のデータ表を提供しない。履歴一覧（基準1、2、8）は専用のデータ表には含まれない。
 
 ### Requirement 4: 通算勝敗と直近試合の表示（マイデータ）
 
@@ -119,17 +125,19 @@ GRANアプリのナビゲーション「データ」タブ（`src/components/lay
 
 #### Acceptance Criteria
 
-1. THE My_Data_Page SHALL 条件別Win_Rateの切り替え項目として、種目、会場、サーフェス、季節、対戦相手（団体戦）、大会シリーズの6つを提供する。
-2. WHEN User が条件を選択する, THE My_Data_Page SHALL 選択された条件の値ごとに、試合数、勝利数、敗北数、Win_Rateを一覧表示する。
-3. WHEN 条件として種目が選択される, THE My_Data_Page SHALL 男子、女子、混合の3区分でWin_Rateを表示する。
+1. THE My_Data_Page SHALL 条件別Win_Rateの条件として、種目、会場、サーフェス、季節、対戦相手（団体戦）、大会シリーズの6つを、プルダウン（セレクトボックス）の選択肢として提供する。
+2. WHEN User がプルダウンから条件を選択する, THE My_Data_Page SHALL 選択された条件の値ごとに、試合数、勝利数、敗北数、Win_Rateを一覧表示する。
+3. WHEN 条件として種目が選択される, THE My_Data_Page SHALL 男子、女子、混合の3区分のみでWin_Rateを表示し、「未設定」区分を表示しない。
 4. WHEN 条件として季節が選択される, THE My_Data_Page SHALL 試合開催日の月に基づき、春（3〜5月）、夏（6〜8月）、秋（9〜11月）、冬（12〜2月）の4区分でWin_Rateを表示する。
 5. WHEN 条件として対戦相手（団体戦）が選択される, THE My_Data_Page SHALL 団体戦の対戦チームごとにWin_Rateを表示し、個人戦の試合は集計対象から除外する。
-6. THE My_Data_Page SHALL 各区分のWin_Rateを、小数点以下を四捨五入した0〜100%の整数値の数値表示と、その値に比例した長さの横棒グラフの両方で表示する。
+6. THE My_Data_Page SHALL 各区分のWin_Rateを、小数点以下を四捨五入した0〜100%の整数値の数値表示と、その値に比例した長さの横棒グラフ（0%の長さを0、100%の長さを横棒グラフ表示領域の全幅とする）の両方で表示する。
 7. IF 選択した条件の値で試合数が0である, THEN THE My_Data_Page SHALL その値のWin_Rateを「-」で表示し、横棒グラフの長さを0とする。
-8. IF 試合のサーフェスまたは大会シリーズが未登録である, THEN THE My_Data_Page SHALL その試合を「未設定」区分に集計する。
+8. IF 試合のサーフェスまたは大会シリーズが未登録である, THEN THE My_Data_Page SHALL その試合を「未設定」区分に集計する。種目は常に男子、女子、混合のいずれかであるため、「未設定」区分は、サーフェスと大会シリーズの条件に限って表示する。
 9. THE My_Data_Page SHALL 条件別Win_Rateの集計対象を、結果が確定（`match_status` が `FINISHED`）した試合に限定する。
 10. WHEN 条件別Win_Rateの集計対象となる試合が全条件を通じて0件である, THE My_Data_Page SHALL 全区分のWin_Rateを「-」で表示し、集計対象の試合がないことを示すメッセージを表示する。
 11. IF 条件別Win_Rateのデータ取得に失敗する, THEN THE My_Data_Page SHALL 取得に失敗したことを示すエラーメッセージと再読み込み操作を表示し、直前に表示していた集計結果を保持する。
+12. WHEN User がプルダウンで選択する条件を変更する, THE My_Data_Page SHALL 変更前の条件の集計結果を、変更後の条件の集計結果の表示に置き換える。
+13. WHEN User が再読み込み操作を実行する, THE My_Data_Page SHALL 現在選択中の条件でデータを再取得し、取得に成功した場合はエラーメッセージを消去して最新の集計結果を表示する。
 
 ### Requirement 6: 出場履歴の一覧表示（出場データ）
 
@@ -170,17 +178,20 @@ GRANアプリのナビゲーション「データ」タブ（`src/components/lay
 
 #### Acceptance Criteria
 
-1. WHEN User がRanking_Pageを開く, THE Ranking_Page SHALL 8つのTier（A, AB, B, BC, C, CD, D, DE）の切り替えタブを、この順序で各Tier 1つずつ表示する。
-2. WHEN Ranking_Pageが初回表示される, THE Ranking_Page SHALL User の現在のTierのタブを選択状態にし、そのTierの順位表を表示する。
-3. WHEN User がTierのタブを選択する, THE Ranking_Page SHALL 選択前の表示を、該当TierのRanking_EntryをGRAN_Levelの降順で並べた順位表に置き換える。
+1. WHEN User がRanking_Pageの階級別を開く, THE Ranking_Page SHALL 8つのTier（A, AB, B, BC, C, CD, D, DE）をこの順序で選択できるTier_Slider（A〜DEの8段階の離散値を持つスライダー）を1つ表示し、選択中のTier名をTier_Sliderの近傍に表示する。8つのTierを並べたタブは表示しない。
+2. WHEN Ranking_Pageが初回表示される, THE Ranking_Page SHALL Tier_Sliderの選択位置を User の現在のTierにし、そのTierの順位表を表示する。
+3. WHEN User がTier_Sliderの選択位置を変更する, THE Ranking_Page SHALL 選択前の表示を、該当TierのRanking_EntryをGRAN_Levelの降順で並べた順位表に置き換え、選択中のTier名の表示を更新する。この表示の置き換えは、順位表の取得完了から1秒以内に完了する。
 4. THE Ranking_Page SHALL 各Ranking_Entryに、順位（1以上の整数）、アイコン、ニックネーム、GRAN_Levelを表示する。
 5. WHEN 複数のユーザーのGRAN_Levelが同値である, THE Ranking_Page SHALL 公式戦消化試合数（`rated_match_count`）が多いユーザーを上位とし、`rated_match_count` も同数の場合は直近の勝率が高いユーザーを上位とする。
 6. WHILE User が選択中のTierに属している, THE Ranking_Page SHALL 選択中のTierの順位表で User の行を他の行と視覚的に区別できるよう強調表示し、「階級内順位 / 階級内総人数」（例: 「3位 / 42人」）を表示する。階級内総人数には `is_level_calibrated` が `false` のユーザーを含めない。
-7. IF 選択したTierに表示対象のユーザーが0人である, THEN THE Ranking_Page SHALL 順位表の代わりに、該当者が居ないことを示すメッセージを表示する。
+7. IF 選択したTierに表示対象のユーザーが0人である, THEN THE Ranking_Page SHALL 順位表の代わりに、該当者が居ないことを示すメッセージを表示し、Tier_Sliderは操作可能な状態を維持する。
 8. THE Ranking_Page SHALL 氏名（`real_name`）、電話番号、メールアドレスを表示しない。
 9. THE Ranking_Page SHALL `is_level_calibrated` が `false` のユーザーを順位表と順位計算から除外する。
 10. WHEN 選択中のTierの順位表の件数が50件を超える, THE Ranking_Page SHALL 初期表示を上位50件とし、続きを50件単位で「もっと見る」操作またはページ送りにより表示する。
-11. IF 順位表の取得に失敗する, THEN THE Ranking_Page SHALL 取得に失敗したことを示すエラーメッセージと再読み込み操作を表示し、直前に表示していた選択Tierのタブ状態を保持する。
+11. IF 順位表の取得に失敗する, THEN THE Ranking_Page SHALL 取得に失敗したことを示すエラーメッセージと再読み込み操作を表示し、直前に表示していた選択TierのTier_Slider選択位置を保持する。
+12. WHILE Tier_Sliderにフォーカスがある, THE Ranking_Page SHALL 左矢印キーまたは下矢印キーで1段階下位のTier、右矢印キーまたは上矢印キーで1段階上位のTierへ選択位置を移動し、DE（下端）とA（上端）を超える移動を行わない。
+13. WHEN User がTier_Sliderのつまみをドラッグまたはタップして操作する, THE Ranking_Page SHALL 8段階の離散位置のうち最も近い位置にのみ選択位置を確定し、8段階の間の中間位置では停止しない。
+14. IF User の現在のTierを判定できない, THEN THE Ranking_Page SHALL 初回表示時のTier_Sliderの選択位置をA（上端）にし、Aの順位表を表示する。
 
 ### Requirement 9: 種目別ランキング（ランキング）
 
@@ -205,15 +216,15 @@ GRANアプリのナビゲーション「データ」タブ（`src/components/lay
 
 #### Acceptance Criteria
 
-1. WHILE データを取得している, THE Data_Tab SHALL 取得開始から200ミリ秒以内に、各データ表示領域の位置にスケルトンまたはローディング表示を行い、取得完了または失敗時に当該表示を除去する。
-2. IF データ取得が失敗する（通信エラー、または10秒以内に応答がない場合）, THEN THE Data_Tab SHALL 失敗した領域に、取得に失敗したことを示すメッセージと再試行操作を表示し、既に表示済みの他領域のデータは保持する。
+1. WHEN データの取得を開始する, THE Data_Tab SHALL 取得開始から200ミリ秒以内に、各データ表示領域の位置にスケルトンまたはローディング表示を行い、取得完了または失敗した時点で当該表示を除去する。
+2. IF データ取得が失敗する（通信エラー、または取得開始から10秒以内に応答がない場合）, THEN THE Data_Tab SHALL 失敗した領域に、取得に失敗したことを示すメッセージと再試行操作を表示し、既に表示済みの他領域のデータは保持する。
 3. WHEN ユーザーが再試行操作を実行する, THE Data_Tab SHALL 失敗した領域のみを再取得し、再取得中は当該領域にローディング表示を行う。
-4. IF 再試行が連続して3回失敗する, THEN THE Data_Tab SHALL 再試行操作の表示を維持したまま、時間をおいて再度お試しいただく旨のメッセージを表示する。
+4. IF 同一領域で再試行が連続して3回失敗する, THEN THE Data_Tab SHALL 再試行操作の表示を維持したまま、時間をおいて再度お試しいただく旨のメッセージを表示する。
 5. THE Data_Tab SHALL 本文テキストを14px以上、注釈テキストを12px以上で、画面幅320px以上のすべての表示環境で表示する。
 6. THE Data_Tab SHALL 勝敗や増減を色のみで伝えず、文字・記号・アイコンのいずれかを併用する。
-7. THE Data_Tab SHALL グラフに表示されるすべてのデータ値を、同一画面内の表またはテキストでも確認できるようにする。
+7. THE Data_Tab SHALL グラフ専用のデータ表を設けず、グラフの値を、軸の目盛りラベル、グラフ上の点を選択したときの表示、および同一画面内のGRAN_Level_History一覧で確認できるようにする。
 8. THE Data_Tab SHALL `docs/ui-design-system.md` のカラートークン、角丸、タイポグラフィ規定に従う。
-9. WHILE ダークモードが有効である, THE Data_Tab SHALL ダークモード用のカラートークンで表示し、本文テキストと背景のコントラスト比を4.5:1以上、注釈テキストと背景のコントラスト比も4.5:1以上に保つ。
+9. WHILE ダークモードが有効である, THE Data_Tab SHALL ダークモード用のカラートークンで表示し、本文テキストと背景のコントラスト比、および注釈テキストと背景のコントラスト比をいずれも4.5:1以上に保つ。
 
 ### Requirement 11: プライバシーとアクセス制御
 

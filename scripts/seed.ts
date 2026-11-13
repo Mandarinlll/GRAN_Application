@@ -48,9 +48,25 @@ function addDays(base: Date, days: number): Date {
 
 // -------------------- 大会シードデータ --------------------
 
+// gender_division を決定する。団体戦は category から導出、SINGLES / DOUBLES は指定必須。
+function divisionOfCategory(
+  category: Category,
+  specified?: "MEN" | "WOMEN" | "MIXED" | null,
+): "MEN" | "WOMEN" | "MIXED" {
+  if (category === "MEN_TEAM") return "MEN";
+  if (category === "WOMEN_TEAM") return "WOMEN";
+  if (category === "MIX_TEAM") return "MIXED";
+  if (!specified) {
+    throw new Error(`[seed] ${category} には gender_division の指定が必要です`);
+  }
+  return specified;
+}
+
 interface SeedTournament {
   title: string;
   category: Category;
+  // SINGLES / DOUBLES は必須（団体戦は category から導出）
+  genderDivision?: "MEN" | "WOMEN" | "MIXED";
   tier: Tier;
   offsetDays: number; // 今日からの相対日数（負=過去）
   startTime: string;
@@ -89,6 +105,7 @@ const SEED_TOURNAMENTS: SeedTournament[] = [
   {
     title: "秋季シングルスチャレンジ B級",
     category: "SINGLES",
+    genderDivision: "MEN",
     tier: "B",
     offsetDays: 25,
     startTime: "08:30",
@@ -107,6 +124,7 @@ const SEED_TOURNAMENTS: SeedTournament[] = [
   {
     title: "GRAN 10月オープンダブルス",
     category: "DOUBLES",
+    genderDivision: "MIXED",
     tier: "C",
     offsetDays: 32,
     startTime: "09:00",
@@ -143,6 +161,7 @@ const SEED_TOURNAMENTS: SeedTournament[] = [
   {
     title: "第79回 GRAN サテライトC級カップ",
     category: "SINGLES",
+    genderDivision: "MEN",
     tier: "C",
     offsetDays: 7,
     startTime: "09:00",
@@ -178,6 +197,7 @@ const SEED_TOURNAMENTS: SeedTournament[] = [
   {
     title: "GRAN プレミアA級シリーズ 第3戦",
     category: "SINGLES",
+    genderDivision: "MEN",
     tier: "A",
     offsetDays: 60,
     startTime: "08:30",
@@ -195,6 +215,7 @@ const SEED_TOURNAMENTS: SeedTournament[] = [
   {
     title: "【終了】GRAN 春季 DE級フェスティバル",
     category: "DOUBLES",
+    genderDivision: "MIXED",
     tier: "DE",
     offsetDays: -30,
     startTime: "09:00",
@@ -417,8 +438,8 @@ const DATA_SEED_TOURNAMENTS: DataSeedTournament[] = [
   { key: "t1", title: "第1戦 シングルス", category: "SINGLES", tier: "C", offsetDays: -150, venue: "駒沢オリンピック公園", surface: "HARD", series: "GRANシリーズ", genderDivision: "MEN" },
   { key: "t2", title: "ミックスダブルス", category: "DOUBLES", tier: "C", offsetDays: -100, venue: "川崎リバーサイドTC", surface: "CLAY", series: "GRANシリーズ", genderDivision: "MIXED" },
   { key: "t3", title: "男子団体戦", category: "MEN_TEAM", tier: "BC", offsetDays: -60, venue: "横浜テニスクラブ", surface: "ARTIFICIAL_GRASS", series: "クラシックシリーズ", genderDivision: "MEN" },
-  // 結果未確定・サーフェス/シリーズ/区分すべて未設定。
-  { key: "t4", title: "未設定シングルス", category: "SINGLES", tier: "C", offsetDays: -30, venue: "昭和の森テニスセンター", surface: null, series: null, genderDivision: null },
+  // 結果未確定・サーフェス/シリーズ未設定（個人戦の性別区分は必須のため設定する）。
+  { key: "t4", title: "未設定シングルス", category: "SINGLES", tier: "C", offsetDays: -30, venue: "昭和の森テニスセンター", surface: null, series: null, genderDivision: "MEN" },
   { key: "t5", title: "ミックス団体戦", category: "MIX_TEAM", tier: "B", offsetDays: -10, venue: "有明テニスの森公園", surface: "OTHER", series: "クラシックシリーズ", genderDivision: "MIXED" },
   // キャンセル／キャンセル待ち（出場履歴に現れないこと）。
   { key: "t6", title: "キャンセル済み大会", category: "SINGLES", tier: "D", offsetDays: -45, venue: "千葉ベイサイドTC", surface: "HARD", series: null, genderDivision: "WOMEN" },
@@ -500,7 +521,7 @@ function seedDataTab(
       `${ymd(addDays(new Date(), t.offsetDays - 7))} 23:59:59`,
       t.surface,
       seriesId,
-      t.genderDivision,
+      divisionOfCategory(t.category, t.genderDivision),
     );
   }
   const tid = (k: string): string => tIds.get(k) as string;
@@ -735,8 +756,8 @@ async function main(): Promise<void> {
         id, title, category, tier, event_date, start_time, end_time,
         venue, court_info, image_url, description, capacity,
         team_size_min, team_size_max, entry_fee, status,
-        entry_start_at, entry_end_at, alert_threshold, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ${NOW_JST}, ${NOW_JST})`,
+        entry_start_at, entry_end_at, alert_threshold, gender_division, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ${NOW_JST}, ${NOW_JST})`,
     ).run(
       tournamentId,
       t.title,
@@ -755,6 +776,7 @@ async function main(): Promise<void> {
       t.status,
       entryStart,
       entryEnd,
+      divisionOfCategory(t.category, t.genderDivision),
     );
 
     // ダミー確定エントリー（残枠・満員の見た目用）。各ダミーユーザーで1件ずつ。

@@ -358,6 +358,214 @@
         "chatSessionId": "sess_f8408649-4ec3-45aa-92b9-85af51c7e174",
         "timestamp": 1794384297970
       }
+    ],
+    "9.1 `utils/chartAxis.ts` に軸計算の純粋関数を実装する": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471474272
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471482743
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471698148
+      }
+    ],
+    "9.3 `GranChart.tsx` に縦軸・横軸・水平補助線を追加し、データ表を削除する": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471474355
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471710302
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471919449
+      }
+    ],
+    "10.1 `utils/aggregate.ts` を更新して種目の「未設定」区分を廃止する": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471474423
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471483542
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471698918
+      }
+    ],
+    "10.3 `gender_division` の補完とアプリ層での必須化を実装する": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471474493
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471484349
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471699761
+      }
+    ],
+    "10.4 `dataRepository` と win-rate ハンドラを更新する": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471474569
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471711111
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471920394
+      }
+    ],
+    "10.5 出場履歴の種目絞り込みから UNSET 選択肢を削除する": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471474673
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471485140
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471700518
+      }
+    ],
+    "10.7 `WinRateByCondition.tsx` の条件選択をネイティブ `<select>` に変更する": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471474748
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471925138
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471982499
+      }
+    ],
+    "11.1 `utils/tier.ts` に Tier とスライダー値の変換関数を追加する": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471474811
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471485926
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471701157
+      }
+    ],
+    "11.3 `src/components/ranking/TierSlider.tsx` を新規実装する": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471474885
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471711760
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471921127
+      }
+    ],
+    "11.4 `RankingView.tsx` の階級選択を `TierSlider` に置き換える": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471474952
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471925583
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471983213
+      }
+    ],
+    "12. Final checkpoint - ビルド・型チェック・テストの確認": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471475023
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471986420
+      },
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794472078228
+      }
+    ],
+    "9. GRANレベル推移グラフの軸・補助線の追加とデータ表の削除": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471919585
+      }
+    ],
+    "10. 条件別勝率のプルダウン化と種目「未設定」区分の廃止": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471982589
+      }
+    ],
+    "11. 階級別ランキングの Tier_Slider 化": [
+      {
+        "executionId": "ab1df7b2-b0af-4549-879d-add818562e03",
+        "chatSessionId": "sess_dcef06d8-9e8d-498c-8d65-4f824cd69fdf",
+        "timestamp": 1794471983282
+      }
     ]
   }
 }

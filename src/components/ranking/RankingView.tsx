@@ -9,7 +9,9 @@ import type { TournamentTier } from "@/features/tournaments/types/tournament";
 import type { RankingCategory } from "@/features/data/types/dto";
 import { useRemoteResource } from "@/features/data/hooks/useRemoteResource";
 import { EmptyState, ErrorPanel, Skeleton } from "@/features/data/components/RegionState";
+import { initialSliderTier } from "@/features/data/utils/tier";
 import { RankingTable, type PublicRankingRow } from "./RankingTable";
+import { TierSlider } from "./TierSlider";
 
 export type RankingMode = "tier" | "category";
 
@@ -18,18 +20,6 @@ export interface RankingSelection {
   tier: TournamentTier;
   category: RankingCategory;
 }
-
-/** 階級タブの表示順（要件8.1）。 */
-export const RANKING_TIER_TABS: readonly TournamentTier[] = [
-  "A",
-  "AB",
-  "B",
-  "BC",
-  "C",
-  "CD",
-  "D",
-  "DE",
-];
 
 /** 種目タブの表示順（要件9.1）。 */
 export const RANKING_CATEGORY_TABS: ReadonlyArray<{ value: RankingCategory; label: string }> = [
@@ -172,10 +162,10 @@ function RankingList({ selection }: { selection: RankingSelection }) {
   );
 }
 
-export function RankingView({ initialTier }: { initialTier: TournamentTier }) {
+export function RankingView({ initialTier }: { initialTier: TournamentTier | null }) {
   const [selection, setSelection] = useState<RankingSelection>({
     mode: "tier",
-    tier: initialTier,
+    tier: initialSliderTier(initialTier),
     category: "MEN",
   });
 
@@ -201,17 +191,10 @@ export function RankingView({ initialTier }: { initialTier: TournamentTier }) {
       </div>
 
       {selection.mode === "tier" ? (
-        <div role="tablist" aria-label="階級" className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-          {RANKING_TIER_TABS.map((tier) => (
-            <TabButton
-              key={tier}
-              selected={selection.tier === tier}
-              onClick={() => setSelection((s) => ({ ...s, tier }))}
-            >
-              {tier}
-            </TabButton>
-          ))}
-        </div>
+        <TierSlider
+          tier={selection.tier}
+          onChange={(tier) => setSelection((s) => ({ ...s, tier }))}
+        />
       ) : (
         <div role="tablist" aria-label="種目" className="grid grid-cols-3 gap-2">
           {RANKING_CATEGORY_TABS.map((c) => (

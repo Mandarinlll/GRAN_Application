@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRemoteResource } from "../../hooks/useRemoteResource";
@@ -34,52 +34,29 @@ export function WinRateByCondition() {
   const current = data && data.dimension === dimension ? data : null;
   const stale = data && data.dimension !== dimension ? data : null;
 
-  const onKeyDown = (e: React.KeyboardEvent, index: number) => {
-    let next = index;
-    if (e.key === "ArrowRight") next = (index + 1) % DIMENSIONS.length;
-    else if (e.key === "ArrowLeft") next = (index - 1 + DIMENSIONS.length) % DIMENSIONS.length;
-    else return;
-    e.preventDefault();
-    setDimension(DIMENSIONS[next].id);
-    document.getElementById(`winrate-tab-${DIMENSIONS[next].id}`)?.focus();
-  };
-
   return (
     <section aria-label="条件別勝率" className={`${CARD_CLASS} space-y-3`}>
       <h2 className={SECTION_TITLE_CLASS}>条件別の勝率</h2>
 
-      <div role="tablist" aria-label="集計条件" className="flex flex-wrap gap-2">
-        {DIMENSIONS.map((d, i) => {
-          const active = d.id === dimension;
-          return (
-            <button
-              key={d.id}
-              id={`winrate-tab-${d.id}`}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              aria-controls="winrate-panel"
-              tabIndex={active ? 0 : -1}
-              onClick={() => setDimension(d.id)}
-              onKeyDown={(e) => onKeyDown(e, i)}
-              className={
-                active
-                  ? "min-h-[44px] rounded-xl bg-emerald-600 px-3 text-sm font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:bg-emerald-500 dark:text-slate-900"
-                  : "min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm text-slate-900 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
-              }
-            >
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor="winrate-dimension" className="text-sm font-bold">
+          条件
+        </label>
+        <select
+          id="winrate-dimension"
+          value={dimension}
+          onChange={(e) => setDimension(e.target.value as Dimension)}
+          className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:focus-visible:ring-emerald-500"
+        >
+          {DIMENSIONS.map((d) => (
+            <option key={d.id} value={d.id}>
               {d.label}
-            </button>
-          );
-        })}
+            </option>
+          ))}
+        </select>
       </div>
 
-      <div
-        id="winrate-panel"
-        role="tabpanel"
-        aria-labelledby={`winrate-tab-${dimension}`}
-        className="space-y-3"
-      >
+      <div aria-live="polite" className="space-y-3">
         {status === "error" && (
           <ErrorPanel
             message="条件別勝率の取得に失敗しました。"
@@ -136,3 +113,4 @@ function Buckets({ data }: { data: WinRateDto }) {
     </>
   );
 }
+

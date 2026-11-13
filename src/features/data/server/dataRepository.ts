@@ -330,7 +330,15 @@ export function createDataRepository(db: DatabaseSync) {
           matchId: String(r.match_id),
           isWin: r.winner_entry_id === r.my_entry_id,
           tournamentCategory: category,
-          genderDivision: asDivision(r.gender_division),
+          // 団体戦は category から部門を導出。SINGLES/DOUBLES は DB 値（NULL は null のまま）
+          genderDivision:
+            category === "MEN_TEAM"
+              ? "MEN"
+              : category === "WOMEN_TEAM"
+                ? "WOMEN"
+                : category === "MIX_TEAM"
+                  ? "MIXED"
+                  : asDivision(r.gender_division),
           venue: String(r.venue ?? ""),
           surface: asSurface(r.surface),
           seriesName: (r.series_name as string | null) ?? null,

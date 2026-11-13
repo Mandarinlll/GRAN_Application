@@ -9,5 +9,8 @@ export default async function RankingPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  return <RankingView initialTier={granLevelToTier(user.granLevel)} />;
+  // 現在の階級を判定できない場合（レベル不正）は null を渡し、A を初期選択にする（要件8.14）。
+  const currentTier = Number.isFinite(user.granLevel) ? granLevelToTier(user.granLevel) : null;
+
+  return <RankingView initialTier={currentTier} />;
 }

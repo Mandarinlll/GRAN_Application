@@ -176,6 +176,108 @@
 - [x] 8. Final checkpoint - すべてのテストとビルドの確認
   - Ensure all tests pass, ask the user if questions arise.
 
+- [x] 9. GRANレベル推移グラフの軸・補助線の追加とデータ表の削除
+  - [x] 9.1 `utils/chartAxis.ts` に軸計算の純粋関数を実装する
+    - `niceTicks(dataMin, dataMax, targetCount = 5)` を実装する。刻み幅は 1・2・5 × 10^k の正の整数、目盛りは整数の等間隔、`min = floor(dataMin / step) * step`、`max = ceil(dataMax / step) * step` でデータ範囲を含める
+    - 目盛りが3個未満になる場合は、刻み幅を 1・2・5 系列で1段階ずつ縮めて3個以上にする。`dataMin = dataMax` で `step = 1` でも足りない場合は `[v-1, v, v+1]` とする
+    - `dateTicks(dates, maxCount = 5)` を実装する。重複を除いて昇順にし、種類数が `maxCount` 以下なら全種類、超える場合は先頭と末尾を含めて添字を等分割で `maxCount` 個選ぶ。ラベルは全日付が同一年なら `M/D`、年をまたぐなら `YYYY/MM/DD` に統一する
+    - _Requirements: 3.11, 3.12, 3.14_
+
+  - [ ]* 9.2 軸計算のプロパティテストを書く
+    - **Property 17: 縦軸の目盛りは整数・等間隔・3個以上でデータ範囲を含む**
+    - **Property 18: 横軸の日付目盛りは個数・形式・順序を満たす**
+    - `dataMin = dataMax` の同値ケース、日付の重複・未整列・年またぎを生成器に含める
+    - **Validates: Requirements 3.11, 3.12, 3.13, 3.14**
+
+  - [x] 9.3 `GranChart.tsx` に縦軸・横軸・水平補助線を追加し、データ表を削除する
+    - 縦軸は `niceTicks(最小変動後レベル, 最大変動後レベル)` の `ticks` を左に整数ラベルで描画し、Y座標は `ticks[0]`〜`ticks[last]` を描画域の下端〜上端へ線形に割り当てる
+    - 各目盛りに水平補助線（`<line data-gridline>`、`stroke` は `slate-200` / `dark:slate-700`）を目盛りと同数描画する。軸ラベルは `text-slate-700 dark:text-slate-300` の12px以上とする
+    - 横軸は `dateTicks(全点の確定日付)` の各日付に対応するX位置（時刻に比例）へ目盛り線とラベルを描画する
+    - `ResizeObserver` でコンテナ実幅（最小280px）を取得して `viewBox` 幅に一致させ、縦軸ラベル幅の左余白と横軸ラベル用の下余白を確保する。幅が狭いときは `dateTicks` の `maxCount` を幅から算出して減らす（3個以上、日付種類が3未満ならその数）
+    - `<details>`「グラフの全データを表で見る」と全点データ表を削除する。点のフォーカス選択表示は維持する
+    - _Requirements: 3.3, 3.4, 3.6, 3.11, 3.12, 3.13, 3.14, 3.15, 10.5, 10.7, 10.9_
+
+  - [ ]* 9.4 `GranChart` の例示テストを書く
+    - 水平補助線の本数が縦軸の目盛りラベル数と一致すること、全点の最小・最大が軸範囲内に収まること、データ表（`<details>` / `<table>`）が存在しないことを確認する
+    - _Requirements: 3.13, 3.14, 3.15, 10.7_
+
+- [x] 10. 条件別勝率のプルダウン化と種目「未設定」区分の廃止
+  - [x] 10.1 `utils/aggregate.ts` を更新して種目の「未設定」区分を廃止する
+    - `category` 次元は男子・女子・混合の3区分のみをこの順で常に返す。`SINGLES` / `DOUBLES` かつ `genderDivision = null` の試合は `category` 集計から除外する。団体戦は `genderDivision` が `null` でも `tournamentCategory` から部門を決める
+    - `venue` 次元は会場名が空文字の試合を集計から除外する。「未設定」区分（キー `UNSET`）は `surface` と `series` の欠損に限る
+    - 他の次元と通算勝敗には、部門を判別できない試合も引き続き含める
+    - _Requirements: 5.3, 5.8_
+
+  - [ ]* 10.2 条件別集計のプロパティテストを更新する
+    - **Property 3: 条件別集計は試合を丁度1区分に分類する**（更新版: `category` は3区分のみ、`UNSET` は `surface` / `series` のみ、判別不能データと空会場名は除外）
+    - 既存の `aggregate` のテストを更新し、部門判別不能な `SINGLES` / `DOUBLES`・団体戦で `genderDivision = null`・空の会場名を生成器に加える
+    - **Validates: Requirements 5.2, 5.3, 5.4, 5.5, 5.8, 5.9**
+
+  - [x] 10.3 `gender_division` の補完とアプリ層での必須化を実装する
+    - `src/lib/db.ts` の `ensureColumn` 追加後に、団体戦（`MEN_TEAM` / `WOMEN_TEAM` / `MIX_TEAM`）かつ `gender_division IS NULL` の行へ `category` から一括補完する冪等な `UPDATE` を追加する
+    - 大会の登録・更新経路の zod スキーマで、`SINGLES` / `DOUBLES` かつ `gender_division` 未指定を 400 で拒否する
+    - `scripts/seed.ts` の `SINGLES` / `DOUBLES` 大会に `gender_division` を必ず設定する
+    - _Requirements: 5.3, 5.8_
+
+  - [x] 10.4 `dataRepository` と win-rate ハンドラを更新する
+    - `DecidedMatch` 生成時に、団体戦は `category` から `genderDivision` を導出し、`SINGLES` / `DOUBLES` で `gender_division` が NULL の場合は `null` のまま渡す
+    - `/api/data/me/win-rate` が更新後の `aggregateByDimension` の結果（種目に「未設定」なし）を返すことを確認する
+    - _Requirements: 5.2, 5.3, 5.8, 5.9_
+
+  - [x] 10.5 出場履歴の種目絞り込みから UNSET 選択肢を削除する
+    - `querySchemas.ts` の `division` の列挙から `UNSET` を削除する（`MEN` / `WOMEN` / `MIXED` のみ）
+    - `utils/participation.ts` の `ParticipationFilter` と `filterParticipations` から未設定の扱いを削除する
+    - `ParticipationFilters.tsx` の種目の選択肢から「未設定」を削除する
+    - _Requirements: 6.4_
+
+  - [ ]* 10.6 出場履歴の絞り込みテストを更新する
+    - **Property 9: 出場履歴の絞り込みと並べ替え**（`division` に `UNSET` を使わない形へ更新）
+    - `querySchemas` が `division=UNSET` を 400 で拒否することを例示テストで確認する
+    - **Validates: Requirements 6.1, 6.4, 6.5**
+
+  - [x] 10.7 `WinRateByCondition.tsx` の条件選択をネイティブ `<select>` に変更する
+    - `role="tablist"` のタブを廃止し、`<label htmlFor>`「条件」に関連付けた `<select>` を実装する。選択肢は種目・会場・サーフェス・季節・対戦相手（団体戦）・大会シリーズの順
+    - `select` は `min-h-[44px]`、`text-sm` 以上、`rounded-xl`、`border-slate-200 dark:border-slate-800`、フォーカスリング `emerald` とする
+    - `onChange` で `dimension` を更新し、変更前の集計結果を変更後の結果に置き換える。再読み込みは現在の `dimension` で再取得し、`keepStaleOnError` により失敗時は直前の集計結果を保持する
+    - 種目では男子・女子・混合の3行のみを表示し、「未設定」行はサーフェスと大会シリーズに試合があるときだけ末尾に表示する
+    - _Requirements: 5.1, 5.2, 5.3, 5.6, 5.7, 5.8, 5.10, 5.11, 5.12, 5.13, 10.5_
+
+  - [ ]* 10.8 `WinRateByCondition` の例示テストを書く
+    - `<select>` の選択肢が6つで順序どおりであること、`<label>` との関連付け、`tablist` が存在しないこと、種目選択時に「未設定」行が出ないことを確認する
+    - _Requirements: 5.1, 5.3, 5.12_
+
+- [x] 11. 階級別ランキングの Tier_Slider 化
+  - [x] 11.1 `utils/tier.ts` に Tier とスライダー値の変換関数を追加する
+    - `SLIDER_MIN = 0`、`SLIDER_MAX = 7`、`tierToSliderValue`（DE=0 … A=7、`TIER_ORDER` の添字）、`sliderValueToTier`、`snapSliderValue`（最寄りの整数に丸め 0〜7 にクランプ、NaN は 7）、`stepSliderValue`（端を超えない）、`initialSliderTier`（判定不能 `null` は `"A"`）を実装する
+    - _Requirements: 8.1, 8.2, 8.12, 8.13, 8.14_
+
+  - [ ]* 11.2 Tier とスライダー値の変換のプロパティテストを書く
+    - **Property 19: Tier とスライダー値の変換**
+    - 往復変換、0〜7 の相異なる整数への写像と上位ほど大きい値、`snapSliderValue` の最寄り性、`stepSliderValue` の端でのクランプ、`initialSliderTier(null) = "A"` を検証する
+    - **Validates: Requirements 8.1, 8.2, 8.12, 8.13, 8.14**
+
+  - [x] 11.3 `src/components/ranking/TierSlider.tsx` を新規実装する
+    - ネイティブ `<input type="range" min={0} max={7} step={1}>` を使い、値は `tierToSliderValue(tier)`、`onChange` で `sliderValueToTier(Number(e.target.value))` を親へ渡す。独自のキーハンドラは持たない
+    - `<label htmlFor>`「階級」を関連付け、`aria-valuetext={`${tier}級`}` を設定する。つまみ周辺の高さは `min-h-[44px]` 以上、フォーカスリングは `emerald`
+    - スライダー直下に DE〜A の全8階級名を左から右へ目盛りとして表示し、近傍に「選択中: AB級」の形式でTier名を常時表示する
+    - 該当者0人・取得失敗のときも `disabled` にしない
+    - _Requirements: 8.1, 8.7, 8.11, 8.12, 8.13, 10.5, 10.9_
+
+  - [x] 11.4 `RankingView.tsx` の階級選択を `TierSlider` に置き換える
+    - 階級別モードの8個のTierタブを廃止して `TierSlider` を表示する。モードの2タブ（階級別 / 種目別）と種目タブ（男子・女子・混合）は維持する
+    - 初期のTierは `initialSliderTier(現在のTier | null)` とし、`ranking/page.tsx` が現在のTierを判定できない場合は `null` を渡して A を初期選択する
+    - 選択状態 `{ mode, tier, category }` を親の `useState` に保持し、モード切替で破棄しない。ドラッグ中の未完了リクエストは `useRemoteResource` の `AbortController` で破棄し、最後の位置の結果のみを表示する
+    - 取得失敗時も直前の選択Tierのスライダー位置を保持する（`keepStaleOnError`）
+    - _Requirements: 8.1, 8.2, 8.6, 8.7, 8.11, 8.13, 8.14, 9.6_
+
+  - [ ]* 11.5 `TierSlider` と `RankingView` の例示テストを書く
+    - `input[type=range]` の `min` / `max` / `step` 属性、`aria-valuetext`、「選択中: ○級」表示、Tierタブが存在しないこと、モード切替後にTierの選択位置が復元されることを確認する
+    - `TierSlider` の `onChange` が 0〜7 の値に対応する Tier を親へ渡すことを確認する
+    - _Requirements: 8.1, 8.2, 8.13, 8.14, 9.6_
+
+- [x] 12. Final checkpoint - ビルド・型チェック・テストの確認
+  - `npm run build` と型チェック（`npx tsc --noEmit`）、`npm run test` がすべて通ることを確認する。問題があればユーザーに確認する。
+
 ## Notes
 
 - `*` 付きのサブタスクは任意で、MVP を優先する場合はスキップできる
@@ -195,7 +297,11 @@
     { "id": 3, "tasks": ["2.4", "2.6", "2.8", "4.2", "6.1"] },
     { "id": 4, "tasks": ["4.3", "4.4", "6.2", "6.3"] },
     { "id": 5, "tasks": ["4.5", "6.4", "6.5", "6.6", "7.1", "7.2"] },
-    { "id": 6, "tasks": ["6.7"] }
+    { "id": 6, "tasks": ["6.7"] },
+    { "id": 7, "tasks": ["9.1", "10.1", "10.3", "10.5", "11.1"] },
+    { "id": 8, "tasks": ["9.2", "9.3", "10.2", "10.4", "10.6", "11.2", "11.3"] },
+    { "id": 9, "tasks": ["9.4", "10.7", "11.4"] },
+    { "id": 10, "tasks": ["10.8", "11.5"] }
   ]
 }
 ```

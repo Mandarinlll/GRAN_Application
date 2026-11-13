@@ -24,7 +24,7 @@
 1. 集計・順位・フォーマットなどのロジックは**DB非依存の純粋関数**として `src/features/data/utils/` に集約し、プロパティベーステスト対象にする。
 2. SQLは `src/features/data/server/dataRepository.ts` に集約し、`DatabaseSync` を引数注入できる形にしてインメモリDBでテスト可能にする。
 3. データ取得はRoute Handler（`/api/data/...`）+ クライアント側の共通フック。領域ごとに独立したローディング/エラー/再試行を実現する（要件10）。
-4. 新規依存はテスト用（vitest, fast-check）のみ。グラフは自前SVGで描画する（依存追加なし）。
+4. 新規依存はテスト用（vitest, fast-check）のみ。グラフは自前SVGで描画する（依存追加なし）。軸目盛りの計算（`niceTicks` / `dateTicks`）とスライダー値の変換は、描画から切り離した純粋関数にする。
 
 ### 未確定事項の確定（要件書「前提と未確定事項」への回答）
 
@@ -37,7 +37,15 @@
 | 種目別ランキングの集計単位 | **性別による区分**。順位の元は常に `users.gran_level` の1値。男子=`gender='MALE'`、女子=`gender='FEMALE'`、混合=全ユーザー（性別未設定・OTHER含む） | 種目別レーティングはDBに存在せず、要件9.7（階級別と同じ値）を満たす最小構成。種目別Eloは将来拡張 |
 | 団体戦の個人別勝敗粒度 | **試合（`tournament_matches` 1行＝エントリー対エントリー）単位**で集計。ユーザーは `entry_members`（`REGISTERED`）に含まれるエントリーの勝敗を自分の勝敗とする。個人ペア単位の子テーブル（`tournament_match_games`）は将来拡張とし、本機能では作らない | 管理者要件で粒度が未決。要件5.5が「団体戦の対戦チーム単位」であり、チーム単位で要件を全て満たせる |
 | 引き分け | 勝者未設定の `FINISHED` 試合は勝敗集計から除外（詳細表示のみ「引き分け」と表示）。集計対象を「勝者が確定した FINISHED 試合」に限り、要件4.1の `勝利+敗北=試合数` を保証 | テニスに引き分けは通常無く、データ不備を統計に混ぜない |
-| 「種目」の定義（統計/絞り込み） | 大会の `category` から `MEN_TEAM→男子`, `WOMEN_TEAM→女子`, `MIX_TEAM→混合`。`SINGLES`/`DOUBLES` は性別が分からないため `tournaments.gender_division`（`MEN`/`WOMEN`/`MIXED`、NULL可）を追加して参照。NULLは「未設定」区分（試合があるときのみ表示） | `category` だけでは単・複の男女が判別できないため |
+| 「種目」の定義（統計/絞り込み） | 大会の `category` から `MEN_TEAM→男子`, `WOMEN_TEAM→女子`, `MIX_TEAM→混合`。`SINGLES`/`DOUBLES` は性別が分からないため `tournaments.gender_division`（`MEN`/`WOMEN`/`MIXED`）を追加して参照する。**種目に「未設定」は存在させない**（下記「種目を必須とする方針」） | `category` だけでは単・複の男女が判別できないため。種目は設計上、常に男子/女子/混合のいずれかである（要件5.3, 5.8） |
+
+#### 種目を必須とする方針（「未設定」区分の解消）
+
+- 団体戦（`MEN_TEAM`/`WOMEN_TEAM`/`MIX_TEAM`）の種目は `category` から一意に決まる。`gender_division` が NULL でも `category` から導出する。
+- `SINGLES`/`DOUBLES` の大会は `gender_division` を**必須入力**とする。大会の登録・更新経路（zod スキーマ）で、`SINGLES`/`DOUBLES` かつ `gender_division` 未指定を 400 で拒否する。`seed.ts` も必ず設定する。
+- `ensureColumn` で列を追加する際、既存行には `category` が団体戦の行のみ `gender_division` を一括補完する（`UPDATE ... SET gender_division = CASE category WHEN 'MEN_TEAM' THEN 'MEN' ...`、冪等）。SQLite は `ALTER TABLE ADD COLUMN` で NOT NULL を後付けできないため、列定義は NULL 許容のまま残し、必須性はアプリ層で担保する。
+- 既存データに残る「`SINGLES`/`DOUBLES` かつ `gender_division` が NULL」の行は、種目を判別できない不正データとして**種目の集計から除外**する（「未設定」区分は作らない）。他の条件（会場・サーフェス・季節・対戦相手・シリーズ）の集計と、通算勝敗には引き続き含める。
+- 出場履歴の種目絞り込みも、同じ理由で「未設定」選択肢を持たない（男子/女子/混合のみ）。
 
 > 種目の意味は2種類ある。**統計・出場履歴の種目**は大会の部門（上表）、**ランキングの種目**はユーザーの性別区分である。UI上の名称は同じ「男子/女子/混合」だが、混同しないよう型を `GenderDivision`（大会側）と `RankingCategory`（ランキング側）に分ける。
 
@@ -111,6 +119,7 @@ src/features/data/
     season.ts                  # 月→季節
     aggregate.ts               # 条件別勝率の区分集計
     history.ts                 # 履歴ソート/グラフ点列/差分表記
+    chartAxis.ts               # 縦軸 niceTicks / 横軸 dateTicks（純粋関数）
     participation.ts           # 絞り込み・並べ替え・結果ラベル
     pagination.ts              # offset/limit スライス
     ranking.ts                 # 階級内順位・競技順位
@@ -125,7 +134,7 @@ src/features/data/
     RegionState.tsx            # Skeleton / ErrorPanel / Empty
     me/ LevelCard, GranHistory, GranChart, RecordSummary, RecentMatches, WinRateByCondition
     participations/ ParticipationView, ParticipationFilters, ParticipationTable, ParticipationDetail
-    ranking/ RankingView, RankingTable
+    ranking/ RankingView, RankingTable   # 実装は src/components/ranking/ に配置済み。階級選択は TierSlider
 ```
 
 ### 純粋関数インターフェース（`utils/`）
@@ -142,6 +151,16 @@ export interface PromotionInfo {
 }
 export function computePromotion(granLevel: number): PromotionInfo; // tierは granLevelToTier を利用
 
+// Tier_Slider 用（tier.ts）。スライダー値は TIER_ORDER の添字: 0=DE（左端）… 7=A（右端）。
+// 値が増える方向が「上位Tier」で、右/上矢印キー＝上位（要件8.12）と一致する。
+export const SLIDER_MIN = 0;
+export const SLIDER_MAX = 7;
+export function tierToSliderValue(tier: TournamentTier): number;      // DE→0 … A→7
+export function sliderValueToTier(value: number): TournamentTier;    // 範囲外/非整数は snapSliderValue を通してから変換
+export function snapSliderValue(raw: number): number;                // 最寄りの整数に丸め 0..7 にクランプ。NaN は 7(A)
+export function stepSliderValue(value: number, delta: 1 | -1): number; // 1段階移動。端を超えない
+export function initialSliderTier(current: TournamentTier | null): TournamentTier; // 判定不能(null)は "A"（要件8.14）
+
 // winRate.ts
 export function winRatePercent1(wins: number, total: number): number | null; // 小数第1位、total=0 → null
 export function winRatePercentInt(wins: number, total: number): number | null; // 整数、total=0 → null
@@ -156,14 +175,16 @@ export function seasonOfDate(eventDate: string): Season; // "YYYY-MM-DD"
 export type Dimension = "category" | "venue" | "surface" | "season" | "opponent" | "series";
 export interface DecidedMatch {            // 勝者が確定した FINISHED 試合（ユーザー視点）
   matchId: string; isWin: boolean;
-  tournamentCategory: TournamentCategory; genderDivision: GenderDivision | null;
+  tournamentCategory: TournamentCategory;
+  genderDivision: GenderDivision | null;   // 団体戦は category から導出。SINGLES/DOUBLES で null は不正データ（種目集計から除外）
   venue: string; surface: Surface | null; seriesName: string | null;
   eventDate: string; opponentTeamName: string | null; // 団体戦のみ非null
 }
 export interface Bucket { key: string; label: string; matches: number; wins: number; losses: number }
 export function aggregateByDimension(matches: DecidedMatch[], dim: Dimension): Bucket[];
-// 固定区分（category: 男子/女子/混合、season: 春夏秋冬）は試合0件でも全区分を返す。
-// 動的区分（venue/surface/series/opponent）は試合のある値のみ。surface/series/category の欠損は "未設定" 区分。
+// 固定区分（category: 男子/女子/混合の3区分のみ、season: 春夏秋冬）は試合0件でも全区分を返す。
+// category に「未設定」区分は存在しない。部門を判別できない試合（SINGLES/DOUBLES かつ genderDivision=null）は category 集計から除外する。
+// 動的区分（venue/surface/series/opponent）は試合のある値のみ。"未設定" 区分は surface と series の欠損に限る（category・venue には適用しない。空の会場名は venue 集計から除外）。
 // opponent は団体戦（opponentTeamName != null）のみ対象。
 
 // history.ts
@@ -171,8 +192,20 @@ export function sortHistoryDesc<T extends { recordedAt: string; seq: number }>(r
 export function toChartSeries<T extends { recordedAt: string; seq: number }>(rows: T[]): T[];   // 昇順、全件
 export function formatDelta(diff: number): { text: string; direction: "up" | "down" | "flat" }; // "+8" / "−6" / "±0"
 
+// chartAxis.ts（GranChart の軸計算。描画から独立した純粋関数）
+export interface NiceTicks { ticks: number[]; min: number; max: number; step: number } // min=ticks[0], max=ticks[last]
+export function niceTicks(dataMin: number, dataMax: number, targetCount?: number /* 既定5 */): NiceTicks;
+// - 刻み幅 step は 1・2・5 × 10^k の正の整数（step >= 1）。ticks は min から max まで step 間隔の整数列（等間隔）。
+// - min = floor(dataMin / step) * step、max = ceil(dataMax / step) * step（データ範囲をすべて含む）。
+// - ticks が3個未満になる場合（dataMin = dataMax、または範囲が狭い）は、step を 1・2・5 系列で1段階ずつ縮めて3個以上にする。
+//   dataMin = dataMax で step=1 でも足りない場合は [v-1, v, v+1] とする。
+export interface DateTick { date: string /* YYYY-MM-DD */; label: string }
+export function dateTicks(dates: string[] /* 確定日付 YYYY-MM-DD、重複・未整列可 */, maxCount?: number /* 既定5 */): DateTick[];
+// - 重複を除いた日付種類数 n に対し、n <= maxCount なら全種類、n > maxCount なら先頭・末尾を含み添字を等分割で maxCount 個選ぶ（個数は min(n, maxCount)、n>=3 なら3以上）。
+// - 昇順で返す。label は全目盛りで1形式に統一: 全日付が同一年なら "M/D"、年をまたぐなら "YYYY/MM/DD"。
+
 // participation.ts
-export interface ParticipationFilter { division?: GenderDivision | "UNSET"; tier?: TournamentTier; year?: number }
+export interface ParticipationFilter { division?: GenderDivision; tier?: TournamentTier; year?: number }
 export function filterParticipations<T extends ParticipationRowBase>(rows: T[], f: ParticipationFilter): T[];
 export function sortParticipations<T extends { eventDate: string }>(rows: T[], order: "asc" | "desc"): T[];
 export function resultLabel(rank: ResultRank | null): string; // null → "未確定"
@@ -208,7 +241,7 @@ export function opponentLabel(args: { isTeamMatch: boolean; teamName: string | n
 | `/api/data/me/gran-history` | `offset`(既定0), `limit`(既定20, 最大50) | `{ rows: HistoryRowDto[]; total; nextOffset; chart?: ChartPointDto[] }`（`chart` は `offset=0` のときのみ全件・古い順） |
 | `/api/data/me/record` | - | `{ total; wins; losses; recent: RecentMatchDto[] }` |
 | `/api/data/me/win-rate` | `dimension` | `{ dimension; buckets: Bucket[]; totalMatches }` |
-| `/api/data/participations` | `division`,`tier`,`year`,`order`(`asc`/`desc`、既定desc),`offset`,`limit`(既定20) | `{ rows: ParticipationRowDto[]; total; nextOffset; years: number[] }` |
+| `/api/data/participations` | `division`(`MEN`/`WOMEN`/`MIXED`),`tier`,`year`,`order`(`asc`/`desc`、既定desc),`offset`,`limit`(既定20) | `{ rows: ParticipationRowDto[]; total; nextOffset; years: number[] }` |
 | `/api/data/participations/[tournamentId]` | - | `ParticipationDetailDto`（本人が当該大会に出場していない場合は404） |
 | `/api/data/ranking/tier` | `tier`, `offset`(既定0), `limit`(既定50) | `{ tier; rows: RankingRowDto[]; total; nextOffset; me: { rank; total } \| null }` |
 | `/api/data/ranking/category` | `category`(`MEN`/`WOMEN`/`MIXED`), `offset`, `limit` | `{ category; rows: RankingRowDto[]; total; nextOffset; me: { rank; total } \| null }` |
@@ -244,12 +277,22 @@ interface State<T> {
 - `DataTabs`（Client）: 「マイデータ / 出場データ / ランキング」を左から1行で常時表示。`usePathname()` で選択中を判定し、`aria-current="page"` と下線+背景色で強調（要件1.1, 1.3）。`Link` による遷移。
 - `RegionState`: `<Skeleton/>`・`<ErrorPanel onRetry/>`・`<EmptyState/>` を提供。エラー時も周囲のタブ/ナビは維持（要件1.8）。
 - `LevelCard`: GRANレベル、階級（`is_level_calibrated=false` は「査定前」表示）、昇格差、進捗バー（`role="progressbar"` + 数値テキスト）。
-- `GranHistory` / `GranChart`: 一覧20件+「もっと見る」。`GranChart` は自前SVG折れ線。各点は `tabindex=0` / `role="button"` でフォーカス・選択でき（44px以上の当たり判定の透明円）、選択点の日付・大会名・変動後レベルをテキスト表示。要件10.7のため、全点の値を `<details>` 内の表に出力する。
+- `GranHistory` / `GranChart`: 一覧20件+「もっと見る」。`GranChart` は自前SVG折れ線。各点は `tabindex=0` / `role="button"` でフォーカス・選択でき（44px以上の当たり判定の透明円）、選択点の日付（YYYY/MM/DD）・大会名・変動後レベルをテキスト表示（要件3.6）。
+  - **軸と補助線（要件3.11〜3.14）**: 縦軸は `niceTicks(最小変動後レベル, 最大変動後レベル)` の `ticks` を等間隔の整数ラベルとして左に描画し、軸範囲は `[ticks[0], ticks[last]]`（データの最小・最大を必ず含む）。Y座標は `ticks[0]`〜`ticks[last]` を描画域の下端〜上端へ線形に割り当てる。各目盛りに水平補助線（`<line data-gridline>`）を引き、本数は目盛りラベル数と同数。横軸は `dateTicks(全点の確定日付)` の各 `date` に対応するX位置（時刻に比例）へ目盛り線とラベルを描画する（形式は1種類に統一、日付種類が3未満ならその数）。補助線は `stroke` に `slate-200 / dark:slate-700` を使い、軸ラベルは `text-slate-700 dark:text-slate-300` の12px以上とする。
+  - **サイズ**: SVGは `viewBox` の縮小でフォントが12px未満にならないよう、`ResizeObserver` でコンテナ実幅（最小280px）を取得し、`viewBox` 幅を実幅に一致させる（縮小率1）。左余白は縦軸ラベル幅、下余白は横軸ラベル幅を確保する。横ラベルが重なる幅では `dateTicks` の `maxCount` を幅から算出して減らす（ただし3個以上、日付種類が3未満ならその数）。
+  - **データ表は設けない（要件3.15, 10.7）**: 従来の `<details>`「グラフの全データを表で見る」と全点データ表は**削除**する。グラフの値は、縦軸・横軸の目盛りラベル、点の選択表示、同一画面内の履歴一覧（`GranHistory`）で確認する。履歴一覧はグラフ専用の表ではなく、グラフの全点を含む保証もない（初期20件+もっと見る）ため、専用表とは扱わない。
 - `RecordSummary` / `RecentMatches`: 勝敗は「勝」「敗」の文字+色の両方（要件4.4）。Participation_Pageへのリンク。
-- `WinRateByCondition`: 6条件のタブ（`role="tablist"`）、区分ごとに「試合数/勝/敗/勝率(整数%)」の行と、勝率に比例した幅の横棒（0試合は「-」・幅0）。
+- `WinRateByCondition`: 条件選択は**プルダウン**（ネイティブ `<select>` + `<label htmlFor>`「条件」。選択肢は種目・会場・サーフェス・季節・対戦相手（団体戦）・大会シリーズの6つをこの順で）。タブ（`role="tablist"`）は使わない（要件5.1）。`onChange` で `dimension` を更新し、変更前の集計結果を変更後の結果に置き換える（要件5.12）。`select` は `min-h-[44px]`、`text-sm` 以上、`rounded-xl`、`ui-design-system.md` の入力トークン（`border-slate-200 dark:border-slate-800`、フォーカスリング `emerald`）を使う。再読み込みは現在の `dimension` で再取得する（要件5.13）。区分ごとに「試合数/勝/敗/勝率(整数%)」の行と、勝率に比例した幅の横棒（0試合は「-」・幅0）。種目を選んだ場合の区分は男子・女子・混合の3行のみで「未設定」行は出さない。「未設定」行はサーフェス・大会シリーズに限り（要件5.8）、試合があるときだけ末尾に表示する。会場は `tournaments.venue` が必須列のため「未設定」を持たず、空文字の会場名は会場別集計から除外する。
 - `ParticipationTable`: md以上は表、md未満は「開催年月日・会場・結果」の3項目のカード行で横スクロールなし（要件6.6）。行は `role="button"` `tabIndex=0`、Enter/Spaceで選択、`min-h-[44px]`（要件7.6）。
 - `ParticipationDetail`: `role="dialog"` `aria-modal`。開くとき `history.pushState({ detail: tournamentId }, "")`、`popstate`・Esc・閉じるボタンで閉じ、直前に押下した行へ `focus()` を戻す。一覧コンポーネントはマウントしたまま背面に残すため、スクロール位置と絞り込み状態が保持される（要件7.5, 7.7）。
-- `RankingView`: 上部1か所に「階級別 / 種目別」切替。階級タブ（要件8.1どおり**A, AB, B, BC, C, CD, D, DE の順**）と種目タブ（男子/女子/混合）。選択状態は親の `useState`（`{ mode, tier, category }`）に保持し、モード切替で破棄しない（要件9.6）。初期の階級は `granLevelToTier(currentUser.granLevel)`、初期の種目は男子。
+- `RankingView`（`src/components/ranking/RankingView.tsx`）: 上部1か所に「階級別 / 種目別」切替（モード切替は2タブのまま）。階級別では**8個のTierタブを廃止**し `TierSlider` を表示する。種目別は従来どおり種目タブ（男子/女子/混合）。選択状態は親の `useState`（`{ mode, tier, category }`）に保持し、モード切替で破棄しない（要件9.6）。初期の階級は `initialSliderTier(現在のTier | null)`（`page.tsx` が現在Tierを判定できない場合は `null` を渡し、A を初期選択する。要件8.14）、初期の種目は男子。
+- `TierSlider`（新規、`src/components/ranking/TierSlider.tsx`）: ネイティブ `<input type="range" min={0} max={7} step={1}>` を使う。
+  - 値は `tierToSliderValue(tier)`、`onChange` では `sliderValueToTier(Number(e.target.value))` で親の `tier` を更新する。ネイティブ `range` は `step=1` によりドラッグ・タップ時に最寄りの整数位置へスナップし、中間位置では停止しない（要件8.13）。矢印キー（←↓で1段階下位、→↑で1段階上位）、Home/End、PageUp/PageDown の操作と、両端を超えない挙動もブラウザが提供する（要件8.12）。独自キーハンドラは持たない。
+  - 値の配置は左端 DE から右端 A（値が増える方向が上位）とし、矢印キーの方向（→/↑ = 上位）と一致させる。スライダー直下に全8階級名（DE〜A の並びで左から右）を目盛りとして表示する。
+  - アクセシビリティ: `<label htmlFor>`「階級」を関連付け、`aria-valuetext={`${tier}級`}` で階級名を読み上げさせる（`aria-valuenow` は数値のため）。`aria-valuemin/max` はネイティブ属性に委ねる。つまみ周辺のタップ領域は高さ `min-h-[44px]` 以上。フォーカスリングは `emerald`。
+  - 選択中のTier名を、スライダー近傍（右上または直上）に「選択中: AB級」の形式で常時表示する（要件8.1）。
+  - 該当者0人・取得失敗のときもスライダーは `disabled` にしない（要件8.7, 8.11）。値の変更で `RankingList` が `key` により再マウントされ、直前の選択位置は `tier` state に保持される。
+  - ドラッグ中は値が変わるたびに取得が起動するため、`useRemoteResource` の `AbortController` で直前の未完了リクエストを破棄し、最後の位置の結果のみを表示する。
 
 ### 画面表示の共通規約
 
@@ -270,12 +313,17 @@ CREATE TABLE IF NOT EXISTS tournament_series (
   name TEXT NOT NULL UNIQUE
 );
 
--- tournaments への列追加（すべてNULL許容）
+-- tournaments への列追加（DB上はすべてNULL許容。surface/series_id は未設定を許容、gender_division はアプリ層で必須）
 ALTER TABLE tournaments ADD COLUMN surface TEXT
   CHECK (surface IN ('HARD','CLAY','ARTIFICIAL_GRASS','OTHER'));
 ALTER TABLE tournaments ADD COLUMN series_id TEXT REFERENCES tournament_series(id);
 ALTER TABLE tournaments ADD COLUMN gender_division TEXT
   CHECK (gender_division IN ('MEN','WOMEN','MIXED'));
+-- gender_division は SQLite の制約上 NULL 許容列として追加するが、運用上は必須。
+-- 団体戦は category から一括補完（冪等）。SINGLES/DOUBLES は登録・更新時に zod で必須化する。
+UPDATE tournaments SET gender_division = CASE category
+    WHEN 'MEN_TEAM' THEN 'MEN' WHEN 'WOMEN_TEAM' THEN 'WOMEN' WHEN 'MIX_TEAM' THEN 'MIXED' END
+ WHERE gender_division IS NULL AND category IN ('MEN_TEAM','WOMEN_TEAM','MIX_TEAM');
 
 -- 試合（db-schema.md 3.9 準拠 + 登録日時）
 CREATE TABLE IF NOT EXISTS tournament_matches (
@@ -394,7 +442,7 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 
 *A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
 
-プロパティ・リフレクションの結果: 「履歴の降順」「出場履歴のページング」「ランキングの50件ページング」は同一の `slicePage` 性質に統合した。「3.5の符号表記」と「7.4の変動表記」は `formatDelta` に統合した。「勝率の算出」「勝率の整数表示/0試合」は `winRate` の性質に統合した。階級別と種目別のレベル一致は、ランキングDTOの生成元が同一であることとして1つにまとめた。
+プロパティ・リフレクションの結果: 「履歴の降順」「出場履歴のページング」「ランキングの50件ページング」は同一の `slicePage` 性質に統合した。「3.5の符号表記」と「7.4の変動表記」は `formatDelta` に統合した。「勝率の算出」「勝率の整数表示/0試合」は `winRate` の性質に統合した。階級別と種目別のレベル一致は、ランキングDTOの生成元が同一であることとして1つにまとめた。グラフ軸（縦軸の整数・等間隔・範囲包含・3個以上）は `niceTicks` の1性質に、スライダー（往復変換・スナップ・端のクランプ・初期値）は Tier⇔スライダー値の1性質に統合した。補助線の本数一致（要件3.13）は `ticks` から生成する構造により Property 17 に帰着させ、描画上の本数は例示テストで確認する。
 
 ### Property 1: 階級判定と昇格情報の整合
 
@@ -410,7 +458,7 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 
 ### Property 3: 条件別集計は試合を丁度1区分に分類する
 
-*For any* 勝者確定済み試合の集合と任意の `Dimension` に対し、`aggregateByDimension` が返す区分について、(a) 各区分で `wins + losses = matches`、(b) 区分の `matches` の合計は対象試合数（`opponent` は団体戦のみ）と等しい、(c) `surface`/`series` が未登録（および `category` で部門が判定できない）試合は「未設定」区分に入る、(d) `category` は男子・女子・混合の3区分、`season` は春夏秋冬の4区分を常に返す。入力に `FINISHED` でない試合や個人戦（`opponent` 次元）は含まれない（呼び出し側のフィルタ後を前提に、集計関数は入力を過不足なく数える）。
+*For any* 勝者確定済み試合の集合と任意の `Dimension` に対し、`aggregateByDimension` が返す区分について、(a) 各区分で `wins + losses = matches`、(b) 区分の `matches` の合計は対象試合数と等しい（`opponent` は団体戦のみ、`category` は部門を判別できる試合のみ、`venue` は会場名が空でない試合のみ）、(c) `surface`/`series` が未登録の試合は「未設定」区分に入り、`category`・`season`・`opponent`・`venue` の結果に「未設定」区分（キー `UNSET`）は現れない、(d) `category` はどの入力に対しても男子・女子・混合の3区分のみ（この順）、`season` は春夏秋冬の4区分を常に返す。団体戦（`MEN_TEAM`/`WOMEN_TEAM`/`MIX_TEAM`）は `genderDivision` が `null` でも `category` から部門が決まる。入力に `FINISHED` でない試合や個人戦（`opponent` 次元）は含まれない（呼び出し側のフィルタ後を前提に、集計関数は入力を過不足なく数える）。
 
 **Validates: Requirements 5.2, 5.3, 5.4, 5.5, 5.8, 5.9**
 
@@ -492,6 +540,24 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 
 **Validates: Requirements 11.5, 11.6**
 
+### Property 17: 縦軸の目盛りは整数・等間隔・3個以上でデータ範囲を含む
+
+*For any* 整数の最小値 `dataMin` と最大値 `dataMax`（`dataMin ≤ dataMax`、同値を含む）に対し、`niceTicks` が返す `ticks` は (a) 3個以上、(b) すべて整数、(c) 隣接する目盛りの差がすべて等しい正の値（`step`）、(d) `ticks[0] ≤ dataMin` かつ `dataMax ≤ ticks[last]`、(e) `min = ticks[0]`、`max = ticks[last]` である。これにより、水平補助線の本数（`ticks` と同数）と範囲内に収まる最小・最大の点が保証される。
+
+**Validates: Requirements 3.12, 3.13, 3.14**
+
+### Property 18: 横軸の日付目盛りは個数・形式・順序を満たす
+
+*For any* 確定日付（`YYYY-MM-DD`）の集合（重複・未整列を含む、1件以上）に対し、`dateTicks` が返す目盛りは (a) 入力に存在する日付のみで構成され昇順で重複がない、(b) 個数は `min(日付の種類数, maxCount)` で、種類数が3以上かつ `maxCount ≥ 3` なら3個以上、(c) 全ラベルが同一の形式（全日付が同一年なら `M/D`、そうでなければ `YYYY/MM/DD`）、(d) 種類数が `maxCount` を超えるときも最初と最後の日付を含む。
+
+**Validates: Requirements 3.11**
+
+### Property 19: Tier とスライダー値の変換
+
+*For any* Tier に対し、`sliderValueToTier(tierToSliderValue(tier)) = tier` が成り立ち、`tierToSliderValue` は 8 つの Tier を 0〜7 の相異なる整数に写し、上位の Tier ほど大きい値になる（DE=0, A=7）。*For any* 実数 `raw` に対し、`snapSliderValue(raw)` は 0〜7 の整数であり、`raw` が 0〜7 の範囲内なら元の `raw` との距離が全整数位置のうち最小（最寄りの離散位置）である。*For any* 値 0〜7 と `delta ∈ {+1, −1}` に対し、`stepSliderValue` は範囲内なら `value + delta`、端（0 で −1、7 で +1）を超える場合は値を変えない。*For any* Tier または `null` に対し、`initialSliderTier(null) = "A"`、`initialSliderTier(tier) = tier` である。
+
+**Validates: Requirements 8.1, 8.2, 8.12, 8.13, 8.14**
+
 ## Error Handling
 
 | 事象 | サーバー | クライアント表示 |
@@ -511,7 +577,7 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 - GRANレベル履歴の追加読み込み失敗: 表示済み行を保持し、「もっと見る」を再度押せる状態で、追加失敗メッセージを表示（要件3.9, 3.10）。
 - 条件別勝率: 直前の集計結果を保持（要件5.11）。
 - 出場履歴: 失敗時に空の表を出さずエラーを出す（要件6.10）。出場詳細の失敗は一覧の状態を保持（要件7.7）。
-- ランキング: 選択中タブを保持し、直前の順位表を保持（要件8.11, 9.10）。
+- ランキング: 階級別ではTier_Sliderの選択位置、種目別では選択中タブを保持し、直前の順位表を保持（要件8.11, 9.10）。
 
 空状態: 履歴0件（要件3.7）、試合0件（4.6）、集計対象0件（5.10）、出場履歴0件（6.7、大会日程 `/tournaments` へのリンク付き）、絞り込み0件（6.8、条件解除ボタン付き）、階級/種目の該当者0人（8.7, 9.9）。
 
@@ -527,7 +593,7 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 
 ### プロパティテスト
 
-- 対象は Property 1〜16。各プロパティを**単一のプロパティテスト**で実装し、`fc.assert(..., { numRuns: 100 })` 以上（最小100回）で実行する。
+- 対象は Property 1〜19。各プロパティを**単一のプロパティテスト**で実装し、`fc.assert(..., { numRuns: 100 })` 以上（最小100回）で実行する。
 - 各テストにタグコメントを付ける。形式: `// Feature: data-tab-restructure, Property {番号}: {プロパティ名}`。
 - Property 10 はインメモリ `new DatabaseSync(":memory:")` に必要テーブルを作成し、`createDataRepository(db)` に注入して実行する（`NOW_JST` 依存の日付は固定の過去日で生成）。反復1回あたりが軽いため100回実行する。
 - Property 15, 16 は DTO 変換関数/`opponentLabel` に対して、任意文字列の氏名・メールなどを生成して検査する。
@@ -539,6 +605,10 @@ export interface RankingRowDto { rank: number; userId: string; nickname: string;
 - 出場詳細: 未確定時の表示、GRAN変動の表示、未出場大会の404。
 - `useRemoteResource`: フェイクタイマーで10秒タイムアウト、3回連続失敗、`keepStaleOnError` の有無（要件2.9, 10.2〜10.4）。
 - コンポーネント: タブの順序と `aria-current`、勝敗の文字+色併用、行のキーボード操作（Enter/Space）、ダイアログのEsc/戻る/フォーカス復帰、ランキングのモード切替後の選択状態の復元（要件1.1, 4.4, 7.5, 7.6, 9.6）。
+- `GranChart`: 縦軸ラベルが3個以上、水平補助線（`[data-gridline]`）の本数が縦軸ラベル数と一致、横軸ラベルの形式が1種類、`<table>` / `<details>` が存在しない、点の選択でYYYY/MM/DD・大会名・変動後レベルが表示される（要件3.6, 3.11〜3.15, 10.7）。日付種類が2のとき横ラベルが2個になる境界例も確認する。
+- `WinRateByCondition`: `<select>` に `<label>` が関連付けられ、選択肢が6つで順序どおり、`role="tablist"` が存在しない。種目を選んだときの行は男子・女子・混合のみで「未設定」が出ない。サーフェス・大会シリーズでは未登録試合があるときだけ「未設定」が出る。条件変更で表示が置き換わり、再読み込みが現在の条件で再取得する（要件5.1〜5.3, 5.8, 5.12, 5.13）。
+- `TierSlider` / `RankingView`: 階級別で `input[type=range]`（min=0, max=7, step=1）が1つあり、階級を表すタブが存在しない。`aria-valuetext` が「◯級」、選択中Tier名がスライダー近傍に表示される。現在Tier不明（`null`）で初期値A。←↓/→↑ の `keydown` 相当の操作で1段階移動し、DE・Aの端で変化しない。値変更で順位表のリクエストURLの `tier` が変わる。該当者0人・取得失敗でもスライダーが `disabled` でない（要件8.1〜8.3, 8.7, 8.11〜8.14）。ネイティブ `range` のドラッグ時スナップはブラウザ実装のため、自動テストではなく手動確認とする。
+- `ensureColumn` / 補完: 団体戦の既存行で `gender_division` が `category` から補完され、2回実行しても結果が変わらない。`SINGLES`/`DOUBLES` で `gender_division` 未指定の大会登録が 400 になる。
 - スケルトン表示が取得開始の同一レンダーで出ること（200ms以内の保証は実装構造で担保）。
 
 ### スモーク・統合

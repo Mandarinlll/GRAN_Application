@@ -106,15 +106,12 @@ export function aggregateByDimension(
     case "category": {
       for (const m of matches) {
         const d = divisionOf(m);
+        // 部門を判別できない試合は種目集計から除外（「未設定」区分は作らない）
         if (d) add(map, d, DIVISION_LABEL[d], m.isWin);
-        else add(map, UNSET_KEY, UNSET_LABEL, m.isWin);
       }
-      const result = DIVISION_ORDER.map(
+      return DIVISION_ORDER.map(
         (d) => map.get(d) ?? emptyBucket(d, DIVISION_LABEL[d]),
       );
-      const unset = map.get(UNSET_KEY);
-      if (unset) result.push(unset);
-      return result;
     }
     case "season": {
       for (const m of matches) {
@@ -128,8 +125,8 @@ export function aggregateByDimension(
     case "venue": {
       for (const m of matches) {
         const v = m.venue?.trim();
+        // 空の会場名は会場別集計から除外
         if (v) add(map, v, v, m.isWin);
-        else add(map, UNSET_KEY, UNSET_LABEL, m.isWin);
       }
       return sortDynamic([...map.values()]);
     }

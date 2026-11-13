@@ -4,7 +4,7 @@ import type { TournamentTier } from "@/features/tournaments/types/tournament";
 import type { GenderDivision } from "../../types/dto";
 
 export interface ParticipationFilterState {
-  division?: GenderDivision | "UNSET";
+  division?: GenderDivision;
   tier?: TournamentTier;
   year?: number;
   order: "asc" | "desc";
@@ -12,11 +12,10 @@ export interface ParticipationFilterState {
 
 export const TIER_OPTIONS: readonly TournamentTier[] = ["A", "AB", "B", "BC", "C", "CD", "D", "DE"];
 
-export const DIVISION_LABEL: Record<GenderDivision | "UNSET", string> = {
+export const DIVISION_LABEL: Record<GenderDivision, string> = {
   MEN: "男子",
   WOMEN: "女子",
   MIXED: "混合",
-  UNSET: "未設定",
 };
 
 const selectClass =
@@ -46,7 +45,7 @@ export function ParticipationFilters({
           }
         >
           <option value="">すべて</option>
-          {(Object.keys(DIVISION_LABEL) as Array<GenderDivision | "UNSET">).map((d) => (
+          {(Object.keys(DIVISION_LABEL) as GenderDivision[]).map((d) => (
             <option key={d} value={d}>
               {DIVISION_LABEL[d]}
             </option>

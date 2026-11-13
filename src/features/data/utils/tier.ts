@@ -66,3 +66,30 @@ export function computePromotion(granLevel: number): PromotionInfo {
     },
   };
 }
+
+// Tier_Slider 用。スライダー値は TIER_ORDER の添字（0=DE … 7=A）。
+export const SLIDER_MIN = 0;
+export const SLIDER_MAX = 7;
+
+export function tierToSliderValue(tier: TournamentTier): number {
+  return TIER_ORDER.indexOf(tier);
+}
+
+// 最寄りの整数に丸めて 0..7 にクランプ。NaN は 7(A)。
+export function snapSliderValue(raw: number): number {
+  if (Number.isNaN(raw)) return SLIDER_MAX;
+  return Math.min(SLIDER_MAX, Math.max(SLIDER_MIN, Math.round(raw)));
+}
+
+export function sliderValueToTier(value: number): TournamentTier {
+  return TIER_ORDER[snapSliderValue(value)];
+}
+
+export function stepSliderValue(value: number, delta: 1 | -1): number {
+  return snapSliderValue(snapSliderValue(value) + delta);
+}
+
+// 現在Tierが判定不能(null)のときは A（要件8.14）。
+export function initialSliderTier(current: TournamentTier | null): TournamentTier {
+  return current ?? "A";
+}
