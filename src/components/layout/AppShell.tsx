@@ -22,6 +22,8 @@ export interface ShellUser {
   // ニックネーム頭文字などアバター表示用の1文字。
   avatarText: string;
   teamName: string | null;
+  // 通知タブのバッジに表示する未読件数（省略時はバッジなし）。
+  unreadNotifications?: number;
 }
 
 type Props = {
@@ -43,9 +45,14 @@ export function AppShell({ activeId, user, children }: Props) {
         {children}
       </div>
 
-      <BottomNav activeId={activeId} />
+      <BottomNav activeId={activeId} user={user} />
     </>
   );
+}
+
+// ナビ項目ごとのバッジ件数（現状は通知タブの未読件数のみ）。
+function badgeFor(id: NavId, user: ShellUser): number {
+  return id === "notifications" ? (user.unreadNotifications ?? 0) : 0;
 }
 
 // --- PC用サイドバー ---
@@ -78,7 +85,12 @@ function Sidebar({
 
       <nav className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
         {NAV_ITEMS.map((item) => (
-          <NavLink key={item.id} item={item} active={item.id === activeId} />
+          <NavLink
+            key={item.id}
+            item={item}
+            active={item.id === activeId}
+            badge={badgeFor(item.id, user)}
+          />
         ))}
       </nav>
 
@@ -117,7 +129,15 @@ function Sidebar({
 }
 
 // サイドバーのリンク1件。未実装画面は無効スタイル + 案内。
-function NavLink({ item, active }: { item: (typeof NAV_ITEMS)[number]; active: boolean }) {
+function NavLink({
+  item,
+  active,
+  badge,
+}: {
+  item: (typeof NAV_ITEMS)[number];
+  active: boolean;
+  badge: number;
+}) {
   const Icon = item.icon;
   const base =
     "flex items-center justify-between gap-3 px-3.5 min-h-[44px] rounded-xl text-xs font-bold transition";
@@ -130,9 +150,9 @@ function NavLink({ item, active }: { item: (typeof NAV_ITEMS)[number]; active: b
         />
         <span>{item.label}</span>
       </span>
-      {item.badge ? (
+      {badge > 0 ? (
         <span className="min-w-4 h-4 px-1 bg-rose-500 text-white rounded-full text-xs flex items-center justify-center font-bold tabular-nums">
-          {item.badge}
+          {badge}
         </span>
       ) : null}
     </>
@@ -225,7 +245,7 @@ function MobileHeader({
 }
 
 // --- モバイル用ボトムナビ（sm未満のみ・セーフエリア対応） ---
-function BottomNav({ activeId }: { activeId: NavId }) {
+function BottomNav({ activeId, user }: { activeId: NavId; user: ShellUser }) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 sm:hidden pb-[env(safe-area-inset-bottom)]">
       <div className="grid grid-cols-5 h-14 text-xs font-medium text-slate-500">
@@ -236,9 +256,9 @@ function BottomNav({ activeId }: { activeId: NavId }) {
             <>
               <div className="relative">
                 <Icon className="w-5 h-5 mb-0.5" />
-                {item.badge ? (
+                {badgeFor(item.id, user) > 0 ? (
                   <span className="absolute -top-1 -right-2 min-w-4 h-4 px-1 bg-rose-500 text-white rounded-full text-xs flex items-center justify-center font-bold tabular-nums">
-                    {item.badge}
+                    {badgeFor(item.id, user)}
                   </span>
                 ) : null}
               </div>
