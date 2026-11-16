@@ -41,10 +41,14 @@ export function TeamList({
   const [category, setCategory] = useState<TournamentCategory | "ALL">("ALL");
   const [tier, setTier] = useState<TournamentTier | "ALL">("ALL");
 
-  const visible = useMemo(
-    () => filterTeams(teams, category, tier),
-    [teams, category, tier],
-  );
+  // 所属チームを先頭に固定し、他は元の順（チーム名順）を保つ。
+  const visible = useMemo(() => {
+    const filtered = filterTeams(teams, category, tier);
+    return [
+      ...filtered.filter((t) => t.id === myTeamId),
+      ...filtered.filter((t) => t.id !== myTeamId),
+    ];
+  }, [teams, category, tier, myTeamId]);
 
   return (
     <section className="space-y-4">
