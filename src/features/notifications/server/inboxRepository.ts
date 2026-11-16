@@ -12,6 +12,7 @@ interface NotificationRow {
   kind: InboxKind;
   tournament_id: string | null;
   entry_id: string | null;
+  ref_id: string | null;
   title: string;
   body: string;
   is_read: number;
@@ -25,6 +26,7 @@ function toNotification(row: NotificationRow): InboxNotification {
     kind: row.kind,
     tournamentId: row.tournament_id,
     entryId: row.entry_id,
+    refId: row.ref_id,
     title: row.title,
     body: row.body,
     isRead: row.is_read === 1,
@@ -42,6 +44,17 @@ export function listNotifications(userId: string): InboxNotification[] {
     )
     .all(userId) as unknown as NotificationRow[];
   return rows.map(toNotification);
+}
+
+// 本人の通知を1件取得する（他人の通知IDを指定されても返さない）。
+export function findNotification(
+  userId: string,
+  notificationId: string,
+): InboxNotification | null {
+  const row = db
+    .prepare("SELECT * FROM inbox_notifications WHERE id = ? AND user_id = ?")
+    .get(notificationId, userId) as unknown as NotificationRow | undefined;
+  return row ? toNotification(row) : null;
 }
 
 // 未読件数（バッジ用）。

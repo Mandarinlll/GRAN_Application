@@ -1,4 +1,4 @@
-// チームページ（一覧・詳細・参加リクエスト・脱退）用のリポジトリ。
+// チームページ（一覧・詳細・招待・脱退・除名・作成/編集/解散）用のリポジトリ。
 // SQL はこの層にのみ閉じ込める（コーディング規約 6）。
 // 既存の teamRepository.ts（エントリー用）は変更せず、ページ専用クエリをここに置く。
 
@@ -6,7 +6,8 @@ import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { granLevelToTier } from "@/features/auth/utils/classLabel";
 import type {
-  JoinRequestView,
+  InvitationView,
+  InviteCandidate,
   TeamDetail,
   TeamListItem,
   TeamRecord,
@@ -179,164 +180,27 @@ export function getTeamDetail(teamId: string): TeamDetail | null {
   };
 }
 
-// ユーザーが所属するチームID（1ユーザー1チーム運用）。無ければ null。
-export function findMembershipTeamId(userId: string): string | null {
-  // 代表者は team_members に無い場合があるため、teams.leader_user_id も所属として扱う。
-  const row = db
-    .prepare(
-      `SELECT team_id FROM (
-         SELECT team_id, joined_at FROM team_members WHERE user_id = ?
-         UNION ALL
-         SELECT id AS team_id, created_at AS joined_at FROM teams WHERE leader_user_id = ?
-       ) ORDER BY joined_at ASC LIMIT 1`,
-    )
-    .get(userId, userId) as { team_id: string } | undefined;
-  return row?.team_id ?? null;
-}
-
-// ユーザーの承認待ちリクエスト先チームID一覧。
-export function listPendingTeamIdsOfUser(userId: string): string[] {
+// ユーザーが所属するチームID一覧（複数チーム所属可）。
+// 代表者は team_members に無い場合があるため、teams.leader_user_id も所属として扱う。
+export function listMembershipTeamIds(userId: string): string[] {
   const rows = db
-    .prepare("SELECT team_id FROM team_join_requests WHERE user_id = ? AND status = 'PENDING'")
-    .all(userId) as Array<{ team_id: string }>;
+    .prepare(
+      `SELECT team_id FROM team_members WHERE user_id = ?
+       UNION
+       SELECT id AS team_id FROM teams WHERE leader_user_id = ?`,
+    )
+    .all(userId, userId) as Array<{ team_id: string }>;
   return rows.map((r) => r.team_id);
 }
 
-// チーム宛の承認待ちリクエスト（代表者向け）。
-export function listPendingRequests(teamId: string): JoinRequestView[] {
-  const rows = db
-    .prepare(
-      `SELECT r.id, r.user_id, r.created_at, u.nickname, u.gran_level
-         FROM team_join_requests r JOIN users u ON u.id = r.user_id
-        WHERE r.team_id = ? AND r.status = 'PENDING'
-        ORDER BY r.created_at ASC`,
-    )
-    .all(teamId) as Array<{
-    id: string;
-    user_id: string;
-    created_at: string;
-    nickname: string;
-    gran_level: number;
-  }>;
-  return rows.map((r) => ({
-    id: r.id,
-    userId: r.user_id,
-    nickname: r.nickname,
-    granLevel: r.gran_level,
-    createdAt: r.created_at,
-  }));
+function isMemberOf(teamId: string, userId: string): boolean {
+  return listMembershipTeamIds(userId).includes(teamId);
 }
 
+// メンバー操作（脱退・除名）の結果。
 export type JoinResult =
   | { ok: true }
-  | { ok: false; reason: "NOT_FOUND" | "ALREADY_MEMBER" | "ALREADY_PENDING" | "FORBIDDEN" | "NOT_PENDING" | "IS_LEADER" };
-
-// 参加リクエスト送信。既にいずれかのチームに所属 / 同チームに申請中なら拒否。
-export function createJoinRequest(teamId: string, userId: string): JoinResult {
-  db.exec("BEGIN IMMEDIATE");
-  try {
-    const exists = db.prepare("SELECT 1 FROM teams WHERE id = ?").get(teamId);
-    if (!exists) {
-      db.exec("ROLLBACK");
-      return { ok: false, reason: "NOT_FOUND" };
-    }
-    if (findMembershipTeamId(userId)) {
-      db.exec("ROLLBACK");
-      return { ok: false, reason: "ALREADY_MEMBER" };
-    }
-    const pending = db
-      .prepare(
-        "SELECT 1 FROM team_join_requests WHERE team_id = ? AND user_id = ? AND status = 'PENDING'",
-      )
-      .get(teamId, userId);
-    if (pending) {
-      db.exec("ROLLBACK");
-      return { ok: false, reason: "ALREADY_PENDING" };
-    }
-    db.prepare(
-      "INSERT INTO team_join_requests (id, team_id, user_id) VALUES (?, ?, ?)",
-    ).run(randomUUID(), teamId, userId);
-    db.exec("COMMIT");
-    return { ok: true };
-  } catch (e) {
-    db.exec("ROLLBACK");
-    throw e;
-  }
-}
-
-// 本人による取り下げ。
-export function cancelJoinRequest(teamId: string, userId: string): JoinResult {
-  const res = db
-    .prepare(
-      `UPDATE team_join_requests
-          SET status = 'CANCELLED', resolved_at = datetime('now', '+9 hours')
-        WHERE team_id = ? AND user_id = ? AND status = 'PENDING'`,
-    )
-    .run(teamId, userId);
-  return Number(res.changes) > 0 ? { ok: true } : { ok: false, reason: "NOT_PENDING" };
-}
-
-// 代表者による承認/却下。承認時は team_members へ追加する（同一トランザクション）。
-export function resolveJoinRequest(
-  requestId: string,
-  leaderUserId: string,
-  approve: boolean,
-): JoinResult {
-  db.exec("BEGIN IMMEDIATE");
-  try {
-    const req = db
-      .prepare(
-        `SELECT r.id, r.team_id, r.user_id, r.status, t.leader_user_id
-           FROM team_join_requests r JOIN teams t ON t.id = r.team_id
-          WHERE r.id = ?`,
-      )
-      .get(requestId) as
-      | { id: string; team_id: string; user_id: string; status: string; leader_user_id: string }
-      | undefined;
-    if (!req) {
-      db.exec("ROLLBACK");
-      return { ok: false, reason: "NOT_FOUND" };
-    }
-    if (req.leader_user_id !== leaderUserId) {
-      db.exec("ROLLBACK");
-      return { ok: false, reason: "FORBIDDEN" };
-    }
-    if (req.status !== "PENDING") {
-      db.exec("ROLLBACK");
-      return { ok: false, reason: "NOT_PENDING" };
-    }
-
-    // 承認時、申請者が他チームへ参加済みなら却下扱いにして拒否する。
-    if (approve && findMembershipTeamId(req.user_id)) {
-      db.prepare(
-        `UPDATE team_join_requests SET status = 'REJECTED', resolved_at = datetime('now', '+9 hours') WHERE id = ?`,
-      ).run(requestId);
-      db.exec("COMMIT");
-      return { ok: false, reason: "ALREADY_MEMBER" };
-    }
-
-    db.prepare(
-      `UPDATE team_join_requests SET status = ?, resolved_at = datetime('now', '+9 hours') WHERE id = ?`,
-    ).run(approve ? "APPROVED" : "REJECTED", requestId);
-    if (approve) {
-      db.prepare(
-        `INSERT INTO team_members (id, team_id, user_id) VALUES (?, ?, ?)`,
-      ).run(randomUUID(), req.team_id, req.user_id);
-      // 同ユーザーの他チーム宛の承認待ちは意味を失うため取り下げ扱いにする。
-      db.prepare(
-        `UPDATE team_join_requests
-            SET status = 'CANCELLED', resolved_at = datetime('now', '+9 hours')
-          WHERE user_id = ? AND status = 'PENDING'`,
-      ).run(req.user_id);
-    }
-    db.exec("COMMIT");
-    return { ok: true };
-  } catch (e) {
-    db.exec("ROLLBACK");
-    throw e;
-  }
-}
-
+  | { ok: false; reason: "NOT_FOUND" | "FORBIDDEN" | "IS_LEADER" | "NOT_MEMBER" };
 // 脱退（承認不要）。代表者は脱退できない。
 export function leaveTeam(teamId: string, userId: string): JoinResult {
   db.exec("BEGIN IMMEDIATE");
@@ -388,4 +252,379 @@ export function setTeamAvatarKey(teamId: string, key: string | null): void {
   db.prepare(
     "UPDATE teams SET avatar_url = ?, updated_at = datetime('now', '+9 hours') WHERE id = ?",
   ).run(key, teamId);
+}
+
+// --- チームの作成・編集・削除 ---
+
+export type TeamMutationResult =
+  | { ok: true; teamId: string }
+  | { ok: false; reason: "ALREADY_LEADER" | "NAME_TAKEN" | "NOT_FOUND" | "FORBIDDEN" };
+
+function nameTaken(name: string, exceptTeamId?: string): boolean {
+  const row = db
+    .prepare("SELECT 1 FROM teams WHERE name = ? AND id <> ? LIMIT 1")
+    .get(name, exceptTeamId ?? "");
+  return row !== undefined;
+}
+
+// 代表者として新規チームを作成する。作成者を代表者かつメンバーにし、role を LEADER にする。
+// （エントリー機能が users.role = 'LEADER' を代表者判定に使うため。ADMIN/OPERATOR は変更しない）
+export function createTeamAsLeader(userId: string, name: string): TeamMutationResult {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    if (db.prepare("SELECT 1 FROM teams WHERE leader_user_id = ?").get(userId)) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "ALREADY_LEADER" };
+    }
+    if (nameTaken(name)) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "NAME_TAKEN" };
+    }
+    const id = randomUUID();
+    db.prepare(
+      `INSERT INTO teams (id, name, leader_user_id, created_at, updated_at)
+       VALUES (?, ?, ?, datetime('now', '+9 hours'), datetime('now', '+9 hours'))`,
+    ).run(id, name, userId);
+    db.prepare(
+      `INSERT OR IGNORE INTO team_members (id, team_id, user_id) VALUES (?, ?, ?)`,
+    ).run(randomUUID(), id, userId);
+    db.prepare(
+      `UPDATE users SET role = 'LEADER', updated_at = datetime('now', '+9 hours')
+        WHERE id = ? AND role = 'USER'`,
+    ).run(userId);
+    db.exec("COMMIT");
+    return { ok: true, teamId: id };
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+}
+
+// チーム名の編集（代表者のみ）。
+export function renameTeam(teamId: string, userId: string, name: string): TeamMutationResult {
+  const team = db
+    .prepare("SELECT leader_user_id FROM teams WHERE id = ?")
+    .get(teamId) as { leader_user_id: string } | undefined;
+  if (!team) return { ok: false, reason: "NOT_FOUND" };
+  if (team.leader_user_id !== userId) return { ok: false, reason: "FORBIDDEN" };
+  if (nameTaken(name, teamId)) return { ok: false, reason: "NAME_TAKEN" };
+  db.prepare(
+    "UPDATE teams SET name = ?, updated_at = datetime('now', '+9 hours') WHERE id = ?",
+  ).run(name, teamId);
+  return { ok: true, teamId };
+}
+
+// チーム解散（代表者のみ）。要件 4.1 に従い、過去エントリー・戦績も残さず削除する。
+// 削除した画像のキーを返す（呼び出し側でストレージから削除する）。
+export function deleteTeamAsLeader(
+  teamId: string,
+  userId: string,
+): { ok: true; avatarKey: string | null } | { ok: false; reason: "NOT_FOUND" | "FORBIDDEN" } {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const team = db
+      .prepare("SELECT leader_user_id, avatar_url FROM teams WHERE id = ?")
+      .get(teamId) as { leader_user_id: string; avatar_url: string | null } | undefined;
+    if (!team) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "NOT_FOUND" };
+    }
+    if (team.leader_user_id !== userId) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "FORBIDDEN" };
+    }
+
+    // 未対応のチーム招待通知は対応済みにする（招待自体は teams の CASCADE で消える）。
+    db.prepare(
+      `UPDATE inbox_notifications SET is_resolved = 1, is_read = 1
+        WHERE kind = 'TEAM_INVITE' AND is_resolved = 0
+          AND ref_id IN (SELECT id FROM team_invitations WHERE team_id = ?)`,
+    ).run(teamId);
+
+    // entries を参照する FK（ON DELETE なし）を先に外す。
+    const entryIds = `SELECT id FROM entries WHERE team_id = ?`;
+    db.prepare(`UPDATE tournament_matches SET entry1_id = NULL WHERE entry1_id IN (${entryIds})`).run(teamId);
+    db.prepare(`UPDATE tournament_matches SET entry2_id = NULL WHERE entry2_id IN (${entryIds})`).run(teamId);
+    db.prepare(`UPDATE tournament_matches SET winner_entry_id = NULL WHERE winner_entry_id IN (${entryIds})`).run(teamId);
+    db.prepare(`UPDATE notification_logs SET entry_id = NULL WHERE entry_id IN (${entryIds})`).run(teamId);
+    db.prepare("DELETE FROM entries WHERE team_id = ?").run(teamId); // entry_members / cancellations は CASCADE
+    db.prepare("DELETE FROM waitlists WHERE team_id = ?").run(teamId);
+    db.prepare("DELETE FROM tournament_results WHERE team_id = ?").run(teamId);
+    db.prepare("DELETE FROM teams WHERE id = ?").run(teamId); // team_members / team_invitations は CASCADE
+
+    // 他にチームを持たない代表者は role を USER に戻す（ADMIN/OPERATOR は変更しない）。
+    db.prepare(
+      `UPDATE users SET role = 'USER', updated_at = datetime('now', '+9 hours')
+        WHERE id = ? AND role = 'LEADER'`,
+    ).run(userId);
+    db.exec("COMMIT");
+    return { ok: true, avatarKey: team.avatar_url };
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+}
+
+// ユーザーが代表を務めるチームID（無ければ null）。
+export function findLeaderTeamId(userId: string): string | null {
+  const row = db
+    .prepare("SELECT id FROM teams WHERE leader_user_id = ?")
+    .get(userId) as { id: string } | undefined;
+  return row?.id ?? null;
+}
+
+// 除名（代表者のみ）。代表者自身は除名できない。
+// 除名後に別のユーザーを迎えたい場合は、招待→承諾で入れ替える。
+export function removeMember(teamId: string, leaderUserId: string, targetUserId: string): JoinResult {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const team = db
+      .prepare("SELECT leader_user_id FROM teams WHERE id = ?")
+      .get(teamId) as { leader_user_id: string } | undefined;
+    if (!team) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "NOT_FOUND" };
+    }
+    if (team.leader_user_id !== leaderUserId) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "FORBIDDEN" };
+    }
+    if (targetUserId === team.leader_user_id) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "IS_LEADER" };
+    }
+    const res = db
+      .prepare("DELETE FROM team_members WHERE team_id = ? AND user_id = ?")
+      .run(teamId, targetUserId);
+    if (Number(res.changes) === 0) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "NOT_MEMBER" };
+    }
+    db.exec("COMMIT");
+    return { ok: true };
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+}
+
+// --- チーム招待（代表者 → ユーザー。通知ページで承諾/辞退） ---
+
+export type InviteResult =
+  | { ok: true; invitationId?: string; teamId?: string }
+  | {
+      ok: false;
+      reason:
+        | "NOT_FOUND"
+        | "FORBIDDEN"
+        | "ALREADY_MEMBER"
+        | "ALREADY_INVITED"
+        | "NOT_PENDING"
+        | "SELF";
+    };
+
+// 招待候補をニックネームの部分一致で検索する（代表者のみ）。
+// すでに所属 / 招待中のユーザーは除く。
+export function searchInviteCandidates(
+  teamId: string,
+  leaderUserId: string,
+  query: string,
+): InviteCandidate[] {
+  if (!isTeamLeaderOf(teamId, leaderUserId)) return [];
+  const q = query.trim();
+  if (!q) return [];
+  const escaped = q.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const rows = db
+    .prepare(
+      `SELECT u.id, u.nickname, u.gran_level
+         FROM users u
+        WHERE u.nickname LIKE ? ESCAPE '\\'
+          AND u.status = 'ACTIVE'
+          AND u.id NOT IN (SELECT user_id FROM team_members WHERE team_id = ?)
+          AND u.id NOT IN (SELECT leader_user_id FROM teams WHERE id = ?)
+          AND u.id NOT IN (SELECT user_id FROM team_invitations WHERE team_id = ? AND status = 'PENDING')
+        ORDER BY u.nickname ASC
+        LIMIT 10`,
+    )
+    .all(`%${escaped}%`, teamId, teamId, teamId) as Array<{
+    id: string;
+    nickname: string;
+    gran_level: number;
+  }>;
+  return rows.map((r) => ({ userId: r.id, nickname: r.nickname, granLevel: r.gran_level }));
+}
+
+// 招待を作成し、招待されたユーザーへ通知（inbox）を出す。
+export function inviteUser(
+  teamId: string,
+  leaderUserId: string,
+  targetUserId: string,
+): InviteResult {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const team = db
+      .prepare(
+        `SELECT t.name, t.leader_user_id, lu.nickname AS leader_nickname
+           FROM teams t JOIN users lu ON lu.id = t.leader_user_id WHERE t.id = ?`,
+      )
+      .get(teamId) as { name: string; leader_user_id: string; leader_nickname: string } | undefined;
+    if (!team) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "NOT_FOUND" };
+    }
+    if (team.leader_user_id !== leaderUserId) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "FORBIDDEN" };
+    }
+    if (targetUserId === leaderUserId) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "SELF" };
+    }
+    const target = db
+      .prepare("SELECT 1 FROM users WHERE id = ? AND status = 'ACTIVE'")
+      .get(targetUserId);
+    if (!target) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "NOT_FOUND" };
+    }
+    if (isMemberOf(teamId, targetUserId)) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "ALREADY_MEMBER" };
+    }
+    if (
+      db
+        .prepare("SELECT 1 FROM team_invitations WHERE team_id = ? AND user_id = ? AND status = 'PENDING'")
+        .get(teamId, targetUserId)
+    ) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "ALREADY_INVITED" };
+    }
+
+    const id = randomUUID();
+    db.prepare("INSERT INTO team_invitations (id, team_id, user_id) VALUES (?, ?, ?)").run(
+      id,
+      teamId,
+      targetUserId,
+    );
+    // 通知本体は、受信箱 inbox_notifications に TEAM_INVITE として登録する。
+    db.prepare(
+      `INSERT INTO inbox_notifications
+         (id, user_id, kind, title, body, dedupe_key, ref_id)
+       VALUES (?, ?, 'TEAM_INVITE', ?, ?, ?, ?)`,
+    ).run(
+      randomUUID(),
+      targetUserId,
+      "チームへの招待",
+      `${team.leader_nickname} さんから「${team.name}」への招待が届いています。参加するか辞退するかを選んでください。`,
+      `TEAM_INVITE:${id}`,
+      id,
+    );
+    db.exec("COMMIT");
+    return { ok: true, invitationId: id };
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+}
+
+function resolveInviteNotification(invitationId: string): void {
+  db.prepare(
+    `UPDATE inbox_notifications SET is_resolved = 1, is_read = 1
+      WHERE kind = 'TEAM_INVITE' AND ref_id = ? AND is_resolved = 0`,
+  ).run(invitationId);
+}
+
+// 招待された本人による承諾/辞退。承諾でチームメンバーになる。
+export function respondToInvitation(
+  invitationId: string,
+  userId: string,
+  accept: boolean,
+): InviteResult {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const inv = db
+      .prepare("SELECT team_id, user_id, status FROM team_invitations WHERE id = ?")
+      .get(invitationId) as { team_id: string; user_id: string; status: string } | undefined;
+    if (!inv || inv.user_id !== userId) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "NOT_FOUND" };
+    }
+    if (inv.status !== "PENDING") {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "NOT_PENDING" };
+    }
+    db.prepare(
+      `UPDATE team_invitations SET status = ?, resolved_at = datetime('now', '+9 hours') WHERE id = ?`,
+    ).run(accept ? "ACCEPTED" : "DECLINED", invitationId);
+    if (accept) {
+      db.prepare(
+        "INSERT OR IGNORE INTO team_members (id, team_id, user_id) VALUES (?, ?, ?)",
+      ).run(randomUUID(), inv.team_id, userId);
+    }
+    resolveInviteNotification(invitationId);
+    db.exec("COMMIT");
+    return { ok: true, teamId: inv.team_id };
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+}
+
+// 代表者による招待の取り消し。
+export function cancelInvitation(invitationId: string, leaderUserId: string): InviteResult {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const inv = db
+      .prepare(
+        `SELECT i.status, t.leader_user_id FROM team_invitations i
+           JOIN teams t ON t.id = i.team_id WHERE i.id = ?`,
+      )
+      .get(invitationId) as { status: string; leader_user_id: string } | undefined;
+    if (!inv) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "NOT_FOUND" };
+    }
+    if (inv.leader_user_id !== leaderUserId) {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "FORBIDDEN" };
+    }
+    if (inv.status !== "PENDING") {
+      db.exec("ROLLBACK");
+      return { ok: false, reason: "NOT_PENDING" };
+    }
+    db.prepare(
+      `UPDATE team_invitations SET status = 'CANCELLED', resolved_at = datetime('now', '+9 hours') WHERE id = ?`,
+    ).run(invitationId);
+    resolveInviteNotification(invitationId);
+    db.exec("COMMIT");
+    return { ok: true };
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+}
+
+// 招待中ユーザー一覧（代表者向け）。
+export function listPendingInvitations(teamId: string): InvitationView[] {
+  const rows = db
+    .prepare(
+      `SELECT i.id, i.user_id, i.created_at, u.nickname, u.gran_level
+         FROM team_invitations i JOIN users u ON u.id = i.user_id
+        WHERE i.team_id = ? AND i.status = 'PENDING'
+        ORDER BY i.created_at ASC`,
+    )
+    .all(teamId) as Array<{
+    id: string;
+    user_id: string;
+    created_at: string;
+    nickname: string;
+    gran_level: number;
+  }>;
+  return rows.map((r) => ({
+    id: r.id,
+    userId: r.user_id,
+    nickname: r.nickname,
+    granLevel: r.gran_level,
+    createdAt: r.created_at,
+  }));
 }

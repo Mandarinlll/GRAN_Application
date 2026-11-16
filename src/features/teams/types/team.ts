@@ -35,14 +35,12 @@ export interface TeamWithMembers {
   members: TeamMemberView[];
 }
 
-// --- チームページ（一覧・詳細・参加リクエスト） ---
+// --- チームページ（一覧・詳細・招待） ---
 
 import type {
   TournamentCategory,
   TournamentTier,
 } from "@/features/tournaments/types/tournament";
-
-export type JoinRequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 
 // チーム一覧の1行。種目は出場履歴（entries）、階級は所属メンバーの平均GRANレベルから導出する。
 export interface TeamListItem {
@@ -92,11 +90,18 @@ export interface TeamDetail {
   recentResults: TeamResultRow[];
 }
 
-// 代表者が承認待ちとして見るリクエスト。
-export interface JoinRequestView {
+// 代表者が見る「招待中」ユーザー。
+export interface InvitationView {
   id: string;
   userId: string;
   nickname: string;
   granLevel: number;
   createdAt: string;
+}
+
+// 招待先として検索された候補ユーザー。
+export interface InviteCandidate {
+  userId: string;
+  nickname: string;
+  granLevel: number;
 }

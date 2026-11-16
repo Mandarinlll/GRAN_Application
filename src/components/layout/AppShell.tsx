@@ -179,14 +179,19 @@ function NavLink({
     </>
   );
 
-  if (active) {
+  // 閲覧中の項目も押下可能にする（詳細・編集などの下層ページからトップへ戻れるように）。
+  if (active && item.implemented) {
     return (
-      <div
+      <Link
+        href={item.href}
         aria-current="page"
-        className={cn(base, "bg-emerald-50 text-emerald-700 border border-emerald-200")}
+        className={cn(
+          base,
+          "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100",
+        )}
       >
         {inner}
-      </div>
+      </Link>
     );
   }
 
@@ -301,11 +306,12 @@ function BottomNav({ activeId, user }: { activeId: NavId; user: ShellUser }) {
               : "text-slate-500 hover:text-slate-900",
           );
 
-          if (active) {
+          // 閲覧中の項目も押下可能（下層ページからトップへ戻れるように）。
+          if (active && item.implemented) {
             return (
-              <div key={item.id} className={cls} aria-current="page">
+              <Link key={item.id} href={item.href} className={cls} aria-current="page">
                 {content}
-              </div>
+              </Link>
             );
           }
           if (!item.implemented) {

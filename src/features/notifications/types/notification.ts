@@ -3,7 +3,8 @@
 // 通知種別。
 //  - REMINDER_7DAYS: 参加予定大会の7日前 9:00 のリマインド
 //  - MEMBER_ASSIGN : 未定枠のまま残っている出場メンバーの指定依頼
-export type InboxKind = "REMINDER_7DAYS" | "MEMBER_ASSIGN";
+//  - TEAM_INVITE   : 代表者からのチーム招待（refId = team_invitations.id）
+export type InboxKind = "REMINDER_7DAYS" | "MEMBER_ASSIGN" | "TEAM_INVITE";
 
 // 画面表示用の通知1件。
 export interface InboxNotification {
@@ -11,6 +12,8 @@ export interface InboxNotification {
   kind: InboxKind;
   tournamentId: string | null;
   entryId: string | null;
+  // 種別ごとの参照ID（TEAM_INVITE のとき招待ID）。
+  refId: string | null;
   title: string;
   body: string;
   isRead: boolean;

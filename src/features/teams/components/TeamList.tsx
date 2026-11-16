@@ -18,8 +18,8 @@ import {
 import type { TeamListItem } from "@/features/teams/types/team";
 import { filterTeams } from "@/features/teams/utils/filter";
 import { membershipStateFor } from "@/features/teams/utils/membership";
-import { MembershipButton } from "@/features/teams/components/MembershipButton";
 import { TeamAvatar } from "@/features/teams/components/TeamAvatar";
+import type { MembershipState } from "@/features/teams/components/MembershipButton";
 
 const CATEGORIES = Object.keys(CATEGORY_LABEL) as TournamentCategory[];
 const TIERS = Object.keys(TIER_LABEL) as TournamentTier[];
@@ -30,25 +30,23 @@ const SELECT_CLS =
 export function TeamList({
   teams,
   userId,
-  myTeamId,
-  pendingTeamIds,
+  myTeamIds,
 }: {
   teams: TeamListItem[];
   userId: string;
-  myTeamId: string | null;
-  pendingTeamIds: string[];
+  myTeamIds: string[];
 }) {
   const [category, setCategory] = useState<TournamentCategory | "ALL">("ALL");
   const [tier, setTier] = useState<TournamentTier | "ALL">("ALL");
 
-  // 所属チームを先頭に固定し、他は元の順（チーム名順）を保つ。
+  // 所属チーム（複数可）を先頭に固定し、他は元の順（チーム名順）を保つ。
   const visible = useMemo(() => {
     const filtered = filterTeams(teams, category, tier);
     return [
-      ...filtered.filter((t) => t.id === myTeamId),
-      ...filtered.filter((t) => t.id !== myTeamId),
+      ...filtered.filter((t) => myTeamIds.includes(t.id)),
+      ...filtered.filter((t) => !myTeamIds.includes(t.id)),
     ];
-  }, [teams, category, tier, myTeamId]);
+  }, [teams, category, tier, myTeamIds]);
 
   return (
     <section className="space-y-4">
@@ -102,7 +100,7 @@ export function TeamList({
               key={t.id}
               className={cn(
                 "bg-white rounded-xl border shadow-sm p-4 flex flex-wrap items-center gap-3",
-                t.id === myTeamId ? "border-emerald-300" : "border-slate-200",
+                myTeamIds.includes(t.id) ? "border-emerald-300" : "border-slate-200",
               )}
             >
               <Link
@@ -124,14 +122,13 @@ export function TeamList({
                 </div>
                 </div>
               </Link>
-              <MembershipButton
+              <TeamStatus
                 teamId={t.id}
                 state={membershipStateFor({
                   teamId: t.id,
                   leaderUserId: t.leaderUserId,
                   userId,
-                  myTeamId,
-                  pendingTeamIds,
+                  myTeamIds,
                 })}
               />
             </li>
@@ -140,4 +137,23 @@ export function TeamList({
       )}
     </section>
   );
+}
+
+// 一覧では操作ボタンを置かず、状態表示のみ。脱退は詳細画面で行う。
+// 自分が代表を務めるチームには、編集画面への「マイチームを管理」を出す。
+function TeamStatus({ teamId, state }: { teamId: string; state: MembershipState }) {
+  if (state === "leader") {
+    return (
+      <Link
+        href={`/team/${teamId}/edit`}
+        className="min-h-[44px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center transition"
+      >
+        マイチームを管理
+      </Link>
+    );
+  }
+  if (state === "member") {
+    return <span className="text-xs font-bold text-emerald-700">所属中</span>;
+  }
+  return null;
 }

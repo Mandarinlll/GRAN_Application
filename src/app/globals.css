@@ -48,6 +48,15 @@ html.dark .bg-slate-100 { background-color: #1e293b; }
 html.dark .bg-slate-200 { background-color: #334155; }
 html.dark .hover\:bg-slate-100:hover { background-color: #334155; }
 html.dark .hover\:bg-slate-200:hover { background-color: #475569; }
+/* 淡色のホバー背景は、ダーク時にそのままだと白背景＋淡色文字になり読めないため暗色へ置き換える */
+html.dark .hover\:bg-slate-50:hover { background-color: #1e293b; }
+html.dark .hover\:bg-emerald-50:hover { background-color: rgba(16, 185, 129, 0.2); }
+html.dark .hover\:bg-emerald-100:hover { background-color: rgba(16, 185, 129, 0.3); }
+html.dark .hover\:bg-rose-50:hover { background-color: rgba(244, 63, 94, 0.2); }
+/* 透明度付きの淡色背景（未読行など）も同様に置き換える */
+html.dark .bg-emerald-50\/40,
+html.dark .bg-emerald-50\/50 { background-color: rgba(16, 185, 129, 0.1); }
+html.dark .bg-slate-50\/50 { background-color: rgba(30, 41, 59, 0.5); }
 html.dark .text-slate-900,
 html.dark .text-slate-800 { color: #f1f5f9; }
 html.dark .text-slate-700,

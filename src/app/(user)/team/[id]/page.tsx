@@ -1,19 +1,14 @@
 // チーム詳細ページ（URL: /team/[id]）。
-// チーム名・代表者・所属メンバー・成績を表示し、参加リクエスト/脱退の操作を提供する。
-// 代表者本人には承認待ちリクエストの一覧（承認・却下）も表示する。
+// チーム名・代表者・所属メンバー・成績を表示し、所属メンバーには脱退の操作を提供する。
+// アイコン画像はクリックで拡大表示できる。
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { getTeamPageContext } from "@/features/teams/server/pageContext";
-import {
-  getTeamDetail,
-  listPendingRequests,
-} from "@/features/teams/server/teamPageRepository";
+import { getTeamDetail } from "@/features/teams/server/teamPageRepository";
 import { MembershipButton } from "@/features/teams/components/MembershipButton";
-import { TeamAvatar } from "@/features/teams/components/TeamAvatar";
-import { AvatarUploader } from "@/features/teams/components/AvatarUploader";
-import { JoinRequestPanel } from "@/features/teams/components/JoinRequestPanel";
+import { TeamAvatarViewer } from "@/features/teams/components/TeamAvatarViewer";
 import { membershipStateFor } from "@/features/teams/utils/membership";
 import {
   CategoryBadge,
@@ -43,10 +38,8 @@ export default async function TeamDetailPage({
     teamId: team.id,
     leaderUserId: team.leaderUserId,
     userId: ctx.userId,
-    myTeamId: ctx.myTeamId,
-    pendingTeamIds: ctx.pendingTeamIds,
+    myTeamIds: ctx.myTeamIds,
   });
-  const requests = state === "leader" ? listPendingRequests(team.id) : null;
 
   return (
     <AppShell activeId="team" user={ctx.shellUser}>
@@ -61,11 +54,16 @@ export default async function TeamDetailPage({
 
         <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
           <div className="flex items-center gap-4">
-            <TeamAvatar teamId={team.id} name={team.name} avatarKey={team.avatarKey} size="lg" />
+            <TeamAvatarViewer teamId={team.id} name={team.name} avatarKey={team.avatarKey} />
             <h1 className="text-xl font-bold text-slate-900">{team.name}</h1>
           </div>
           {state === "leader" && (
-            <AvatarUploader teamId={team.id} hasAvatar={team.avatarKey !== null} />
+            <Link
+              href={`/team/${team.id}/edit`}
+              className="min-h-[44px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center transition"
+            >
+              マイチームを管理
+            </Link>
           )}
           <div className="text-xs text-slate-500">
             代表者 {team.leaderNickname} ・ {team.members.length}名
@@ -79,8 +77,6 @@ export default async function TeamDetailPage({
           </div>
           <MembershipButton teamId={team.id} state={state} />
         </section>
-
-        {requests && <JoinRequestPanel requests={requests} />}
 
         <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
           <h2 className="text-sm font-bold text-slate-900">成績</h2>

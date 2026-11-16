@@ -1,10 +1,11 @@
-// チーム一覧ページ（URL: /team）。種目・階級で絞り込み、チームへ参加リクエストを送れる。
+// チーム一覧ページ（URL: /team）。種目・階級で絞り込み、チーム詳細へ移動できる。
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Users } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamList } from "@/features/teams/components/TeamList";
 import { getTeamPageContext } from "@/features/teams/server/pageContext";
-import { listTeams } from "@/features/teams/server/teamPageRepository";
+import { findLeaderTeamId, listTeams } from "@/features/teams/server/teamPageRepository";
 
 export default async function TeamPage() {
   const ctx = await getTeamPageContext();
@@ -18,12 +19,18 @@ export default async function TeamPage() {
             <Users className="w-5 h-5" />
           </div>
           <h1 className="text-xl font-bold text-slate-900 leading-tight">チーム</h1>
+          {/* 代表者ならマイチームの編集画面、そうでなければ新規作成ページへ（/team/mine で振り分け）。 */}
+          <Link
+            href="/team/mine"
+            className="ml-auto min-h-[44px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center transition"
+          >
+            {findLeaderTeamId(ctx.userId) ? "マイチームを管理" : "チームを作成"}
+          </Link>
         </div>
         <TeamList
           teams={listTeams()}
           userId={ctx.userId}
-          myTeamId={ctx.myTeamId}
-          pendingTeamIds={ctx.pendingTeamIds}
+          myTeamIds={ctx.myTeamIds}
         />
       </main>
     </AppShell>

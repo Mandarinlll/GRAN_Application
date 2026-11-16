@@ -1,17 +1,14 @@
-// ログインユーザーとチームの関係から、表示するボタン状態を決める純粋関数。
+// ログインユーザーとチームの関係から、表示する状態を決める純粋関数。
 import type { MembershipState } from "@/features/teams/components/MembershipButton";
 
 export function membershipStateFor(params: {
   teamId: string;
   leaderUserId: string;
   userId: string;
-  myTeamId: string | null;
-  pendingTeamIds: string[];
+  myTeamIds: string[];
 }): MembershipState {
-  const { teamId, leaderUserId, userId, myTeamId, pendingTeamIds } = params;
+  const { teamId, leaderUserId, userId, myTeamIds } = params;
   if (leaderUserId === userId) return "leader";
-  if (myTeamId === teamId) return "member";
-  if (myTeamId) return "blocked";
-  if (pendingTeamIds.includes(teamId)) return "pending";
+  if (myTeamIds.includes(teamId)) return "member";
   return "none";
 }

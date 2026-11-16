@@ -145,7 +145,7 @@ erDiagram
 
     teams {
         uuid id PK
-        varchar name
+        varchar name "最大15文字"
         uuid leader_user_id UK "1ユーザー1代表制約"
     }
 
@@ -398,7 +398,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
 | チームID | `id` | UUID | NO | PK | `gen_random_uuid()`<br> |
-| チーム名 | `name` | VARCHAR(60) | NO | - | チーム名称
+| チーム名 | `name` | VARCHAR(15) | NO | - | チーム名称（最大15文字。アプリ側で検証）
 
  |
 | アイコン画像URL | `avatar_url` | TEXT | YES | - | チームアイコン画像パス
