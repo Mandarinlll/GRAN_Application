@@ -1,4 +1,4 @@
-﻿// チーム（teams / team_members）ドメインの型定義。
+// チーム（teams / team_members）ドメインの型定義。
 // db-schema.md 3.2 / 3.3 準拠。
 
 // teams テーブル1行に対応するアプリ内部表現。
@@ -49,6 +49,7 @@ export interface TeamListItem {
   id: string;
   name: string;
   leaderUserId: string;
+  avatarKey: string | null;
   leaderNickname: string;
   memberCount: number;
   categories: TournamentCategory[];
@@ -75,6 +76,7 @@ export interface TeamDetail {
   id: string;
   name: string;
   leaderUserId: string;
+  avatarKey: string | null;
   leaderNickname: string;
   createdAt: string;
   categories: TournamentCategory[];

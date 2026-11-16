@@ -19,6 +19,7 @@ import type { TeamListItem } from "@/features/teams/types/team";
 import { filterTeams } from "@/features/teams/utils/filter";
 import { membershipStateFor } from "@/features/teams/utils/membership";
 import { MembershipButton } from "@/features/teams/components/MembershipButton";
+import { TeamAvatar } from "@/features/teams/components/TeamAvatar";
 
 const CATEGORIES = Object.keys(CATEGORY_LABEL) as TournamentCategory[];
 const TIERS = Object.keys(TIER_LABEL) as TournamentTier[];
@@ -102,8 +103,10 @@ export function TeamList({
             >
               <Link
                 href={`/team/${t.id}`}
-                className="flex-1 min-w-[200px] space-y-1.5 rounded-lg hover:opacity-80 transition"
+                className="flex-1 min-w-[200px] flex items-center gap-3 rounded-lg hover:opacity-80 transition"
               >
+                <TeamAvatar teamId={t.id} name={t.name} avatarKey={t.avatarKey} />
+                <div className="space-y-1.5 min-w-0">
                 <div className="text-sm font-bold text-slate-900">{t.name}</div>
                 <div className="text-xs text-slate-500">
                   代表者 {t.leaderNickname} ・ {t.memberCount}名
@@ -114,6 +117,7 @@ export function TeamList({
                   {t.categories.map((c) => (
                     <CategoryBadge key={c} category={c} />
                   ))}
+                </div>
                 </div>
               </Link>
               <MembershipButton

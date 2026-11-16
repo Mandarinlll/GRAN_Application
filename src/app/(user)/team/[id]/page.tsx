@@ -11,6 +11,8 @@ import {
   listPendingRequests,
 } from "@/features/teams/server/teamPageRepository";
 import { MembershipButton } from "@/features/teams/components/MembershipButton";
+import { TeamAvatar } from "@/features/teams/components/TeamAvatar";
+import { AvatarUploader } from "@/features/teams/components/AvatarUploader";
 import { JoinRequestPanel } from "@/features/teams/components/JoinRequestPanel";
 import { membershipStateFor } from "@/features/teams/utils/membership";
 import {
@@ -58,7 +60,13 @@ export default async function TeamDetailPage({
         </Link>
 
         <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
-          <h1 className="text-xl font-bold text-slate-900">{team.name}</h1>
+          <div className="flex items-center gap-4">
+            <TeamAvatar teamId={team.id} name={team.name} avatarKey={team.avatarKey} size="lg" />
+            <h1 className="text-xl font-bold text-slate-900">{team.name}</h1>
+          </div>
+          {state === "leader" && (
+            <AvatarUploader teamId={team.id} hasAvatar={team.avatarKey !== null} />
+          )}
           <div className="text-xs text-slate-500">
             代表者 {team.leaderNickname} ・ {team.members.length}名
             {team.averageGranLevel !== null && ` ・ 平均Rate ${team.averageGranLevel}`}

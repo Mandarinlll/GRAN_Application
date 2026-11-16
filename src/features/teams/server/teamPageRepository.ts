@@ -1,4 +1,4 @@
-﻿// チームページ（一覧・詳細・参加リクエスト・脱退）用のリポジトリ。
+// チームページ（一覧・詳細・参加リクエスト・脱退）用のリポジトリ。
 // SQL はこの層にのみ閉じ込める（コーディング規約 6）。
 // 既存の teamRepository.ts（エントリー用）は変更せず、ページ専用クエリをここに置く。
 
@@ -35,7 +35,7 @@ function categoriesOf(teamId: string): TournamentCategory[] {
 export function listTeams(): TeamListItem[] {
   const rows = db
     .prepare(
-      `SELECT t.id, t.name, t.leader_user_id, lu.nickname AS leader_nickname,
+      `SELECT t.id, t.name, t.avatar_url, t.leader_user_id, lu.nickname AS leader_nickname,
               COUNT(tm.id) AS member_count, AVG(mu.gran_level) AS avg_level
          FROM teams t
          JOIN users lu ON lu.id = t.leader_user_id
@@ -48,6 +48,7 @@ export function listTeams(): TeamListItem[] {
     id: string;
     name: string;
     leader_user_id: string;
+    avatar_url: string | null;
     leader_nickname: string;
     member_count: number;
     avg_level: number | null;
@@ -57,6 +58,7 @@ export function listTeams(): TeamListItem[] {
     id: r.id,
     name: r.name,
     leaderUserId: r.leader_user_id,
+    avatarKey: r.avatar_url,
     leaderNickname: r.leader_nickname,
     memberCount: r.member_count,
     categories: categoriesOf(r.id),
@@ -127,7 +129,7 @@ function recentResultsOf(teamId: string): TeamResultRow[] {
 export function getTeamDetail(teamId: string): TeamDetail | null {
   const team = db
     .prepare(
-      `SELECT t.id, t.name, t.leader_user_id, t.created_at, lu.nickname AS leader_nickname
+      `SELECT t.id, t.name, t.avatar_url, t.leader_user_id, t.created_at, lu.nickname AS leader_nickname
          FROM teams t JOIN users lu ON lu.id = t.leader_user_id
         WHERE t.id = ?`,
     )
@@ -136,6 +138,7 @@ export function getTeamDetail(teamId: string): TeamDetail | null {
         id: string;
         name: string;
         leader_user_id: string;
+        avatar_url: string | null;
         created_at: string;
         leader_nickname: string;
       }
@@ -159,6 +162,7 @@ export function getTeamDetail(teamId: string): TeamDetail | null {
     id: team.id,
     name: team.name,
     leaderUserId: team.leader_user_id,
+    avatarKey: team.avatar_url,
     leaderNickname: team.leader_nickname,
     createdAt: team.created_at,
     categories: categoriesOf(teamId),
@@ -361,4 +365,27 @@ export function leaveTeam(teamId: string, userId: string): JoinResult {
     db.exec("ROLLBACK");
     throw e;
   }
+}
+
+// --- チームアイコン（avatar_url には画像ストレージの保存キーを持たせる） ---
+
+export function getTeamAvatarKey(teamId: string): string | null {
+  const row = db
+    .prepare("SELECT avatar_url FROM teams WHERE id = ?")
+    .get(teamId) as { avatar_url: string | null } | undefined;
+  return row?.avatar_url ?? null;
+}
+
+export function isTeamLeaderOf(teamId: string, userId: string): boolean {
+  return (
+    db
+      .prepare("SELECT 1 FROM teams WHERE id = ? AND leader_user_id = ?")
+      .get(teamId, userId) !== undefined
+  );
+}
+
+export function setTeamAvatarKey(teamId: string, key: string | null): void {
+  db.prepare(
+    "UPDATE teams SET avatar_url = ?, updated_at = datetime('now', '+9 hours') WHERE id = ?",
+  ).run(key, teamId);
 }
