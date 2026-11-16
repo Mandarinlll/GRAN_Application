@@ -3,6 +3,7 @@
 
 import {
   Calendar,
+  User,
   UserCheck,
   Flame,
   Bookmark,
@@ -37,14 +38,15 @@ import type {
 type ViewMode = "table" | "cards";
 
 type Props = {
-  kpi: { total: number; open: number; few: number; entered: number };
+  // personal / team: 個人戦・団体戦のエントリー済み大会数。
+  kpi: { open: number; few: number; personal: number; team: number };
   filters: FilterState;
   update: <K extends keyof FilterState>(key: K, value: FilterState[K]) => void;
   reset: () => void;
   resultCount: number;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
-  onOpenEntered: () => void;
+  onOpenEntered: (scope: "personal" | "team") => void;
 };
 
 const CATEGORY_OPTIONS: TournamentCategory[] = [
@@ -80,13 +82,6 @@ export function ScheduleControls({
       {/* KPIカード */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         <KpiCard
-          icon={Calendar}
-          iconClass="bg-emerald-50 text-emerald-600"
-          label="掲載大会数"
-          value={kpi.total}
-          valueClass="text-slate-900"
-        />
-        <KpiCard
           icon={UserCheck}
           iconClass="bg-sky-50 text-sky-600"
           label="受付中"
@@ -100,27 +95,18 @@ export function ScheduleControls({
           value={kpi.few}
           valueClass="text-amber-600"
         />
-        <button
-          type="button"
-          onClick={onOpenEntered}
-          className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-sm flex items-center justify-between gap-3 hover:border-purple-300 hover:shadow-md transition group text-left min-h-[44px]"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-              <Bookmark className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-slate-500">自チーム申込中</div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-lg sm:text-xl font-bold text-purple-600 tabular-nums">
-                  {kpi.entered}
-                </span>
-                <span className="text-xs text-slate-400 font-bold">大会</span>
-              </div>
-            </div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-purple-600 shrink-0" />
-        </button>
+        <EnteredKpiButton
+          icon={Bookmark}
+          label="団体戦"
+          value={kpi.team}
+          onClick={() => onOpenEntered("team")}
+        />
+        <EnteredKpiButton
+          icon={User}
+          label="個人戦"
+          value={kpi.personal}
+          onClick={() => onOpenEntered("personal")}
+        />
       </section>
 
       {/* コントロールバー */}
@@ -422,5 +408,42 @@ function FilterField({
       </label>
       {children}
     </div>
+  );
+}
+
+// エントリー済み大会数のカード。押すと「申込中・エントリー済み大会」を開く。
+function EnteredKpiButton({
+  icon: Icon,
+  label,
+  value,
+  onClick,
+}: {
+  icon: typeof Bookmark;
+  label: string;
+  value: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-sm flex items-center justify-between gap-3 hover:border-purple-300 hover:shadow-md transition group text-left min-h-[44px]"
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+          <Icon className="w-5 h-5" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-xs font-bold text-slate-500">{label}</div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-lg sm:text-xl font-bold text-purple-600 tabular-nums">
+              {value}
+            </span>
+            <span className="text-xs text-slate-400 font-bold">大会</span>
+          </div>
+        </div>
+      </div>
+      <ChevronRight className="w-4 h-4 text-purple-600 shrink-0" />
+    </button>
   );
 }

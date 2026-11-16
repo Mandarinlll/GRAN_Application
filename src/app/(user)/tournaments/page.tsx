@@ -6,11 +6,10 @@
 // 実 DB（tournaments / entries / waitlists）に接続した本番実装へ置き換えたもの。
 
 import { redirect } from "next/navigation";
-import { listPublicTournaments } from "@/features/tournaments/server/tournamentRepository";
-import { listInvolvedTournamentIds } from "@/features/entries/server/entryRepository";
+import { listTournamentCards } from "@/features/tournaments/server/tournamentCards";
+import { getMyEntriesAction } from "@/features/entries/server/actions";
+import { countActiveTournaments } from "@/features/entries/utils/entryFilters";
 import { getEntryViewer } from "@/features/entries/server/entryViewData";
-import type { TournamentCardData } from "@/features/tournaments/types/view";
-import { formatEventDate, formatYen, isPastDate, monthOf } from "@/utils/date";
 import { TournamentSchedule } from "@/features/tournaments/components/TournamentSchedule";
 import { getUnreadCountSynced } from "@/features/notifications/server/inboxService";
 
@@ -25,50 +24,20 @@ export default async function TournamentsPage({
   const viewer = await getEntryViewer();
   if (!viewer) redirect("/login");
 
-  // 公開大会一覧（昇順）を取得。
-  const tournaments = listPublicTournaments();
+  const cards = listTournamentCards(viewer);
 
-  // ログインユーザー/チームが関与している大会IDの集合。
-  const involved = listInvolvedTournamentIds({
-    userId: viewer.userId,
-    teamId: viewer.team?.id ?? null,
-  });
-
-  // 表示用 DTO へ変換。
-  const cards: TournamentCardData[] = tournaments.map((t) => ({
-    id: t.id,
-    title: t.title,
-    category: t.category,
-    tier: t.tier,
-    eventDate: t.eventDate,
-    eventDateLabel: formatEventDate(t.eventDate),
-    month: monthOf(t.eventDate),
-    startTime: t.startTime,
-    endTime: t.endTime,
-    venue: t.venue,
-    courtInfo: t.courtInfo,
-    description: t.description,
-    imageUrl: t.imageUrl,
-    capacity: t.capacity,
-    teamSizeMin: t.teamSizeMin,
-    teamSizeMax: t.teamSizeMax,
-    entryFee: t.entryFee,
-    entryFeeLabel: formatYen(t.entryFee),
-    status: t.status,
-    entryStartAt: t.entryStartAt,
-    entryEndAt: t.entryEndAt,
-    confirmedCount: t.confirmedCount,
-    waitingCount: t.waitingCount,
-    remaining: t.remaining,
-    capacityStatus: t.capacityStatus,
-    isPast: isPastDate(t.eventDate),
-    isEntered: involved.has(t.id),
-  }));
+  // 個人戦・団体戦のエントリー済み大会数（KPIカード用）。
+  const mine = await getMyEntriesAction();
+  const entryCounts = {
+    personal: countActiveTournaments(mine.personal),
+    team: countActiveTournaments(mine.team),
+  };
 
   return (
     <TournamentSchedule
       tournaments={cards}
       viewer={viewer}
+      entryCounts={entryCounts}
       unreadNotifications={getUnreadCountSynced(viewer.userId)}
       initialEditEntryId={typeof editEntry === "string" ? editEntry : null}
     />

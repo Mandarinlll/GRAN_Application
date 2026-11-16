@@ -18,31 +18,3 @@ export interface CurrentUser {
   role: UserRole; // 権限
   isAdminPreview: boolean; // 管理者バナーを出すか（ADMIN/OPERATORのプレビュー用）
 }
-
-// 「要対応」カードの緊急度。残り日数によって色が変わる。
-//  danger = 3日未満(赤) / warning = 3〜7日(オレンジ) / normal = 8日以上(緑)
-export type ActionUrgency = "danger" | "warning" | "normal";
-
-// 「要対応」カード1件分のデータ
-export interface RequiredAction {
-  id: string;
-  tournamentDate: string; // 大会日（表示用文字列 例: "2026/09/20 (日)"）
-  tournamentTitle: string; // 大会名
-  daysLeft: number; // 対応期限までの残り日数
-  urgency: ActionUrgency; // 緊急度（色分けに使う）
-  actionLabel: string; // 必要な対応の説明（例: "未定枠があります"）
-}
-
-// エントリー済み大会1件分のデータ（カルーセルで1枚ずつ表示する）
-export interface EnteredTournament {
-  id: string;
-  displayId: string; // 大会ID表示用（例: "T-2026-0920"）
-  title: string;
-  dateTime: string; // 開催日時（例: "2026/09/20 (日) 09:00集合"）
-  venue: string; // 会場
-  categoryLevel: string; // 種目・規定階級（例: "ミックス団体戦 (B〜C級)"）
-  fee: string; // 参加費用の表示（例: "¥20,000 (決済完了)"）
-  applicantInfo: string; // エントリーチーム情報
-  statusLabel: string; // ステータスバッジの文言（例: "要メンバー登録"）
-  note: string; // 注意事項・連絡事項
-}

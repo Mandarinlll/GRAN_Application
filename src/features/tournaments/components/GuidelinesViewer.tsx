@@ -17,6 +17,8 @@ import {
   Wallet,
   Edit3,
   Maximize2,
+  Users2,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -29,6 +31,7 @@ import { FlyerPlaceholder } from "@/features/tournaments/components/FlyerPlaceho
 import { memberCountRange } from "@/features/tournaments/utils/category";
 import { formatTime } from "@/utils/date";
 import type { TournamentCardData } from "@/features/tournaments/types/view";
+import type { EntrySummary } from "@/features/entries/types/entry";
 
 type Props = {
   tournaments: TournamentCardData[]; // フィルター後の配列（前後送り対象）
@@ -38,6 +41,10 @@ type Props = {
   onOpenFlyer: (tournament: TournamentCardData) => void;
   onEntry: (tournament: TournamentCardData) => void;
   onWaitlist: (tournament: TournamentCardData) => void;
+  // この大会に対するログインユーザー/チームのエントリー（有効なもの）。あれば操作ボタンを出す。
+  entries?: EntrySummary[];
+  onEditMembers?: (entry: EntrySummary) => void;
+  onCancel?: (entry: EntrySummary) => void;
 };
 
 export function GuidelinesViewer({
@@ -48,6 +55,9 @@ export function GuidelinesViewer({
   onOpenFlyer,
   onEntry,
   onWaitlist,
+  entries = [],
+  onEditMembers,
+  onCancel,
 }: Props) {
   const t = tournaments[index];
 
@@ -68,6 +78,7 @@ export function GuidelinesViewer({
   const isFull = t.capacityStatus === "FULL";
   const isOpen = t.status === "OPEN";
   const canAct = isOpen && !t.isPast;
+  const hasEntry = entries.length > 0;
   const range = memberCountRange(t.category, t.teamSizeMin, t.teamSizeMax);
 
   return (
@@ -81,6 +92,7 @@ export function GuidelinesViewer({
       >
         {/* トップバー: 前後送り + インジケーター + 閉じる */}
         <div className="bg-slate-900 text-white px-4 sm:px-6 py-3 flex items-center justify-between gap-2">
+          {tournaments.length > 1 ? (
           <button
             onClick={() => index > 0 && onIndexChange(index - 1)}
             disabled={index <= 0}
@@ -89,6 +101,9 @@ export function GuidelinesViewer({
             <ChevronLeft className="w-4 h-4" />
             <span className="hidden sm:inline">前の要項</span>
           </button>
+          ) : (
+            <span />
+          )}
 
           <div className="text-center px-2 min-w-0">
             <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-600 text-white tabular-nums">
@@ -100,6 +115,7 @@ export function GuidelinesViewer({
           </div>
 
           <div className="flex items-center gap-2">
+            {tournaments.length > 1 && (
             <button
               onClick={() =>
                 index < tournaments.length - 1 && onIndexChange(index + 1)
@@ -110,6 +126,7 @@ export function GuidelinesViewer({
               <span className="hidden sm:inline">次の要項</span>
               <ChevronRight className="w-4 h-4" />
             </button>
+            )}
             <button
               onClick={onClose}
               aria-label="閉じる"
@@ -209,6 +226,19 @@ export function GuidelinesViewer({
                 waitingCount={t.waitingCount}
               />
 
+              {/* 自分のエントリー（メンバー確認・変更・キャンセル） */}
+              {hasEntry && (
+                <div className="space-y-2">
+                  {entries.map((e) => (
+                    <MyEntryPanel
+                      key={e.entryId}
+                      entry={e}
+                      onEditMembers={onEditMembers}
+                      onCancel={onCancel}
+                    />
+                  ))}
+                </div>
+              )}
               {/* 詳細テキスト（エントリー状況バーの下部に配置） */}
               {t.description && (
                 <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5 text-xs">
@@ -227,7 +257,11 @@ export function GuidelinesViewer({
           <Button variant="secondary" size="md" onClick={onClose} type="button" className="w-full sm:w-auto">
             閉じる
           </Button>
-          {canAct ? (
+          {hasEntry ? (
+            <Button variant="secondary" size="md" type="button" disabled className="w-full sm:w-auto">
+              エントリー済み
+            </Button>
+          ) : canAct ? (
             isFull ? (
               <Button
                 variant="destructive"
@@ -285,6 +319,92 @@ function SpecCell({
         {main}
       </div>
       <div className="text-xs text-slate-500">{sub}</div>
+    </div>
+  );
+}
+
+// 自分のエントリー1件分のパネル。メンバー構成と、変更・キャンセル操作を表示する。
+function MyEntryPanel({
+  entry,
+  onEditMembers,
+  onCancel,
+}: {
+  entry: EntrySummary;
+  onEditMembers?: (entry: EntrySummary) => void;
+  onCancel?: (entry: EntrySummary) => void;
+}) {
+  const isWaiting = entry.kind === "WAITING";
+  const canModify = entry.kind === "CONFIRMED" && !entry.isPast;
+  return (
+    <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50 space-y-2 text-xs">
+      <div className="flex items-center justify-between gap-2">
+        <div className="font-bold text-slate-800 flex items-center gap-1.5">
+          <Users2 className="w-3.5 h-3.5 text-emerald-600" />
+          {entry.isTeamEntry
+            ? `チームエントリー${entry.teamName ? `（${entry.teamName}）` : ""}`
+            : "個人エントリー"}
+        </div>
+        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white text-emerald-700 border border-emerald-200">
+          {isWaiting
+            ? `キャンセル待ち #${entry.queueNumber ?? "-"}`
+            : entry.isPast
+              ? "終了"
+              : "確定"}
+        </span>
+      </div>
+      {entry.members.length > 0 && (
+        <ul className="space-y-1">
+          {entry.members.map((m) => (
+            <li
+              key={m.id}
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white"
+            >
+              <span className="w-5 text-slate-400 tabular-nums">{m.orderNo}</span>
+              <span
+                className={cn(
+                  "font-bold",
+                  m.isPending ? "text-amber-700" : "text-slate-800",
+                )}
+              >
+                {m.memberType === "PENDING" || m.isPending
+                  ? "未定枠"
+                  : m.memberType === "GUEST"
+                    ? (m.guestName ?? "ゲスト")
+                    : "登録ユーザー"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {entry.hasPendingMember && canModify && (
+        <div className="flex items-center gap-1.5 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <span>未定枠があります。メンバーを登録してください。</span>
+        </div>
+      )}
+      {canModify && (
+        <div className="flex items-center gap-2 pt-1">
+          {entry.isTeamEntry && onEditMembers && (
+            <button
+              type="button"
+              onClick={() => onEditMembers(entry)}
+              className="flex items-center gap-1 px-3 min-h-[40px] rounded-lg text-xs font-bold bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition"
+            >
+              <Users2 className="w-3.5 h-3.5" />
+              メンバー変更
+            </button>
+          )}
+          {onCancel && (
+            <button
+              type="button"
+              onClick={() => onCancel(entry)}
+              className="flex items-center gap-1 px-3 min-h-[40px] rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-50 transition"
+            >
+              キャンセル
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -67,7 +67,7 @@ export const waitlistCreateSchema = z.object({
 
 export type WaitlistCreateInput = z.infer<typeof waitlistCreateSchema>;
 
-// エントリーキャンセル申請スキーマ。
+// エントリーキャンセルスキーマ。
 export const cancelEntrySchema = z.object({
   entryId: z.string().min(1, "エントリーが指定されていません"),
 });

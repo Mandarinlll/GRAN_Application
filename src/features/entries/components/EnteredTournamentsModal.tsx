@@ -9,52 +9,43 @@ import { Button } from "@/components/ui/button";
 import { TierBadge, CategoryBadge } from "@/features/tournaments/components/badges";
 import { formatEventDate, formatYen } from "@/utils/date";
 import type { EntrySummary } from "@/features/entries/types/entry";
+import { isActiveEntry } from "@/features/entries/utils/entryFilters";
 
-type ScopeTab = "personal" | "team";
-type StateTab = "all" | "confirmed" | "waitlist" | "past";
+export type ScopeTab = "personal" | "team";
 
 type Props = {
   personal: EntrySummary[];
   team: EntrySummary[];
   teamName: string | null;
+  // 最初に表示する区分（未指定ならチームがあればチーム、なければ個人）。
+  initialScope?: ScopeTab;
   onClose: () => void;
   onCancel: (entry: EntrySummary) => void;
   onEditMembers: (entry: EntrySummary) => void;
+  // 大会の詳細画面（日程ページと共通）を開く。
+  onOpenDetail: (entry: EntrySummary) => void;
 };
 
 export function EnteredTournamentsModal({
-  personal,
-  team,
+  personal: allPersonal,
+  team: allTeam,
   teamName,
+  initialScope,
   onClose,
   onCancel,
   onEditMembers,
+  onOpenDetail,
 }: Props) {
+  // 終了した大会・参加済みの履歴は表示しない。
+  const personal = useMemo(() => allPersonal.filter(isActiveEntry), [allPersonal]);
+  const team = useMemo(() => allTeam.filter(isActiveEntry), [allTeam]);
   const [scope, setScope] = useState<ScopeTab>(
-    team.length > 0 ? "team" : "personal",
+    initialScope ?? (team.length > 0 ? "team" : "personal"),
   );
-  const [stateTab, setStateTab] = useState<StateTab>("all");
-
+  // 個人戦・団体戦のどちらかを指定して開いた場合は、その区分だけを表示する（切替タブなし）。
+  const fixedScope = initialScope !== undefined;
   const source = scope === "team" ? team : personal;
-
-  const filtered = useMemo(() => {
-    return source.filter((e) => {
-      if (stateTab === "confirmed") return e.kind === "CONFIRMED" && !e.isPast;
-      if (stateTab === "waitlist") return e.kind === "WAITING";
-      if (stateTab === "past") return e.isPast || e.kind === "ATTENDED";
-      return true;
-    });
-  }, [source, stateTab]);
-
-  const counts = useMemo(
-    () => ({
-      all: source.length,
-      confirmed: source.filter((e) => e.kind === "CONFIRMED" && !e.isPast).length,
-      waitlist: source.filter((e) => e.kind === "WAITING").length,
-      past: source.filter((e) => e.isPast || e.kind === "ATTENDED").length,
-    }),
-    [source],
-  );
+  const filtered = source;
 
   return (
     <div
@@ -73,7 +64,9 @@ export function EnteredTournamentsModal({
             </div>
             <div className="min-w-0">
               <h3 className="text-base font-bold truncate">
-                申込中・エントリー済み大会
+                {fixedScope
+                  ? `${scope === "team" ? "団体戦" : "個人戦"} 申込中・エントリー済み大会`
+                  : "申込中・エントリー済み大会"}
               </h3>
               {teamName && (
                 <div className="text-xs text-purple-300 truncate">
@@ -91,7 +84,8 @@ export function EnteredTournamentsModal({
           </button>
         </div>
 
-        {/* 個人/チーム 切替タブ */}
+        {/* 個人/チーム 切替タブ（区分を指定せずに開いた場合のみ） */}
+        {!fixedScope && (
         <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-6 pt-2.5 flex items-center gap-2">
           <ScopeTabBtn
             active={scope === "personal"}
@@ -106,14 +100,7 @@ export function EnteredTournamentsModal({
           />
         </div>
 
-        {/* 状態フィルタタブ */}
-        <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-6 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <StateTabBtn active={stateTab === "all"} onClick={() => setStateTab("all")} label={`すべて (${counts.all})`} />
-          <StateTabBtn active={stateTab === "confirmed"} onClick={() => setStateTab("confirmed")} label={`確定中 (${counts.confirmed})`} />
-          <StateTabBtn active={stateTab === "waitlist"} onClick={() => setStateTab("waitlist")} label={`キャンセル待ち (${counts.waitlist})`} />
-          <StateTabBtn active={stateTab === "past"} onClick={() => setStateTab("past")} label={`終了・履歴 (${counts.past})`} />
-        </div>
-
+        )}
         {/* リスト */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3">
           {filtered.length === 0 ? (
@@ -127,6 +114,7 @@ export function EnteredTournamentsModal({
                 entry={e}
                 onCancel={() => onCancel(e)}
                 onEditMembers={() => onEditMembers(e)}
+                onOpenDetail={() => onOpenDetail(e)}
               />
             ))
           )}
@@ -174,39 +162,16 @@ function ScopeTabBtn({
   );
 }
 
-function StateTabBtn({
-  active,
-  onClick,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "px-3 min-h-[40px] rounded-xl text-xs font-bold transition shrink-0",
-        active
-          ? "bg-purple-600 text-white shadow-sm"
-          : "text-slate-600 hover:bg-slate-200",
-      )}
-    >
-      {label}
-    </button>
-  );
-}
-
 function EntryRow({
   entry,
   onCancel,
   onEditMembers,
+  onOpenDetail,
 }: {
   entry: EntrySummary;
   onCancel: () => void;
   onEditMembers: () => void;
+  onOpenDetail: () => void;
 }) {
   const isWaiting = entry.kind === "WAITING";
   const isCancelled = entry.kind === "CANCELLED";
@@ -221,7 +186,13 @@ function EntryRow({
             <TierBadge tier={entry.tier} className="scale-90 origin-left" />
           </div>
           <h4 className="text-sm font-bold text-slate-900 leading-snug">
-            {entry.tournamentTitle}
+            <button
+              type="button"
+              onClick={onOpenDetail}
+              className="text-left hover:text-emerald-700 hover:underline"
+            >
+              {entry.tournamentTitle}
+            </button>
           </h4>
         </div>
         {/* 状態バッジ */}
@@ -266,9 +237,16 @@ function EntryRow({
       )}
 
       {/* アクション */}
-      {canModify && (
+      {(
         <div className="flex items-center gap-2 pt-1">
-          {entry.isTeamEntry && (
+          <button
+            type="button"
+            onClick={onOpenDetail}
+            className="flex items-center gap-1 px-3 min-h-[40px] rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition"
+          >
+            詳細を見る
+          </button>
+          {canModify && entry.isTeamEntry && (
             <button
               type="button"
               onClick={onEditMembers}
@@ -278,13 +256,15 @@ function EntryRow({
               メンバー変更
             </button>
           )}
+          {canModify && (
           <button
             type="button"
             onClick={onCancel}
             className="flex items-center gap-1 px-3 min-h-[40px] rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-50 transition"
           >
-            キャンセル申請
+            キャンセル
           </button>
+          )}
         </div>
       )}
     </div>
