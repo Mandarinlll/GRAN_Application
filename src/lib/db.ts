@@ -353,7 +353,7 @@ export function openDatabase(
       id            TEXT    PRIMARY KEY,
       user_id       TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       kind          TEXT    NOT NULL
-                      CHECK (kind IN ('REMINDER_7DAYS','MEMBER_ASSIGN')),
+                      CHECK (kind IN ('REMINDER_7DAYS','MEMBER_ASSIGN','TEAM_INVITE')),
       tournament_id TEXT    REFERENCES tournaments(id) ON DELETE CASCADE,
       entry_id      TEXT    REFERENCES entries(id) ON DELETE CASCADE,
       title         TEXT    NOT NULL,
@@ -361,10 +361,70 @@ export function openDatabase(
       dedupe_key    TEXT    NOT NULL UNIQUE,
       is_read       INTEGER NOT NULL DEFAULT 0,
       is_resolved   INTEGER NOT NULL DEFAULT 0,
-      created_at    TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours'))
+      created_at    TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours')),
+      ref_id        TEXT
     );
   `);
+
+  // 既存DBの inbox_notifications は kind の CHECK に 'TEAM_INVITE' が無く、ref_id 列も無い。
+  // SQLite は CHECK を ALTER で変更できないため、テーブルを作り直してデータを移す（冪等）。
+  const inboxDef = (
+    db
+      .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'inbox_notifications'")
+      .get() as { sql: string } | undefined
+  )?.sql;
+  if (inboxDef && !inboxDef.includes("TEAM_INVITE")) {
+    db.exec("BEGIN");
+    try {
+      db.exec("ALTER TABLE inbox_notifications RENAME TO inbox_notifications_old;");
+      db.exec("DROP INDEX IF EXISTS idx_inbox_notifications_user;");
+      db.exec(`
+        CREATE TABLE inbox_notifications (
+          id            TEXT    PRIMARY KEY,
+          user_id       TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          kind          TEXT    NOT NULL
+                          CHECK (kind IN ('REMINDER_7DAYS','MEMBER_ASSIGN','TEAM_INVITE')),
+          tournament_id TEXT    REFERENCES tournaments(id) ON DELETE CASCADE,
+          entry_id      TEXT    REFERENCES entries(id) ON DELETE CASCADE,
+          title         TEXT    NOT NULL,
+          body          TEXT    NOT NULL,
+          dedupe_key    TEXT    NOT NULL UNIQUE,
+          is_read       INTEGER NOT NULL DEFAULT 0,
+          is_resolved   INTEGER NOT NULL DEFAULT 0,
+          created_at    TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours')),
+          ref_id        TEXT
+        );
+      `);
+      db.exec(`
+        INSERT INTO inbox_notifications
+          (id, user_id, kind, tournament_id, entry_id, title, body, dedupe_key, is_read, is_resolved, created_at)
+        SELECT id, user_id, kind, tournament_id, entry_id, title, body, dedupe_key, is_read, is_resolved, created_at
+          FROM inbox_notifications_old;
+      `);
+      db.exec("DROP TABLE inbox_notifications_old;");
+      db.exec("COMMIT");
+    } catch (e) {
+      db.exec("ROLLBACK");
+      throw e;
+    }
+  }
   db.exec("CREATE INDEX IF NOT EXISTS idx_inbox_notifications_user ON inbox_notifications(user_id, created_at DESC);");
+
+  // team_invitations（代表者からユーザーへのチーム招待）。
+  // 招待されたユーザーが通知ページで承諾すると team_members に追加される。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS team_invitations (
+      id          TEXT PRIMARY KEY,
+      team_id     TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+      user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      status      TEXT NOT NULL DEFAULT 'PENDING'
+                    CHECK (status IN ('PENDING','ACCEPTED','DECLINED','CANCELLED')),
+      created_at  TEXT NOT NULL DEFAULT (datetime('now', '+9 hours')),
+      resolved_at TEXT
+    );
+  `);
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_team_invitation_pending ON team_invitations(team_id, user_id) WHERE status = 'PENDING';");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_team_invitations_user ON team_invitations(user_id, status);");
   // user_settings（アプリ設定：通知・文字サイズ・カラーモード）。
   // 行が無いユーザーは既定値（全通知ON / 標準 / 端末連動）として扱う。
   db.exec(`
@@ -379,6 +439,8 @@ export function openDatabase(
       updated_at             TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours'))
     );
   `);
+  // ※ チーム参加リクエスト（team_join_requests）は機能廃止。参加は代表者からの招待のみ。
+  //   既存DBに残っているテーブルは削除せずそのまま残す（データ削除を伴うため）。
   db.exec("CREATE INDEX IF NOT EXISTS idx_entry_members_user ON entry_members(user_id, entry_id);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_results_user_recorded ON tournament_results(user_id, recorded_at DESC);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_matches_entry1 ON tournament_matches(entry1_id);");
