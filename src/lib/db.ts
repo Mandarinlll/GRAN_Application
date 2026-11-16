@@ -379,6 +379,22 @@ export function openDatabase(
       updated_at             TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours'))
     );
   `);
+  // team_join_requests（チーム参加リクエスト）。
+  // 一般ユーザーが代表者へ送り、代表者の承認で team_members に追加される。
+  // 同一チーム・同一ユーザーの PENDING は部分UNIQUEインデックスで1件に制限する。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS team_join_requests (
+      id          TEXT PRIMARY KEY,
+      team_id     TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+      user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      status      TEXT NOT NULL DEFAULT 'PENDING'
+                    CHECK (status IN ('PENDING','APPROVED','REJECTED','CANCELLED')),
+      created_at  TEXT NOT NULL DEFAULT (datetime('now', '+9 hours')),
+      resolved_at TEXT
+    );
+  `);
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_team_join_pending ON team_join_requests(team_id, user_id) WHERE status = 'PENDING';");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_team_join_requests_team ON team_join_requests(team_id, status);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_entry_members_user ON entry_members(user_id, entry_id);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_results_user_recorded ON tournament_results(user_id, recorded_at DESC);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_matches_entry1 ON tournament_matches(entry1_id);");

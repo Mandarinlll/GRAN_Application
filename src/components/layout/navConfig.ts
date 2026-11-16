@@ -51,5 +51,5 @@ export const NAV_ITEMS: NavItemDef[] = [
     icon: Bell,
     implemented: true,
   },
-  { id: "team", label: "チーム", href: "#", icon: Users, implemented: false },
+  { id: "team", label: "チーム", href: "/team", icon: Users, implemented: true },
 ];
