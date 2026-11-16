@@ -33,7 +33,7 @@ export function GuideSection() {
 function DocAccordion({ doc }: { doc: GuideDoc }) {
   const Icon = ICONS[doc.id];
   return (
-    <details className="group rounded-xl border border-slate-200 bg-white">
+    <details className="group rounded-2xl border border-slate-200 bg-white shadow-sm">
       <summary className="flex items-center justify-between gap-3 px-4 min-h-[48px] cursor-pointer list-none [&::-webkit-details-marker]:hidden">
         <span className="flex items-center gap-2.5 text-sm font-bold text-slate-800">
           <Icon className="w-4 h-4 text-emerald-600" />

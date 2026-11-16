@@ -17,7 +17,7 @@ export function AdminBanner({ role, visible }: Props) {
   return (
     <div className="bg-indigo-900 text-indigo-100 text-xs px-4 py-2 flex items-center justify-between shadow-inner">
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500 text-white uppercase">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-indigo-500 text-white uppercase">
           <ShieldCheck className="w-3 h-3" />
           {/* {role} のように波括弧で囲むと、JSの値(ここでは props の role)を埋め込める */}
           {role}

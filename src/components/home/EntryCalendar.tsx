@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getEventName, getJapaneseHolidayName } from "@/utils/holiday";
 import { TournamentDetailHost } from "@/features/tournaments/components/TournamentDetailHost";
 import type { TournamentCardData } from "@/features/tournaments/types/view";
 import type { EntryViewer } from "@/features/entries/server/entryViewData";
@@ -16,7 +17,7 @@ type Props = {
   viewer: EntryViewer;
 };
 
-const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"];
 
 // "YYYY-MM-DD" → "YYYY-MM"（タイムゾーンずれを避けるため文字列で扱う）
 function monthKey(year: number, month0: number): string {
@@ -60,7 +61,8 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
   const monthCount = entries.filter((e) => e.eventDate.startsWith(prefix)).length;
 
   // 月の1日の曜日と日数から、グリッドのセル（空白 + 日付）を作る
-  const firstWeekday = new Date(year, month0, 1).getDay();
+  // 月曜始まり: 日曜(0)を末尾(6)に回す。
+  const firstWeekday = (new Date(year, month0, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month0 + 1, 0).getDate();
   const cells: (number | null)[] = [
     ...Array.from({ length: firstWeekday }, () => null),
@@ -96,7 +98,7 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         {/* 月切替ヘッダー */}
         <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-200">
           <button
@@ -111,7 +113,7 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
             <div className="text-sm font-bold text-slate-900 tabular-nums">
               {year}年{month0 + 1}月
             </div>
-            <div className="text-[11px] text-slate-500">
+            <div className="text-xs text-slate-500">
               この月のエントリー {monthCount}件
             </div>
           </div>
@@ -126,15 +128,15 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
         </div>
 
         {/* 曜日行 */}
-        <div className="grid grid-cols-7 text-center text-[11px] font-bold border-b border-slate-200 bg-slate-50">
+        <div className="grid grid-cols-7 text-center text-xs font-bold border-b border-slate-200 bg-slate-50">
           {WEEKDAYS.map((w, i) => (
             <div
               key={w}
               className={cn(
                 "py-1.5",
-                i === 0 && "text-rose-500",
-                i === 6 && "text-sky-600",
-                i !== 0 && i !== 6 && "text-slate-500",
+                i === 6 && "text-rose-500",
+                i === 5 && "text-sky-600",
+                i < 5 && "text-slate-500",
               )}
             >
               {w}
@@ -156,24 +158,41 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
             const key = `${prefix}-${String(day).padStart(2, "0")}`;
             const dayEntries = byDate.get(key) ?? [];
             const col = idx % 7;
+            // 日曜・祝日は赤、土曜は青。
+            const holidayName = getJapaneseHolidayName(year, month0 + 1, day);
+            const eventName = holidayName ? null : getEventName(year, month0 + 1, day);
+            const isRed = col === 6 || holidayName !== null;
             return (
               <div
                 key={key}
                 className="min-h-[72px] sm:min-h-[96px] border-b border-r border-slate-100 p-1 space-y-0.5"
               >
-                <div
-                  className={cn(
-                    "w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center tabular-nums",
-                    key === todayKey
-                      ? "bg-emerald-600 text-white"
-                      : col === 0
-                        ? "text-rose-500"
-                        : col === 6
-                          ? "text-sky-600"
-                          : "text-slate-700",
-                  )}
-                >
-                  {day}
+                <div className="flex items-center gap-1 min-w-0">
+                  <div
+                    className={cn(
+                      "w-6 h-6 shrink-0 rounded-full text-xs font-bold flex items-center justify-center tabular-nums",
+                      key === todayKey
+                        ? "bg-emerald-600 text-white"
+                        : isRed
+                          ? "text-rose-500"
+                          : col === 5
+                            ? "text-sky-600"
+                            : "text-slate-700",
+                    )}
+                  >
+                    {day}
+                  </div>
+                  {holidayName || eventName ? (
+                    <span
+                      title={holidayName ?? eventName ?? undefined}
+                      className={cn(
+                        "min-w-0 truncate text-xs leading-none",
+                        holidayName ? "text-rose-500" : "text-slate-500",
+                      )}
+                    >
+                      {holidayName ?? eventName}
+                    </span>
+                  ) : null}
                 </div>
                 {dayEntries.map((e) => (
                   <button
@@ -182,7 +201,7 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
                     onClick={() => openDetail(e)}
                     title={e.tournamentTitle}
                     className={cn(
-                      "block w-full text-left truncate rounded px-1 py-0.5 text-[10px] font-bold leading-tight transition",
+                      "block w-full text-left truncate rounded px-1 py-0.5 text-xs font-bold leading-tight transition",
                       chipClass(e),
                     )}
                   >
@@ -196,7 +215,7 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
       </div>
 
       {/* 凡例 */}
-      <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
+      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
         <Legend className="bg-emerald-100 border-emerald-300" label="確定" />
         <Legend className="bg-amber-100 border-amber-300" label="キャンセル待ち / 要メンバー登録" />
         <Legend className="bg-slate-200 border-slate-300" label="終了" />

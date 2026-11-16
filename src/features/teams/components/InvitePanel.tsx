@@ -58,7 +58,7 @@ export function InvitePanel({
   }
 
   return (
-    <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-4">
+    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
       <h2 className="text-sm font-bold text-slate-900">ユーザーを招待</h2>
 
       <form onSubmit={search} className="flex gap-2">

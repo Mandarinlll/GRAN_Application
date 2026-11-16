@@ -87,7 +87,7 @@ export function TeamList({
       </div>
 
       {visible.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-8 flex flex-col items-center text-center gap-2 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 flex flex-col items-center text-center gap-2 shadow-sm">
           <Users className="w-8 h-8 text-slate-300" />
           <p className="text-sm font-bold text-slate-600">
             該当するチームはありません

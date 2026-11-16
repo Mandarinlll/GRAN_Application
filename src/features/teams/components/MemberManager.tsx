@@ -28,7 +28,7 @@ export function MemberManager({
   }
 
   return (
-    <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
       <h2 className="text-sm font-bold text-slate-900">メンバー管理（{members.length}名）</h2>
       <ul className="divide-y divide-slate-100">
         {members.map((m) => (

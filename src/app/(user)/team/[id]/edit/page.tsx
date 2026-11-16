@@ -31,7 +31,7 @@ export default async function EditTeamPage({
 
   return (
     <AppShell activeId="team" user={ctx.shellUser}>
-      <main className="max-w-4xl mx-auto px-4 py-6 pb-24 space-y-4">
+      <main className="max-w-2xl mx-auto px-4 py-6 pb-24 space-y-4">
         <Link
           href="/team"
           className="min-h-[44px] inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-slate-900"
@@ -40,7 +40,7 @@ export default async function EditTeamPage({
           チーム一覧へ
         </Link>
 
-        <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-4">
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h1 className="text-xl font-bold text-slate-900">マイチーム</h1>
             <Link

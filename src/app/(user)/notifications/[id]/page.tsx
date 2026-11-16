@@ -38,7 +38,7 @@ export default async function NotificationDetailPage({
 
   return (
     <AppShell activeId="notifications" user={shellUser}>
-      <main className="max-w-4xl mx-auto px-4 py-6 pb-24 space-y-4">
+      <main className="max-w-2xl mx-auto px-4 py-6 pb-24 space-y-4">
         <Link
           href="/notifications"
           className="min-h-[44px] inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-slate-900"

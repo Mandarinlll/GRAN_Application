@@ -126,7 +126,7 @@ export function RegisterForm() {
                 className={`${inputBase} pl-9`}
               />
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               ※ ログインIDとして使用されます
             </p>
           </Field>
@@ -311,7 +311,7 @@ export function RegisterForm() {
                 className={`${inputBase} pl-9`}
               />
             </div>
-            <div className="mt-1.5 p-2.5 bg-amber-50 rounded-lg border border-amber-200 flex items-start gap-2 text-[11px] text-amber-800">
+            <div className="mt-1.5 p-2.5 bg-amber-50 rounded-lg border border-amber-200 flex items-start gap-2 text-xs text-amber-800">
               <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
               <span>
                 外部公開用（対戦表・ドロー表）の資料に掲載されます。本名やメールアドレスなどの個人情報を含めることはお控えください。
@@ -354,11 +354,11 @@ export function RegisterForm() {
                 <Gauge className="w-4 h-4 text-emerald-600" />
                 申告階級の査定基準レンジ
               </span>
-              <span className="px-2 py-0.5 rounded bg-emerald-600 text-white font-mono text-[11px]">
+              <span className="px-2 py-0.5 rounded bg-emerald-600 text-white font-mono text-xs">
                 {guidance.range}
               </span>
             </div>
-            <p className="text-slate-600 leading-relaxed text-[11px]">
+            <p className="text-slate-600 leading-relaxed text-xs">
               {guidance.desc}
             </p>
             <div className="pt-2 border-t border-emerald-200 flex items-start gap-1.5 text-[10.5px] text-slate-500">
@@ -403,7 +403,7 @@ export function RegisterForm() {
           すでにアカウントをお持ちですか？
           <Link
             href="/login"
-            className="text-emerald-600 hover:text-emerald-700 font-semibold ml-1"
+            className="text-emerald-600 hover:text-emerald-700 font-bold ml-1"
           >
             ログインはこちら
           </Link>
@@ -445,7 +445,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+      <label className="block text-xs font-bold text-slate-700 mb-1.5">
         {label}
         {required && <span className="text-rose-500 ml-0.5">*</span>}
       </label>

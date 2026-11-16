@@ -43,7 +43,7 @@ export default async function TeamDetailPage({
 
   return (
     <AppShell activeId="team" user={ctx.shellUser}>
-      <main className="max-w-4xl mx-auto px-4 py-6 pb-24 space-y-4">
+      <main className="max-w-2xl mx-auto px-4 py-6 pb-24 space-y-4">
         <Link
           href="/team"
           className="min-h-[44px] inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-slate-900"
@@ -52,7 +52,7 @@ export default async function TeamDetailPage({
           チーム一覧へ
         </Link>
 
-        <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
           <div className="flex items-center gap-4">
             <TeamAvatarViewer teamId={team.id} name={team.name} avatarKey={team.avatarKey} />
             <h1 className="text-xl font-bold text-slate-900">{team.name}</h1>
@@ -78,7 +78,7 @@ export default async function TeamDetailPage({
           <MembershipButton teamId={team.id} state={state} />
         </section>
 
-        <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
           <h2 className="text-sm font-bold text-slate-900">成績</h2>
           <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
             {[
@@ -110,7 +110,7 @@ export default async function TeamDetailPage({
           )}
         </section>
 
-        <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
           <h2 className="text-sm font-bold text-slate-900">所属メンバー</h2>
           <ul className="divide-y divide-slate-100">
             {team.members.map((m) => (

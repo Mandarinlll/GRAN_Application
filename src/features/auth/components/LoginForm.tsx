@@ -35,7 +35,7 @@ export function LoginForm() {
         <div>
           <label
             htmlFor="identifier"
-            className="block text-xs font-semibold text-slate-700 mb-1.5"
+            className="block text-xs font-bold text-slate-700 mb-1.5"
           >
             ログインID / メールアドレス
           </label>
@@ -61,7 +61,7 @@ export function LoginForm() {
         <div>
           <label
             htmlFor="password"
-            className="block text-xs font-semibold text-slate-700 mb-1.5"
+            className="block text-xs font-bold text-slate-700 mb-1.5"
           >
             パスワード
           </label>
@@ -106,7 +106,7 @@ export function LoginForm() {
           アカウントをまだお持ちでない方は→
           <Link
             href="/register"
-            className="text-emerald-600 hover:text-emerald-700 font-semibold ml-1"
+            className="text-emerald-600 hover:text-emerald-700 font-bold ml-1"
           >
             新規登録
           </Link>

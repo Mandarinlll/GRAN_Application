@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Users } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { TeamList } from "@/features/teams/components/TeamList";
 import { getTeamPageContext } from "@/features/teams/server/pageContext";
 import { findLeaderTeamId, listTeams } from "@/features/teams/server/teamPageRepository";
@@ -13,20 +14,20 @@ export default async function TeamPage() {
 
   return (
     <AppShell activeId="team" user={ctx.shellUser}>
-      <main className="max-w-4xl mx-auto px-4 py-6 pb-24 space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5" />
-          </div>
-          <h1 className="text-xl font-bold text-slate-900 leading-tight">チーム</h1>
-          {/* 代表者ならマイチームの編集画面、そうでなければ新規作成ページへ（/team/mine で振り分け）。 */}
-          <Link
-            href="/team/mine"
-            className="ml-auto min-h-[44px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center transition"
-          >
-            {findLeaderTeamId(ctx.userId) ? "マイチームを管理" : "チームを作成"}
-          </Link>
-        </div>
+      <main className="max-w-2xl mx-auto px-4 py-6 pb-24 space-y-4">
+        <PageHeader
+          icon={Users}
+          title="チーム"
+          action={
+            // 代表者ならマイチームの編集画面、そうでなければ新規作成ページへ（/team/mine で振り分け）。
+            <Link
+              href="/team/mine"
+              className="min-h-[44px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center transition"
+            >
+              {findLeaderTeamId(ctx.userId) ? "マイチームを管理" : "チームを作成"}
+            </Link>
+          }
+        />
         <TeamList
           teams={listTeams()}
           userId={ctx.userId}

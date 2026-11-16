@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { Bell } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { getSession } from "@/lib/session";
 import { getCurrentUser } from "@/features/auth/server/currentUser";
 import { NotificationList } from "@/features/notifications/components/NotificationList";
@@ -31,15 +32,8 @@ export default async function NotificationsPage() {
 
   return (
     <AppShell activeId="notifications" user={shellUser}>
-      <main className="max-w-4xl mx-auto px-4 py-6 pb-24 space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-            <Bell className="w-5 h-5" />
-          </div>
-          <h1 className="text-xl font-bold text-slate-900 leading-tight">
-            通知
-          </h1>
-        </div>
+      <main className="max-w-2xl mx-auto px-4 py-6 pb-24 space-y-4">
+        <PageHeader icon={Bell} title="通知" />
         <NotificationList notifications={notifications} />
       </main>
     </AppShell>

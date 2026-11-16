@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { Settings } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { getSession } from "@/lib/session";
 import { getCurrentUser } from "@/features/auth/server/currentUser";
 import { findUserById } from "@/features/auth/server/userRepository";
@@ -34,12 +35,7 @@ export default async function SettingsPage() {
   return (
     <AppShell activeId="settings" user={shellUser}>
       <main className="max-w-2xl mx-auto px-4 py-6 pb-24 space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-            <Settings className="w-5 h-5" />
-          </div>
-          <h1 className="text-xl font-bold text-slate-900 leading-tight">設定</h1>
-        </div>
+        <PageHeader icon={Settings} title="設定" />
         <SettingsView
           profile={{
             loginId: user.loginId,

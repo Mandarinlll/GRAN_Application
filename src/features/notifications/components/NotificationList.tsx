@@ -57,12 +57,12 @@ export function NotificationList({
       </div>
 
       {visible.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-8 flex flex-col items-center text-center gap-2 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 flex flex-col items-center text-center gap-2 shadow-sm">
           <Bell className="w-8 h-8 text-slate-300" />
           <p className="text-sm font-bold text-slate-600">該当する通知はありません</p>
         </div>
       ) : (
-        <ul className="bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-100 overflow-hidden">
+        <ul className="bg-white rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100 overflow-hidden">
           {visible.map((n) => (
             <NotificationRow key={n.id} n={n} />
           ))}
