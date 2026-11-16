@@ -2,7 +2,7 @@
 // フィルター・ビュー切替・一括選択・各種モーダル・トーストを統括する。
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ListFilter, LayoutGrid } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -11,11 +11,7 @@ import { useTournamentFilters } from "@/features/tournaments/hooks/useTournament
 import { ScheduleControls } from "@/features/tournaments/components/ScheduleControls";
 import { ScheduleTable } from "@/features/tournaments/components/ScheduleTable";
 import { ScheduleCards } from "@/features/tournaments/components/ScheduleCards";
-import { GuidelinesViewer } from "@/features/tournaments/components/GuidelinesViewer";
-import { FlyerLightbox } from "@/features/tournaments/components/FlyerLightbox";
-import { EntryModal } from "@/features/entries/components/EntryModal";
-import { WaitlistModal } from "@/features/entries/components/WaitlistModal";
-import { EntrySuccessModal } from "@/features/entries/components/EntrySuccessModal";
+import { TournamentDetailHost } from "@/features/tournaments/components/TournamentDetailHost";
 import { BulkEntryBar } from "@/features/entries/components/BulkEntryBar";
 import { BulkEntryModal } from "@/features/entries/components/BulkEntryModal";
 import { CancelEntryModal } from "@/features/entries/components/CancelEntryModal";
@@ -32,6 +28,8 @@ type Props = {
   unreadNotifications?: number;
   // 指定されたエントリーのメンバー変更モーダルを初期表示で開く（通知ページからの導線）。
   initialEditEntryId?: string | null;
+  // 個人戦・団体戦のエントリー済み大会数（サーバー側で集計）。
+  entryCounts: { personal: number; team: number };
 };
 
 type ViewMode = "table" | "cards";
@@ -41,6 +39,7 @@ export function TournamentSchedule({
   viewer,
   unreadNotifications = 0,
   initialEditEntryId = null,
+  entryCounts,
 }: Props) {
   const router = useRouter();
   const { filters, update, reset, filtered, kpi } = useTournamentFilters(tournaments);
@@ -53,40 +52,17 @@ export function TournamentSchedule({
 
   // モーダル状態。
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
-  const [flyer, setFlyer] = useState<TournamentCardData | null>(null);
-  const [entryTarget, setEntryTarget] = useState<TournamentCardData | null>(null);
-  const [waitlistTarget, setWaitlistTarget] = useState<TournamentCardData | null>(null);
-  const [success, setSuccess] = useState<{
-    kind: "entry" | "waitlist";
-    tournament: TournamentCardData;
-    queueNumber?: number;
-  } | null>(null);
+  // 申込中一覧から開いた詳細は、フィルター結果に含まれない大会もあるため単独リストで表示する。
+  const [detailOverride, setDetailOverride] = useState<TournamentCardData[] | null>(null);
+  const [detailFocusEntryId, setDetailFocusEntryId] = useState<string | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
 
   // 申込中一覧（遅延取得）。
   const [myEntries, setMyEntries] = useState<MyEntriesResult | null>(null);
   const [enteredOpen, setEnteredOpen] = useState(false);
+  const [enteredScope, setEnteredScope] = useState<"personal" | "team" | undefined>(undefined);
   const [cancelTarget, setCancelTarget] = useState<EntrySummary | null>(null);
   const [editTarget, setEditTarget] = useState<EntrySummary | null>(null);
-
-  // 通知ページからの遷移: 該当エントリーのメンバー変更モーダルを開く。
-  useEffect(() => {
-    if (!initialEditEntryId) return;
-    let cancelled = false;
-    getMyEntriesAction().then((data) => {
-      if (cancelled) return;
-      const target = [...data.personal, ...data.team].find(
-        (e) => e.entryId === initialEditEntryId && e.kind === "CONFIRMED",
-      );
-      if (target) {
-        setMyEntries(data);
-        setEditTarget(target);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [initialEditEntryId]);
 
   const showToast = useCallback((message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -129,31 +105,11 @@ export function TournamentSchedule({
   }
 
   // 申込中一覧を開く（サーバーから取得）。
-  async function openEntered() {
+  async function openEntered(scope?: "personal" | "team") {
+    setEnteredScope(scope);
     const data = await getMyEntriesAction();
     setMyEntries(data);
     setEnteredOpen(true);
-  }
-
-  // エントリー成功時の共通処理。
-  function handleEntrySuccess(
-    _entryId: string | undefined,
-    tournament: TournamentCardData,
-  ) {
-    setEntryTarget(null);
-    setViewerIndex(null);
-    setSuccess({ kind: "entry", tournament });
-    router.refresh(); // サーバー側の残枠・申込状況を再取得。
-  }
-
-  function handleWaitlistSuccess(
-    queueNumber: number | undefined,
-    tournament: TournamentCardData,
-  ) {
-    setWaitlistTarget(null);
-    setViewerIndex(null);
-    setSuccess({ kind: "waitlist", tournament, queueNumber });
-    router.refresh();
   }
 
   const shellUser = {
@@ -185,14 +141,14 @@ export function TournamentSchedule({
 
         {/* KPI + フィルター */}
         <ScheduleControls
-          kpi={kpi}
+          kpi={{ open: kpi.open, few: kpi.few, ...entryCounts }}
           filters={filters}
           update={update}
           reset={reset}
           resultCount={filtered.length}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          onOpenEntered={openEntered}
+          onOpenEntered={(scope) => void openEntered(scope)}
         />
 
         {/* 一覧（表 or カード） */}
@@ -238,58 +194,22 @@ export function TournamentSchedule({
         </section>
       </main>
 
-      {/* 要項ビューア */}
-      {viewerIndex !== null && filtered[viewerIndex] && (
-        <GuidelinesViewer
-          tournaments={filtered}
-          index={viewerIndex}
-          onIndexChange={setViewerIndex}
-          onClose={() => setViewerIndex(null)}
-          onOpenFlyer={setFlyer}
-          onEntry={(t) => setEntryTarget(t)}
-          onWaitlist={(t) => setWaitlistTarget(t)}
-        />
-      )}
-
-      {/* 全画面要項 */}
-      {flyer && <FlyerLightbox tournament={flyer} onClose={() => setFlyer(null)} />}
-
-      {/* 単一エントリー */}
-      {entryTarget && (
-        <EntryModal
-          tournament={entryTarget}
-          viewer={viewer}
-          onClose={() => setEntryTarget(null)}
-          onSuccess={handleEntrySuccess}
-          onToast={showToast}
-        />
-      )}
-
-      {/* キャンセル待ち */}
-      {waitlistTarget && (
-        <WaitlistModal
-          tournament={waitlistTarget}
-          viewer={viewer}
-          onClose={() => setWaitlistTarget(null)}
-          onSuccess={handleWaitlistSuccess}
-          onToast={showToast}
-        />
-      )}
-
-      {/* 完了画面 */}
-      {success && (
-        <EntrySuccessModal
-          kind={success.kind}
-          tournament={success.tournament}
-          queueNumber={success.queueNumber}
-          onClose={() => setSuccess(null)}
-          onOpenEntered={() => {
-            setSuccess(null);
-            void openEntered();
-          }}
-        />
-      )}
-
+      {/* 大会詳細（ホームのカレンダーと共通）＋エントリー等の操作 */}
+      <TournamentDetailHost
+        tournaments={detailOverride ?? filtered}
+        index={viewerIndex}
+        onIndexChange={(next) => {
+          setViewerIndex(next);
+          if (next === null) {
+            setDetailOverride(null);
+            setDetailFocusEntryId(null);
+          }
+        }}
+        viewer={viewer}
+        focusEntryId={detailFocusEntryId}
+        initialEditEntryId={initialEditEntryId}
+        onOpenEntered={() => void openEntered()}
+      />
       {/* 一括エントリーバー */}
       <BulkEntryBar
         count={selectedIds.size}
@@ -323,13 +243,22 @@ export function TournamentSchedule({
           personal={myEntries.personal}
           team={myEntries.team}
           teamName={myEntries.teamName}
+          initialScope={enteredScope}
           onClose={() => setEnteredOpen(false)}
           onCancel={(entry) => setCancelTarget(entry)}
           onEditMembers={(entry) => setEditTarget(entry)}
+          onOpenDetail={(entry) => {
+            const t = tournaments.find((x) => x.id === entry.tournamentId);
+            if (!t) return;
+            setEnteredOpen(false);
+            setDetailOverride([t]);
+            setDetailFocusEntryId(entry.entryId);
+            setViewerIndex(0);
+          }}
         />
       )}
 
-      {/* キャンセル申請 */}
+      {/* キャンセル */}
       {cancelTarget && (
         <CancelEntryModal
           entry={cancelTarget}

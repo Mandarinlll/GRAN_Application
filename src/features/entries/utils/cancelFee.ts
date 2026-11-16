@@ -23,7 +23,7 @@ function toDateOnly(dateStr: string): Date {
   return new Date(y, (m ?? 1) - 1, d ?? 1, 0, 0, 0, 0);
 }
 
-// 開催日とキャンセル申請日からキャンセル料を判定する。
+// 開催日とキャンセル日からキャンセル料を判定する。
 // cancelDate を省略した場合は現在時刻を用いる。
 export function calculateCancelFee(
   eventDate: string,

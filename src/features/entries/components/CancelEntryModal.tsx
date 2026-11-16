@@ -1,4 +1,4 @@
-// エントリーキャンセル申請モーダル。
+// エントリーキャンセルモーダル。
 // 開催日までの残日数からキャンセル料率を自動判定して表示し、確定する。
 "use client";
 
@@ -48,7 +48,7 @@ export function CancelEntryModal({ entry, onClose, onDone, onToast }: Props) {
           </div>
           <div>
             <h3 className="text-base font-bold text-slate-900">
-              エントリーのキャンセル申請
+              エントリーのキャンセル
             </h3>
             <p className="text-xs text-slate-500">キャンセル料率の自動判定・確定</p>
           </div>

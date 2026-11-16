@@ -310,7 +310,7 @@ export async function submitWaitlistAction(
   }
 }
 
-// ---- キャンセル申請 ----
+// ---- キャンセル ----
 export async function cancelEntryAction(
   input: unknown,
 ): Promise<EntryActionResult> {

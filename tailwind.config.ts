@@ -4,6 +4,8 @@ import type { Config } from "tailwindcss";
 // content: どのファイル内のクラス名を拾うか（ここに書いたファイルの className が有効になる）
 // theme.extend.colors: 独自の色名を追加。tests/home.html の tailwind.config と同じ brand/admin を定義。
 const config: Config = {
+  // ダークモードは html.dark クラスで切り替える（未指定だと OS 設定に追従してしまい、アプリの設定と食い違う）。
+  darkMode: "class",
   content: [
     "./src/**/*.{ts,tsx}",
   ],

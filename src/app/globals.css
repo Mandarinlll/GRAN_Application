@@ -88,3 +88,41 @@ html.dark select,
 html.dark textarea { color: #f1f5f9; }
 html.dark input::placeholder,
 html.dark textarea::placeholder { color: #64748b; }
+/* ---- ダークモード追補: 上の読み替えで漏れていたライト配色クラス ----
+   背景だけ暗くなり文字が濃色のまま、または背景が明るいまま文字だけ淡色になる組み合わせを解消する。 */
+html.dark .bg-slate-300 { background-color: #475569; }
+html.dark .bg-white\/90 { background-color: rgba(15, 23, 42, 0.9); }
+html.dark .bg-amber-100 { background-color: rgba(245, 158, 11, 0.22); }
+html.dark .bg-rose-100 { background-color: rgba(244, 63, 94, 0.22); }
+html.dark .bg-red-50 { background-color: rgba(239, 68, 68, 0.14); }
+html.dark .bg-red-100 { background-color: rgba(239, 68, 68, 0.22); }
+html.dark .bg-purple-50 { background-color: rgba(168, 85, 247, 0.16); }
+html.dark .disabled\:bg-slate-50:disabled { background-color: #1e293b; }
+html.dark .text-emerald-800,
+html.dark .text-emerald-900 { color: #a7f3d0; }
+html.dark .text-emerald-600 { color: #34d399; }
+html.dark .hover\:text-emerald-700:hover { color: #a7f3d0; }
+html.dark .text-amber-900,
+html.dark .text-amber-950 { color: #fde68a; }
+html.dark .text-amber-600 { color: #fbbf24; }
+html.dark .text-rose-900,
+html.dark .text-rose-950 { color: #fecdd3; }
+html.dark .text-rose-600 { color: #fb7185; }
+html.dark .hover\:text-rose-600:hover { color: #fda4af; }
+html.dark .text-red-700,
+html.dark .text-red-800 { color: #fca5a5; }
+html.dark .text-indigo-700 { color: #a5b4fc; }
+html.dark .text-purple-600,
+html.dark .text-purple-700 { color: #d8b4fe; }
+html.dark .text-sky-600 { color: #38bdf8; }
+html.dark .hover\:text-slate-600:hover,
+html.dark .hover\:text-slate-800:hover { color: #f1f5f9; }
+html.dark .border-emerald-100,
+html.dark .border-emerald-300 { border-color: rgba(16, 185, 129, 0.45); }
+html.dark .border-amber-300 { border-color: rgba(245, 158, 11, 0.5); }
+html.dark .border-indigo-200 { border-color: rgba(99, 102, 241, 0.45); }
+html.dark .border-red-200 { border-color: rgba(239, 68, 68, 0.4); }
+html.dark .border-slate-200\/60 { border-color: rgba(51, 65, 85, 0.6); }
+html.dark .disabled\:border-slate-100:disabled,
+html.dark .disabled\:border-slate-200:disabled { border-color: #334155; }
+html.dark .placeholder-slate-400::placeholder { color: #64748b; }
