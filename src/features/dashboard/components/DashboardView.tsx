@@ -27,7 +27,7 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 
 const W = 480;
 const H = 240;
-const PAD = { top: 12, right: 12, bottom: 32, left: 32 };
+const PAD = { top: 12, right: 20, bottom: 32, left: 32 };
 
 // 最大値から見やすい目盛り上限を決める。
 function niceMax(max: number): number {
