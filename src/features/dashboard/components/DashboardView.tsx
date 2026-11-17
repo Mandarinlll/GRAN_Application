@@ -8,7 +8,7 @@ function StatCard({ label, value, unit }: { label: string; value: string; unit?:
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4">
       <p className="text-sm text-slate-600">{label}</p>
-      <p className="mt-3 text-3xl font-bold text-slate-900">
+      <p className="mt-2 text-3xl font-bold text-slate-900">
         {value}
         {unit && <span className="ml-1 text-base font-normal text-slate-500">{unit}</span>}
       </p>
@@ -18,9 +18,9 @@ function StatCard({ label, value, unit }: { label: string; value: string; unit?:
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="bg-white border border-slate-200 rounded-xl p-4">
+    <section className="flex min-h-[300px] min-w-0 flex-col bg-white border border-slate-200 rounded-xl p-4 lg:min-h-0">
       <h2 className="text-sm font-bold text-slate-900">{title}</h2>
-      <div className="mt-3">{children}</div>
+      <div className="mt-2 flex min-h-0 flex-1 flex-col">{children}</div>
     </section>
   );
 }
@@ -69,7 +69,7 @@ function TrendChart({ data }: { data: DashboardData["trend"] }) {
   const y = (v: number) => PAD.top + ih - (v / max) * ih;
   const points = data.map((p, i) => `${x(i)},${y(p.count)}`).join(" ");
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="日別エントリー数の推移">
+    <svg viewBox={`0 0 ${W} ${H}`} className="min-h-0 w-full flex-1" role="img" aria-label="日別エントリー数の推移">
       <Axis max={max} />
       <polyline points={points} fill="none" stroke="#2563eb" strokeWidth="2" />
       {data.map((p, i) => (
@@ -109,7 +109,7 @@ function StackedBars({ data }: { data: DashboardData["tournaments"] }) {
   const bw = Math.min(28, slot * 0.6);
   return (
     <>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="直近の大会ごとのエントリー数と募集枠">
+      <svg viewBox={`0 0 ${W} ${H}`} className="min-h-0 w-full flex-1" role="img" aria-label="直近の大会ごとのエントリー数と募集枠">
         {Array.from({ length: 6 }, (_, i) => {
           const v = (max / 5) * i;
           const y = top + ih - (v / max) * ih;
@@ -165,15 +165,15 @@ function StackedBars({ data }: { data: DashboardData["tournaments"] }) {
 }
 export function DashboardView({ data }: { data: DashboardData }) {
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4 lg:h-[calc(100vh-3.5rem-3rem)]">
       <h1 className="text-lg font-bold text-slate-900">ダッシュボード</h1>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid shrink-0 grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="今日のエントリー数" value={data.todayEntries.toLocaleString("ja-JP")} unit="件" />
         <StatCard label="今月の売上予定" value={formatYen(data.monthlySales)} />
         <StatCard label="公開中の大会数" value={data.openTournaments.toLocaleString("ja-JP")} unit="件" />
         <StatCard label="要対応タスク" value={data.pendingTasks.toLocaleString("ja-JP")} unit="件" />
       </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-2 lg:grid-rows-1">
         <Panel title="エントリー数（グラフ）">
           <TrendChart data={data.trend} />
         </Panel>
