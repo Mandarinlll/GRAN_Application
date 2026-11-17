@@ -15,6 +15,7 @@ export function listTournamentCards(viewer: EntryViewer): TournamentCardData[] {
   return listPublicTournaments().map((t) => ({
     id: t.id,
     title: t.title,
+    shortTitle: t.shortTitle,
     category: t.category,
     tier: t.tier,
     eventDate: t.eventDate,

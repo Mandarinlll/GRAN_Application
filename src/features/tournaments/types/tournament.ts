@@ -33,6 +33,7 @@ export type TournamentStatus =
 export interface Tournament {
   id: string;
   title: string;
+  shortTitle: string | null; // 略称（未設定は null。表示は shortTitle ?? title）
   category: TournamentCategory;
   tier: TournamentTier;
   eventDate: string; // YYYY-MM-DD

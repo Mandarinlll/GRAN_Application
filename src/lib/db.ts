@@ -288,6 +288,8 @@ export function openDatabase(
     "TEXT CHECK (surface IN ('HARD','CLAY','ARTIFICIAL_GRASS','OTHER'))",
   );
   ensureColumn("tournaments", "series_id", "TEXT REFERENCES tournament_series(id)");
+  // 略称（カレンダー等の省スペース表示用。NULL の場合は title を表示する）。
+  ensureColumn("tournaments", "short_title", "TEXT");
   ensureColumn(
     "tournaments",
     "gender_division",

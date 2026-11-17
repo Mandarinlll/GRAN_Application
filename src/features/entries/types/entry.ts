@@ -97,6 +97,7 @@ export interface EntrySummary {
   entryId: string;
   tournamentId: string;
   tournamentTitle: string;
+  tournamentShortTitle: string | null; // 大会の略称（未設定は null）
   tournamentDisplayId: string; // 画面表示用 ID（tournaments.id）
   eventDate: string;
   startTime: string;

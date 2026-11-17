@@ -20,6 +20,7 @@ import {
 interface TournamentRow {
   id: string;
   title: string;
+  short_title: string | null;
   category: TournamentCategory;
   tier: TournamentTier;
   event_date: string;
@@ -47,6 +48,7 @@ function toTournament(row: TournamentRow): Tournament {
   return {
     id: row.id,
     title: row.title,
+    shortTitle: row.short_title,
     category: row.category,
     tier: row.tier,
     eventDate: row.event_date,
@@ -146,6 +148,7 @@ export function countConfirmedEntries(tournamentId: string): number {
 
 export interface CreateTournamentParams {
   title: string;
+  shortTitle?: string | null;
   category: TournamentCategory;
   tier: TournamentTier;
   eventDate: string;
@@ -180,15 +183,16 @@ export function createTournament(params: CreateTournamentParams): Tournament {
   const id = randomUUID();
   db.prepare(
     `INSERT INTO tournaments (
-      id, title, category, tier, event_date, start_time, end_time,
+      id, title, short_title, category, tier, event_date, start_time, end_time,
       venue, court_info, image_url, description, capacity,
       team_size_min, team_size_max, entry_fee, status,
       entry_start_at, entry_end_at, alert_threshold, gender_division,
       surface, series_id, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${NOW_JST}, ${NOW_JST})`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${NOW_JST}, ${NOW_JST})`,
   ).run(
     id,
     params.title,
+    params.shortTitle?.trim() || null,
     params.category,
     params.tier,
     params.eventDate,
