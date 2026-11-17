@@ -1,5 +1,6 @@
-// ユーザー画面共通レイアウト。管理者/運営者でプレビュー中は、全ページ上部にバナーを出す。
-// （ホーム "/" は (user) グループ外のため、src/app/page.tsx で同じバナーを表示している）
+// ユーザー画面共通レイアウト（/home, /tournaments, /data, /notifications, /team, /settings）。
+// 管理者/運営者でプレビュー中は、全ページ上部にバナーを出す。
+// ナビはユーザー用（AppShell）のみ。管理者用ナビは /admin 配下（AdminShell）でだけ表示する。
 import { AdminBanner } from "@/components/home/AdminBanner";
 import { getCurrentUser } from "@/features/auth/server/currentUser";
 

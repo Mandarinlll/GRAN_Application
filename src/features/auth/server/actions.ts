@@ -22,6 +22,7 @@ import {
   registerSuccessfulLogin,
   rowToUser,
 } from "@/features/auth/server/userRepository";
+import { postLoginPath } from "@/features/admin/utils/permissions";
 
 // フォーム送信の結果型。成功時は redirect するため、実質エラー時のみ返る。
 export interface AuthActionState {
@@ -122,7 +123,7 @@ export async function registerAction(
   }
 
   // 成功: ホームへ。redirect は例外で制御を移すため try の外で呼ぶ。
-  redirect("/");
+  redirect("/home");
 }
 
 // ---- ログイン ----
@@ -191,7 +192,8 @@ export async function loginAction(
     isAdmin: user.isAdmin,
   });
 
-  redirect("/");
+  // 管理者・運営者は管理コンソールへ、それ以外はホームへ。
+  redirect(postLoginPath(user));
 }
 
 // ---- ログアウト ----

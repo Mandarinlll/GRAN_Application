@@ -12,14 +12,13 @@ import { Trophy, ChevronRight, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/features/auth/server/actions";
 import {
+  HOME_HREF,
   NAV_ITEMS,
   SETTINGS_HREF,
   type NavId,
 } from "@/components/layout/navConfig";
 import { granLevelToClassLabel } from "@/features/auth/utils/classLabel";
 
-// ロゴクリック時の遷移先（ホーム）。
-const HOME_HREF = "/";
 
 // シェルが表示に必要とする最小のユーザー情報。
 export interface ShellUser {

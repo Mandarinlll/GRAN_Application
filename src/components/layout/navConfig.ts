@@ -28,8 +28,11 @@ export interface NavItemDef {
 // 設定ページの URL（ユーザーカードからの導線で使用）。
 export const SETTINGS_HREF = "/settings";
 
+// ホーム画面の URL（"/" はここへリダイレクトする）。
+export const HOME_HREF = "/home";
+
 export const NAV_ITEMS: NavItemDef[] = [
-  { id: "home", label: "ホーム", href: "/", icon: Home, implemented: true },
+  { id: "home", label: "ホーム", href: HOME_HREF, icon: Home, implemented: true },
   {
     id: "schedule",
     label: "大会日程",

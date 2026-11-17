@@ -9,6 +9,7 @@ export type AdminPermission =
   | "console.access" // 管理コンソールへの入場（ダッシュボード閲覧）
   | "entries.view" // エントリー確認
   | "scores.input" // スコア入力
+  | "topics.manage" // ホーム画面トピックスの管理
   | "tournaments.manage" // 大会の登録・編集・料金変更
   | "accounts.manage" // アカウント追加・停止/削除・PW強制リセット
   | "roles.manage"; // 権限（role）の変更
