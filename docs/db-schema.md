@@ -681,6 +681,21 @@ CREATE TYPE notification_type_enum AS ENUM (
 
 ---
 
+#### 3.10b topics（ホーム画面トピックス）【新規追加】
+
+| 論理名 | 物理名 | データ型 | NULL | 備考 |
+| --- | --- | --- | --- | --- |
+| トピックID | `id` | UUID | NO | PK |
+| タイトル | `title` | TEXT | NO | 画像の代替テキストに使用 |
+| 画像保存キー | `image_key` | TEXT | NO | imageStorage の保存キー。配信は `/api/topics/{id}/image` |
+| リンク先 | `link_url` | TEXT | YES | 内部パス（`/`始まり）または https URL |
+| 表示順 | `sort_order` | INT | NO | 昇順。初期値 0 |
+| 公開フラグ | `is_published` | BOOLEAN | NO | 初期値 true |
+| 公開開始 / 終了 | `publish_from` / `publish_until` | TIMESTAMPTZ | YES | NULL は無期限 |
+| 作成 / 更新日時 | `created_at` / `updated_at` | TIMESTAMPTZ | NO | |
+
+---
+
 #### 3.11 【廃止】yearly_rankings（年間ランキング集計）
 
 > **【注意】本テーブルは年間ランキング制度の廃止に伴い、新規利用が停止（非推奨/廃止）となりました。順位および実力判定は `users.gran_level`（規定階級内順位）に一本化されます。**

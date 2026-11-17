@@ -61,6 +61,14 @@ export function openDatabase(
     db.exec("PRAGMA journal_mode = WAL;");
   }
 
+  return applySchema(db);
+}
+
+/**
+ * スキーマを冪等に適用する（CREATE IF NOT EXISTS / ensureColumn / 条件付き移行のみ）。
+ * dev ではキャッシュ済み接続にも再適用し、サーバー再起動なしでテーブル追加を反映する。
+ */
+function applySchema(db: DatabaseSync): DatabaseSync {
   // users テーブル（db-schema.md 3.1 準拠）。
   // ENUM は SQLite に無いため CHECK 制約で表現する。
   db.exec(`
@@ -441,6 +449,23 @@ export function openDatabase(
       updated_at             TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours'))
     );
   `);
+  // topics（ホーム画面のトピックス）。画像は保存キーのみ持つ（imageStorage 参照）。
+  // 管理者画面（今後設計）から追加・並び替え・公開切替を行う想定。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS topics (
+      id          TEXT    PRIMARY KEY,
+      title       TEXT    NOT NULL,
+      image_key   TEXT    NOT NULL,
+      link_url    TEXT,
+      sort_order  INTEGER NOT NULL DEFAULT 0,
+      is_published INTEGER NOT NULL DEFAULT 1,
+      publish_from TEXT,
+      publish_until TEXT,
+      created_at  TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours')),
+      updated_at  TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours'))
+    );
+  `);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_topics_publish ON topics(is_published, sort_order);");
   // ※ チーム参加リクエスト（team_join_requests）は機能廃止。参加は代表者からの招待のみ。
   //   既存DBに残っているテーブルは削除せずそのまま残す（データ削除を伴うため）。
   db.exec("CREATE INDEX IF NOT EXISTS idx_entry_members_user ON entry_members(user_id, entry_id);");
@@ -452,7 +477,10 @@ export function openDatabase(
 }
 
 // 既存インスタンスがあれば再利用、無ければ生成する。
-export const db: DatabaseSync = globalThis.__granDb ?? openDatabase();
+// キャッシュ済み接続（dev の HMR で再評価された場合）にも最新スキーマを適用する。
+export const db: DatabaseSync = globalThis.__granDb
+  ? applySchema(globalThis.__granDb)
+  : openDatabase();
 
 if (process.env.NODE_ENV !== "production") {
   globalThis.__granDb = db;
