@@ -23,7 +23,9 @@ function toCurrentUser(user: User): CurrentUser {
     rankInClass: 0, // 順位機能は未実装のため暫定 0。
     teamName: "", // チーム機能は未実装のため空。
     role: user.role,
-    isAdminPreview: user.isAdmin,
+    // 管理者バナーの表示対象: ADMIN / OPERATOR、または is_admin = true。
+    isAdminPreview:
+      user.isAdmin || user.role === "ADMIN" || user.role === "OPERATOR",
   };
 }
 
