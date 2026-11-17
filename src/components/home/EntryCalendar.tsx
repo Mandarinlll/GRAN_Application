@@ -1,4 +1,4 @@
-// エントリー済み大会をカレンダー（月表示）で見せるコンポーネント。
+﻿// エントリー済み大会をカレンダー（月表示）で見せるコンポーネント。
 // 日付内の大会をタップすると、詳細モーダルを開く。
 "use client";
 
@@ -128,7 +128,7 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
         </div>
 
         {/* 曜日行 */}
-        <div className="grid grid-cols-7 text-center text-xs font-bold border-b border-slate-200 bg-slate-50">
+        <div className="grid grid-cols-[repeat(5,minmax(0,1fr))_repeat(2,minmax(0,1.5fr))] text-center text-xs font-bold border-b border-slate-200 bg-slate-50">
           {WEEKDAYS.map((w, i) => (
             <div
               key={w}
@@ -145,7 +145,7 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
         </div>
 
         {/* 日付グリッド */}
-        <div className="grid grid-cols-7">
+        <div className="grid grid-cols-[repeat(5,minmax(0,1fr))_repeat(2,minmax(0,1.5fr))]">
           {cells.map((day, idx) => {
             if (day === null) {
               return (
@@ -165,7 +165,7 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
             return (
               <div
                 key={key}
-                className="min-h-[72px] sm:min-h-[96px] border-b border-r border-slate-100 p-1 space-y-0.5"
+                className="min-h-[72px] sm:min-h-[96px] min-w-0 border-b border-r border-slate-100 p-1 space-y-0.5"
               >
                 <div className="flex items-center gap-1 min-w-0">
                   <div
@@ -182,9 +182,9 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
                   >
                     {day}
                   </div>
-                  {holidayName || eventName ? (
+                  {eventName ? (
                     <span
-                      title={holidayName ?? eventName ?? undefined}
+                      title={eventName}
                       className={cn(
                         "min-w-0 truncate text-xs leading-none",
                         holidayName ? "text-rose-500" : "text-slate-500",
@@ -201,7 +201,7 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
                     onClick={() => openDetail(e)}
                     title={e.tournamentTitle}
                     className={cn(
-                      "block w-full text-left truncate rounded px-1 py-0.5 text-xs font-bold leading-tight transition",
+                      "block w-full text-left whitespace-normal break-words rounded px-1 py-0.5 text-xs font-bold leading-tight transition",
                       chipClass(e),
                     )}
                   >
