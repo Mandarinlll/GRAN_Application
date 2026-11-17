@@ -10,6 +10,8 @@
 import { redirect } from "next/navigation";
 import { AdminBanner } from "@/components/home/AdminBanner";
 import { EntryCalendar } from "@/components/home/EntryCalendar";
+import { TopicsCarousel } from "@/components/home/TopicsCarousel";
+import { listPublishedTopics } from "@/features/topics/server/topicRepository";
 import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentUser } from "@/features/auth/server/currentUser";
 import { getSession } from "@/lib/session";
@@ -54,6 +56,7 @@ export default async function HomePage() {
 
       {/* メインコンテンツ */}
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6 pb-24">
+        <TopicsCarousel topics={listPublishedTopics()} />
         <EntryCalendar entries={entries} tournaments={tournaments} viewer={viewer} />
       </main>
     </AppShell>
