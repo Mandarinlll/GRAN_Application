@@ -152,6 +152,7 @@ erDiagram
     tournaments {
         uuid id PK
         varchar title
+        varchar short_title
         varchar category
         varchar tier "A-DE 8段階"
         varchar status
@@ -434,6 +435,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 | --- | --- | --- | --- | --- | --- |
 | 大会ID | `id` | UUID | NO | PK | `gen_random_uuid()`<br> |
 | 大会名 | `title` | VARCHAR(100) | NO | - | 大会名称
+| 大会略称 | `short_title` | VARCHAR(30) | YES | NULL | カレンダー等の省スペース表示用。未設定時は `title` を表示 |
 
  |
 | 種目区分 | `category` | tournament_category_enum | NO | - | 男子団体/女子団体/ミックス団体/単/複

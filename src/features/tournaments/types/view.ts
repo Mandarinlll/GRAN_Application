@@ -11,6 +11,7 @@ import type { CapacityStatus } from "@/features/tournaments/utils/capacity";
 export interface TournamentCardData {
   id: string;
   title: string;
+  shortTitle: string | null;
   category: TournamentCategory;
   tier: TournamentTier;
   eventDate: string; // YYYY-MM-DD

@@ -1,4 +1,4 @@
-﻿// エントリー済み大会をカレンダー（月表示）で見せるコンポーネント。
+// エントリー済み大会をカレンダー（月表示）で見せるコンポーネント。
 // 日付内の大会をタップすると、詳細モーダルを開く。
 "use client";
 
@@ -205,7 +205,7 @@ export function EntryCalendar({ entries, tournaments, viewer }: Props) {
                       chipClass(e),
                     )}
                   >
-                    {e.tournamentTitle}
+                    {e.tournamentShortTitle ?? e.tournamentTitle}
                   </button>
                 ))}
               </div>

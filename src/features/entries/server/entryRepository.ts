@@ -238,7 +238,7 @@ export function listEntrySummaries(params: {
 
   const entryRows = db
     .prepare(
-      `SELECT e.*, t.title AS t_title, t.event_date AS t_event_date,
+      `SELECT e.*, t.title AS t_title, t.short_title AS t_short_title, t.event_date AS t_event_date,
               t.start_time AS t_start_time, t.venue AS t_venue,
               t.tier AS t_tier, t.entry_fee AS t_entry_fee,
               tm.name AS team_name
@@ -251,6 +251,7 @@ export function listEntrySummaries(params: {
     .all(...args) as Array<
     EntryRow & {
       t_title: string;
+      t_short_title: string | null;
       t_event_date: string;
       t_start_time: string;
       t_venue: string;
@@ -267,6 +268,7 @@ export function listEntrySummaries(params: {
       entryId: row.id,
       tournamentId: row.tournament_id,
       tournamentTitle: row.t_title,
+      tournamentShortTitle: row.t_short_title,
       tournamentDisplayId: row.tournament_id,
       eventDate: row.t_event_date,
       startTime: row.t_start_time,
@@ -304,7 +306,7 @@ export function listEntrySummaries(params: {
 
   const waitRows = db
     .prepare(
-      `SELECT w.*, t.title AS t_title, t.event_date AS t_event_date,
+      `SELECT w.*, t.title AS t_title, t.short_title AS t_short_title, t.event_date AS t_event_date,
               t.start_time AS t_start_time, t.venue AS t_venue,
               t.tier AS t_tier, t.entry_fee AS t_entry_fee, t.category AS t_category,
               tm.name AS team_name
@@ -317,6 +319,7 @@ export function listEntrySummaries(params: {
     .all(...waitArgs) as Array<
     WaitlistRow & {
       t_title: string;
+      t_short_title: string | null;
       t_event_date: string;
       t_start_time: string;
       t_venue: string;
@@ -332,6 +335,7 @@ export function listEntrySummaries(params: {
       entryId: w.id,
       tournamentId: w.tournament_id,
       tournamentTitle: w.t_title,
+      tournamentShortTitle: w.t_short_title,
       tournamentDisplayId: w.tournament_id,
       eventDate: w.t_event_date,
       startTime: w.t_start_time,
