@@ -12,14 +12,16 @@ import { Trophy, ChevronRight, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/features/auth/server/actions";
 import {
+  HOME_HREF,
   NAV_ITEMS,
   SETTINGS_HREF,
   type NavId,
 } from "@/components/layout/navConfig";
 import { granLevelToClassLabel } from "@/features/auth/utils/classLabel";
+import { AdminNav } from "@/features/admin/components/AdminNav";
+import { useAdminNav } from "@/features/admin/components/AdminNavContext";
+import { ADMIN_HOME_HREF } from "@/features/admin/utils/navConfig";
 
-// ロゴクリック時の遷移先（ホーム）。
-const HOME_HREF = "/";
 
 // シェルが表示に必要とする最小のユーザー情報。
 export interface ShellUser {
@@ -41,18 +43,26 @@ type Props = {
 
 export function AppShell({ activeId, user, children }: Props) {
   const classLabel = granLevelToClassLabel(user.granLevel);
+  // 管理者・運営者なら管理者用ナビの表示項目（一般ユーザーは null = 従来のナビ）。
+  const adminNavIds = useAdminNav();
 
   return (
     <>
-      <Sidebar activeId={activeId} user={user} classLabel={classLabel} />
+      <Sidebar activeId={activeId} user={user} classLabel={classLabel} adminNavIds={adminNavIds} />
 
       {/* サイドバー分の左余白（sm以上）。 */}
       <div className="sm:pl-60">
-        <MobileHeader user={user} classLabel={classLabel} />
+        <MobileHeader user={user} classLabel={classLabel} logoHref={adminNavIds ? ADMIN_HOME_HREF : HOME_HREF} />
+        {adminNavIds ? (
+          // 管理者・運営者のモバイル表示: ボトムナビの代わりにヘッダー下へ管理者用ナビを出す。
+          <div className="sm:hidden bg-white border-b border-slate-200 p-2">
+            <AdminNav allowedIds={adminNavIds} variant="bar" />
+          </div>
+        ) : null}
         {children}
       </div>
 
-      <BottomNav activeId={activeId} user={user} />
+      {adminNavIds ? null : <BottomNav activeId={activeId} user={user} />}
     </>
   );
 }
@@ -67,17 +77,19 @@ function Sidebar({
   activeId,
   user,
   classLabel,
+  adminNavIds,
 }: {
   activeId: NavId;
   user: ShellUser;
   classLabel: string;
+  adminNavIds: string[] | null;
 }) {
   return (
     <aside className="hidden sm:flex flex-col fixed top-0 bottom-0 left-0 w-60 bg-white border-r border-slate-200 z-40 shadow-sm">
       <div className="h-14 px-4 flex items-center border-b border-slate-100">
         <Link
-          href={HOME_HREF}
-          aria-label="ホームに戻る"
+          href={adminNavIds ? ADMIN_HOME_HREF : HOME_HREF}
+          aria-label={adminNavIds ? "管理画面のトップへ" : "ホームに戻る"}
           className="flex items-center gap-2.5 min-h-[44px] rounded-lg hover:opacity-80 transition"
         >
           <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-sm">
@@ -94,16 +106,23 @@ function Sidebar({
         </Link>
       </div>
 
-      <nav className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.id}
-            item={item}
-            active={item.id === activeId}
-            badge={badgeFor(item.id, user)}
-          />
-        ))}
-      </nav>
+      {adminNavIds ? (
+        // 管理者・運営者: 管理画面と同じナビを表示したままにする。
+        <div className="flex-1 py-4 px-3 overflow-y-auto">
+          <AdminNav allowedIds={adminNavIds} variant="sidebar" />
+        </div>
+      ) : (
+        <nav className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
+          {NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.id}
+              item={item}
+              active={item.id === activeId}
+              badge={badgeFor(item.id, user)}
+            />
+          ))}
+        </nav>
+      )}
 
       <div className="p-3 border-t border-slate-100 space-y-2">
         <Link
@@ -227,15 +246,17 @@ function NavLink({
 function MobileHeader({
   user,
   classLabel,
+  logoHref,
 }: {
   user: ShellUser;
   classLabel: string;
+  logoHref: string;
 }) {
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm sm:hidden">
       <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link
-          href={HOME_HREF}
+          href={logoHref}
           aria-label="ホームに戻る"
           className="flex items-center gap-2.5 min-h-[44px] rounded-lg hover:opacity-80 transition"
         >

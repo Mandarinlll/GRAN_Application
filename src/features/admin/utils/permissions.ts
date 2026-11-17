@@ -15,11 +15,13 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
     "console.access",
     "entries.view",
     "scores.input",
+    "topics.manage",
     "tournaments.manage",
     "accounts.manage",
     "roles.manage",
   ],
-  OPERATOR: ["console.access", "entries.view", "scores.input"],
+  // トピックス管理は ADMIN / OPERATOR 双方に許可（仕様決定事項）。
+  OPERATOR: ["console.access", "entries.view", "scores.input", "topics.manage"],
 };
 
 // users の行から管理コンソール上のロールを決定する。管理者でなければ null。
@@ -35,6 +37,13 @@ export function resolveAdminRole(
   if (user.role === "OPERATOR") return "OPERATOR";
   if (user.isAdmin) return "ADMIN";
   return null;
+}
+
+// ログイン成功後の遷移先。管理コンソールに入れるユーザーは /admin、それ以外はホーム。
+export function postLoginPath(
+  user: Pick<User, "role" | "isAdmin" | "status">,
+): "/admin" | "/home" {
+  return resolveAdminRole(user) ? "/admin" : "/home";
 }
 
 // ロールが権限を持つか。

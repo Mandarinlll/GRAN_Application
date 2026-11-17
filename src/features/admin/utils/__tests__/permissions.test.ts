@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluateAdminAccess,
+  postLoginPath,
   resolveAdminRole,
   roleHasPermission,
 } from "@/features/admin/utils/permissions";
@@ -105,5 +106,18 @@ describe("evaluateAdminAccess", () => {
       ok: true,
       admin: { userId: "u1", loginId: "000001", role: "ADMIN" },
     });
+  });
+});
+
+describe("postLoginPath（ログイン後の遷移先）", () => {
+  it("ADMIN / OPERATOR / is_admin は /admin", () => {
+    expect(postLoginPath(makeUser({ role: "ADMIN" }))).toBe("/admin");
+    expect(postLoginPath(makeUser({ role: "OPERATOR" }))).toBe("/admin");
+    expect(postLoginPath(makeUser({ role: "USER", isAdmin: true }))).toBe("/admin");
+  });
+
+  it("一般ユーザー・代表者はホーム", () => {
+    expect(postLoginPath(makeUser({ role: "USER" }))).toBe("/home");
+    expect(postLoginPath(makeUser({ role: "LEADER" }))).toBe("/home");
   });
 });

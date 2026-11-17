@@ -7,7 +7,7 @@ import { RegisterForm } from "@/features/auth/components/RegisterForm";
 
 export default async function RegisterPage() {
   const session = await getSession();
-  if (session) redirect("/");
+  if (session) redirect("/home");
 
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col justify-center px-4 py-8 sm:py-10">

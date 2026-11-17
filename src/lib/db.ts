@@ -465,6 +465,8 @@ function applySchema(db: DatabaseSync): DatabaseSync {
       updated_at  TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours'))
     );
   `);
+  // 論理削除用（NULL=有効）。既存DBへも冪等に追加する。
+  ensureColumn("topics", "deleted_at", "TEXT");
   db.exec("CREATE INDEX IF NOT EXISTS idx_topics_publish ON topics(is_published, sort_order);");
   // ※ チーム参加リクエスト（team_join_requests）は機能廃止。参加は代表者からの招待のみ。
   //   既存DBに残っているテーブルは削除せずそのまま残す（データ削除を伴うため）。
