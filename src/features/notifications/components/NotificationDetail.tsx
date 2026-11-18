@@ -49,7 +49,7 @@ export function NotificationDetail({ n }: { n: InboxNotification }) {
         <div
           className={cn(
             "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-            action ? "bg-rose-100 text-rose-600" : "bg-emerald-100 text-emerald-700",
+            action || n.kind === "URGENT" ? "bg-rose-100 text-rose-600" : "bg-emerald-100 text-emerald-700",
           )}
         >
           <Icon className="w-5 h-5" />

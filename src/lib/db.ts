@@ -364,7 +364,7 @@ export function applySchema(db: DatabaseSync): DatabaseSync {
       id            TEXT    PRIMARY KEY,
       user_id       TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       kind          TEXT    NOT NULL
-                      CHECK (kind IN ('REMINDER_7DAYS','MEMBER_ASSIGN','TEAM_INVITE')),
+                      CHECK (kind IN ('REMINDER_7DAYS','MEMBER_ASSIGN','TEAM_INVITE','ANNOUNCEMENT','URGENT')),
       tournament_id TEXT    REFERENCES tournaments(id) ON DELETE CASCADE,
       entry_id      TEXT    REFERENCES entries(id) ON DELETE CASCADE,
       title         TEXT    NOT NULL,
@@ -384,9 +384,12 @@ export function applySchema(db: DatabaseSync): DatabaseSync {
       .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'inbox_notifications'")
       .get() as { sql: string } | undefined
   )?.sql;
-  if (inboxDef && !inboxDef.includes("TEAM_INVITE")) {
+  if (inboxDef && !inboxDef.includes("URGENT")) {
     db.exec("BEGIN");
     try {
+      // 旧テーブルに ref_id 列が無い場合は NULL で移す。
+      const hasRefId = (db.prepare("PRAGMA table_info(inbox_notifications)").all() as Array<{ name: string }>).some((col) => col.name === "ref_id");
+      const refExpr = hasRefId ? "ref_id" : "NULL";
       db.exec("ALTER TABLE inbox_notifications RENAME TO inbox_notifications_old;");
       db.exec("DROP INDEX IF EXISTS idx_inbox_notifications_user;");
       db.exec(`
@@ -394,7 +397,7 @@ export function applySchema(db: DatabaseSync): DatabaseSync {
           id            TEXT    PRIMARY KEY,
           user_id       TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           kind          TEXT    NOT NULL
-                          CHECK (kind IN ('REMINDER_7DAYS','MEMBER_ASSIGN','TEAM_INVITE')),
+                          CHECK (kind IN ('REMINDER_7DAYS','MEMBER_ASSIGN','TEAM_INVITE','ANNOUNCEMENT','URGENT')),
           tournament_id TEXT    REFERENCES tournaments(id) ON DELETE CASCADE,
           entry_id      TEXT    REFERENCES entries(id) ON DELETE CASCADE,
           title         TEXT    NOT NULL,
@@ -408,8 +411,8 @@ export function applySchema(db: DatabaseSync): DatabaseSync {
       `);
       db.exec(`
         INSERT INTO inbox_notifications
-          (id, user_id, kind, tournament_id, entry_id, title, body, dedupe_key, is_read, is_resolved, created_at)
-        SELECT id, user_id, kind, tournament_id, entry_id, title, body, dedupe_key, is_read, is_resolved, created_at
+          (id, user_id, kind, tournament_id, entry_id, title, body, dedupe_key, is_read, is_resolved, created_at, ref_id)
+        SELECT id, user_id, kind, tournament_id, entry_id, title, body, dedupe_key, is_read, is_resolved, created_at, ${refExpr}
           FROM inbox_notifications_old;
       `);
       db.exec("DROP TABLE inbox_notifications_old;");
@@ -420,6 +423,21 @@ export function applySchema(db: DatabaseSync): DatabaseSync {
     }
   }
   db.exec("CREATE INDEX IF NOT EXISTS idx_inbox_notifications_user ON inbox_notifications(user_id, created_at DESC);");
+  // admin_announcements（運営からのお知らせ・緊急連絡の送信履歴）。
+  // 受信者ごとの本体は inbox_notifications(kind = ANNOUNCEMENT / URGENT) に展開される。
+  // tournament_id が NULL のときは全ユーザー宛て。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_announcements (
+      id              TEXT    PRIMARY KEY,
+      title           TEXT    NOT NULL,
+      body            TEXT    NOT NULL,
+      is_urgent       INTEGER NOT NULL DEFAULT 0,
+      tournament_id   TEXT    REFERENCES tournaments(id) ON DELETE SET NULL,
+      created_by      TEXT    REFERENCES users(id) ON DELETE SET NULL,
+      recipient_count INTEGER NOT NULL DEFAULT 0,
+      created_at      TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours'))
+    );
+  `);
 
   // team_invitations（代表者からユーザーへのチーム招待）。
   // 招待されたユーザーが通知ページで承諾すると team_members に追加される。

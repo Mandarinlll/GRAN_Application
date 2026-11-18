@@ -17,12 +17,13 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
     "entries.manage",
     "scores.input",
     "topics.manage",
+    "notifications.manage",
     "tournaments.manage",
     "accounts.manage",
     "roles.manage",
   ],
   // トピックス管理は ADMIN / OPERATOR 双方に許可（仕様決定事項）。
-  OPERATOR: ["console.access", "entries.view", "scores.input", "topics.manage"],
+  OPERATOR: ["console.access", "entries.view", "scores.input", "topics.manage", "notifications.manage"],
 };
 
 // users の行から管理コンソール上のロールを決定する。管理者でなければ null。

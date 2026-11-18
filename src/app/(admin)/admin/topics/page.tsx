@@ -1,9 +1,6 @@
-// トピックス管理（URL: /admin/topics）。ADMIN / OPERATOR のみ。
-import { requireAdminPage } from "@/features/admin/server/guard";
-import { listAllTopics } from "@/features/topics/server/topicAdminRepository";
-import { TopicsManager } from "@/features/topics/components/TopicsManager";
+// 旧トピックス管理の URL。通知管理のトピックスタブへ移動した。
+import { redirect } from "next/navigation";
 
-export default async function AdminTopicsPage() {
-  await requireAdminPage("topics.manage");
-  return <TopicsManager topics={listAllTopics()} />;
+export default function AdminTopicsPage() {
+  redirect("/admin/notifications?tab=topics");
 }

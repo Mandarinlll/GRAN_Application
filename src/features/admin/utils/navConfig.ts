@@ -2,7 +2,7 @@
 // 各機能の画面を実装する際は implemented を true にする。
 // 先頭の「ホーム」（/admin）は AdminNav が固定で出す。ユーザー画面の項目は含めない。
 
-import { Megaphone, Newspaper, Trophy, Users } from "lucide-react";
+import { Megaphone, Trophy, Users } from "lucide-react";
 import { roleHasPermission } from "@/features/admin/utils/permissions";
 import type { AdminPermission, AdminRole } from "@/features/admin/types/permissions";
 
@@ -30,8 +30,8 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     label: "通知管理",
     href: "/admin/notifications",
     icon: Megaphone,
-    permission: "console.access",
-    implemented: false,
+    permission: "notifications.manage",
+    implemented: true,
   },
   {
     id: "users-teams",
@@ -40,14 +40,6 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     icon: Users,
     permission: "accounts.manage",
     implemented: false,
-  },
-  {
-    id: "topics",
-    label: "トピックス管理",
-    href: "/admin/topics",
-    icon: Newspaper,
-    permission: "topics.manage",
-    implemented: true,
   },
 ];
 

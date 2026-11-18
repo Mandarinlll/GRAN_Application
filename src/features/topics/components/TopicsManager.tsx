@@ -80,7 +80,7 @@ export function TopicsManager({ topics }: { topics: AdminTopic[] }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold text-slate-900">トピックス管理</h1>
+        <h2 className="text-sm font-bold text-slate-900">トピックス管理</h2>
         <button
           type="button"
           onClick={() => setEditing("new")}

@@ -10,6 +10,7 @@ export type AdminPermission =
   | "entries.view" // エントリー確認
   | "entries.manage" // エントリーの支払い状態変更・削除（ADMIN のみ）
   | "scores.input" // スコア入力
+  | "notifications.manage" // 通知管理(運営からのお知らせ・緊急連絡の配信)
   | "topics.manage" // ホーム画面トピックスの管理
   | "tournaments.manage" // 大会の登録・編集・料金変更
   | "accounts.manage" // アカウント追加・停止/削除・PW強制リセット

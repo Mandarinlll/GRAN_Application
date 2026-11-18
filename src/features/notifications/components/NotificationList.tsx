@@ -13,17 +13,19 @@ import {
   needsAction,
 } from "@/features/notifications/utils/display";
 
-type Filter = "all" | "action" | "reminder";
+type Filter = "all" | "action" | "reminder" | "operator";
 
 const FILTERS: Array<{ id: Filter; label: string }> = [
   { id: "all", label: "すべて" },
   { id: "action", label: "要対応" },
   { id: "reminder", label: "リマインド" },
+  { id: "operator", label: "運営から" },
 ];
 
 function matches(n: InboxNotification, filter: Filter): boolean {
   if (filter === "action") return n.kind === "MEMBER_ASSIGN" || n.kind === "TEAM_INVITE";
   if (filter === "reminder") return n.kind === "REMINDER_7DAYS";
+  if (filter === "operator") return n.kind === "ANNOUNCEMENT" || n.kind === "URGENT";
   return true;
 }
 
