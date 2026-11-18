@@ -165,7 +165,7 @@ function StackedBars({ data }: { data: DashboardData["tournaments"] }) {
 }
 export function DashboardView({ data }: { data: DashboardData }) {
   return (
-    <div className="flex flex-col gap-4 lg:h-[calc(100vh-3.5rem-3rem)]">
+    <div className="flex flex-col gap-4 lg:h-[calc(100vh-2.75rem-3rem)]">
       <h1 className="text-lg font-bold text-slate-900">ダッシュボード</h1>
       <div className="grid shrink-0 grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="今日のエントリー数" value={data.todayEntries.toLocaleString("ja-JP")} unit="件" />

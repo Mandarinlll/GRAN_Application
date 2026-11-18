@@ -54,6 +54,12 @@
    ├─ surface: コート種別（HARD / CLAY / ARTIFICIAL_GRASS / OTHER）
    ├─ series_id: tournament_series(id) 参照
    └─ gender_division: 部門の性別区分（MEN / WOMEN / MIXED）
+
+6. 管理者向け大会管理（admin-tournament-management）
+   ├─ tournaments.prize（NULL許容）: 賞品・表彰
+   ├─ entries.payment_status / paid_at: 入金ステータス（UNPAID / PAID / REFUNDED）と入金確認日時
+   ├─ entry_payment_logs（新規追加）: 入金ステータス変更履歴
+   └─ notification_logs.delivery_type: TOURNAMENT_CANCELLED を追加
 ```
 
 ### 1. `users` テーブルの差分
@@ -81,6 +87,14 @@
 * **`tournaments.surface`（NULL許容）**：コート種別。`HARD` / `CLAY` / `ARTIFICIAL_GRASS` / `OTHER`（CHECK制約）。NULLは条件別勝率で「未設定」に集計。
 * **`tournaments.series_id`（NULL許容 / FK）**：`tournament_series(id)` 参照。NULLは「未設定」に集計。
 * **`tournaments.gender_division`（NULL許容）**：`MEN` / `WOMEN` / `MIXED`（CHECK制約）。単・複の男女区分判別用。
+
+### 4a. 管理者向け大会管理による追加
+
+* **`tournaments.prize`（TEXT / NULL許容）**：賞品・表彰。200文字以内、空白のみは NULL。
+* **`entries.payment_status`（NOT NULL / 初期値 `UNPAID`）**：`UNPAID` / `PAID` / `REFUNDED`（CHECK制約）。
+* **`entries.paid_at`（NULL許容）**：`PAID` へ更新した日時。`UNPAID` へ戻すと NULL。
+* **`entry_payment_logs`（新規）**：入金ステータスの変更前後・変更者・日時を記録。
+* **`notification_logs.delivery_type`**：`TOURNAMENT_CANCELLED` を追加。
 
 ### 5. 実DB（SQLite, `src/lib/db.ts`）との差異
 
@@ -126,6 +140,9 @@ erDiagram
 
     teams ||--o{ yearly_rankings : "【廃止】年間ランキング"
 
+    entries ||--o{ entry_payment_logs : "入金ステータス変更履歴"
+    users ||--o{ entry_payment_logs : "変更者(管理者)"
+
     users ||--o{ notification_logs : "通知先"
     tournaments ||--o{ notification_logs : "対象大会"
     entries ||--o{ notification_logs : "対象エントリー"
@@ -160,6 +177,7 @@ erDiagram
         varchar surface "コート種別(NULL可)"
         uuid series_id FK "大会シリーズ(NULL可)"
         varchar gender_division "MEN/WOMEN/MIXED(NULL可)"
+        text prize "賞品・表彰(NULL可,200文字以内)"
     }
 
     tournament_series {
@@ -173,6 +191,17 @@ erDiagram
         uuid user_id FK
         uuid team_id FK
         varchar status
+        varchar payment_status "UNPAID/PAID/REFUNDED"
+        timestamptz paid_at "入金確認日時(NULL可)"
+    }
+
+    entry_payment_logs {
+        uuid id PK
+        uuid entry_id FK
+        varchar from_status
+        varchar to_status
+        uuid changed_by FK "users(id)"
+        timestamptz changed_at
     }
 
     entry_members {
@@ -221,7 +250,7 @@ erDiagram
 
     notification_logs {
         uuid id PK
-        varchar delivery_type
+        varchar delivery_type "TOURNAMENT_CANCELLED を含む"
         varchar status
     }
 
@@ -327,7 +356,15 @@ CREATE TYPE notification_type_enum AS ENUM (
     'WAITLIST_OFFER',      -- 繰り上がり承諾案内
     'REMINDER_10DAYS',     -- 10日前メンバー未定督促
     'CAPACITY_ALERT',      -- 定員到達 / 1ヶ月前未達アラート
-    'URGENT_BROADCAST'     -- 当日緊急一斉連絡
+    'URGENT_BROADCAST',    -- 当日緊急一斉連絡
+    'TOURNAMENT_CANCELLED' -- 大会中止通知（管理者による大会中止時）
+);
+
+-- 入金ステータス（entries.payment_status / 実DBでは CHECK 制約）
+CREATE TYPE payment_status_enum AS ENUM (
+    'UNPAID',      -- 未入金（初期値）
+    'PAID',        -- 入金済み
+    'REFUNDED'     -- 返金済み
 );
 
 ```
@@ -490,6 +527,8 @@ CREATE TYPE notification_type_enum AS ENUM (
  |
 | **部門の性別区分** | `gender_division` | VARCHAR(10) | YES | - | **CHECK: `MEN` / `WOMEN` / `MIXED`。単・複の男女判別用**
  |
+| **賞品・表彰** | `prize` | TEXT | YES | - | **賞品・表彰の自由記述（200文字以内、空白のみは NULL）。管理者向け大会管理で入力**
+ |
 | 作成日時 | `created_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
 | 更新日時 | `updated_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
 
@@ -516,9 +555,28 @@ CREATE TYPE notification_type_enum AS ENUM (
 | 代理登録フラグ | `is_proxy` | BOOLEAN | NO | - | 初期値: `false`（管理者代行時 true）
 
  |
+| **入金ステータス** | `payment_status` | payment_status_enum | NO | - | **初期値: `UNPAID`（`UNPAID` / `PAID` / `REFUNDED`。実DBは TEXT + CHECK）。管理者のみ更新し、変更は `entry_payment_logs` に記録**
+ |
+| **入金確認日時** | `paid_at` | TIMESTAMPTZ | YES | - | **`PAID` へ更新した日時（JST）。`UNPAID` へ戻すと NULL。`REFUNDED` では保持**
+ |
 | 申込日時 | `applied_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
 | 作成日時 | `created_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
 | 更新日時 | `updated_at` | TIMESTAMPTZ | NO | - | `CURRENT_TIMESTAMP`<br> |
+
+---
+
+#### 3.5a entry_payment_logs（入金ステータス変更履歴）【新規追加】
+
+| 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
+| --- | --- | --- | --- | --- | --- |
+| ログID | `id` | UUID | NO | PK | `gen_random_uuid()`（実DBは `randomUUID()` の TEXT） |
+| エントリーID | `entry_id` | UUID | NO | FK | `entries(id)` 参照 |
+| 変更前ステータス | `from_status` | VARCHAR(20) | NO | - | 変更前の `payment_status` |
+| 変更後ステータス | `to_status` | VARCHAR(20) | NO | - | 変更後の `payment_status` |
+| 変更者ユーザーID | `changed_by` | UUID | NO | FK | `users(id)` 参照（操作した管理者） |
+| 変更日時 | `changed_at` | TIMESTAMPTZ | NO | - | JST 文字列（`NOW_JST`） |
+
+> インデックス：`idx_entry_payment_logs_entry ON entry_payment_logs(entry_id, changed_at DESC)`、`idx_entries_tournament_payment ON entries(tournament_id, payment_status)`。
 
 ---
 
@@ -718,7 +776,7 @@ CREATE TYPE notification_type_enum AS ENUM (
 | 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
 | --- | --- | --- | --- | --- | --- |
 | 通知ログID | `id` | UUID | NO | PK | `gen_random_uuid()`<br> |
-| 配信種別 | `delivery_type` | notification_type_enum | NO | - | 配信トリガー種別
+| 配信種別 | `delivery_type` | notification_type_enum | NO | - | 配信トリガー種別（**`TOURNAMENT_CANCELLED`（大会中止通知）を追加。実DBは CHECK 拡張のためテーブルを再作成して移行**）
 
  |
 | 送信先ユーザーID | `user_id` | UUID | YES | FK | `users(id)` 参照（個別送信時）

@@ -68,7 +68,7 @@ export function openDatabase(
  * スキーマを冪等に適用する（CREATE IF NOT EXISTS / ensureColumn / 条件付き移行のみ）。
  * dev ではキャッシュ済み接続にも再適用し、サーバー再起動なしでテーブル追加を反映する。
  */
-function applySchema(db: DatabaseSync): DatabaseSync {
+export function applySchema(db: DatabaseSync): DatabaseSync {
   // users テーブル（db-schema.md 3.1 準拠）。
   // ENUM は SQLite に無いため CHECK 制約で表現する。
   db.exec(`
@@ -247,7 +247,8 @@ function applySchema(db: DatabaseSync): DatabaseSync {
       delivery_type   TEXT NOT NULL
                         CHECK (delivery_type IN (
                           'ENTRY_CONFIRMED','CANCEL_FREE','CANCEL_PAID_USER','CANCEL_PAID_ADMIN',
-                          'WAITLIST_OFFER','REMINDER_10DAYS','CAPACITY_ALERT','URGENT_BROADCAST'
+                          'WAITLIST_OFFER','REMINDER_10DAYS','CAPACITY_ALERT','URGENT_BROADCAST',
+                          'TOURNAMENT_CANCELLED'
                         )),
       user_id         TEXT REFERENCES users(id),
       recipient_email TEXT,
@@ -468,6 +469,79 @@ function applySchema(db: DatabaseSync): DatabaseSync {
   // 論理削除用（NULL=有効）。既存DBへも冪等に追加する。
   ensureColumn("topics", "deleted_at", "TEXT");
   db.exec("CREATE INDEX IF NOT EXISTS idx_topics_publish ON topics(is_published, sort_order);");
+
+  // ------------------------------------------------------------------
+  // 管理者向け大会管理（admin-tournament-management design.md "Data Models"）。
+  // ------------------------------------------------------------------
+  ensureColumn("tournaments", "prize", "TEXT");
+  ensureColumn(
+    "entries",
+    "payment_status",
+    "TEXT NOT NULL DEFAULT 'UNPAID' CHECK (payment_status IN ('UNPAID','PAID','REFUNDED'))",
+  );
+  ensureColumn("entries", "paid_at", "TEXT");
+
+  // 入金ステータス変更履歴。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS entry_payment_logs (
+      id          TEXT PRIMARY KEY,
+      entry_id    TEXT NOT NULL REFERENCES entries(id),
+      from_status TEXT NOT NULL,
+      to_status   TEXT NOT NULL,
+      changed_by  TEXT NOT NULL REFERENCES users(id),
+      changed_at  TEXT NOT NULL
+    );
+  `);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_entry_payment_logs_entry ON entry_payment_logs(entry_id, changed_at DESC);");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_entries_tournament_payment ON entries(tournament_id, payment_status);");
+
+  // 既存DBの notification_logs は delivery_type の CHECK に 'TOURNAMENT_CANCELLED' が無い。
+  // 未対応の場合のみ、改名→再作成→全列コピー→旧テーブル削除で移行する（冪等）。
+  const notifLogDef = (
+    db
+      .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'notification_logs'")
+      .get() as { sql: string } | undefined
+  )?.sql;
+  if (notifLogDef && !notifLogDef.includes("TOURNAMENT_CANCELLED")) {
+    db.exec("BEGIN");
+    try {
+      db.exec("ALTER TABLE notification_logs RENAME TO notification_logs_old;");
+      db.exec(`
+        CREATE TABLE notification_logs (
+          id              TEXT PRIMARY KEY,
+          delivery_type   TEXT NOT NULL
+                            CHECK (delivery_type IN (
+                              'ENTRY_CONFIRMED','CANCEL_FREE','CANCEL_PAID_USER','CANCEL_PAID_ADMIN',
+                              'WAITLIST_OFFER','REMINDER_10DAYS','CAPACITY_ALERT','URGENT_BROADCAST',
+                              'TOURNAMENT_CANCELLED'
+                            )),
+          user_id         TEXT REFERENCES users(id),
+          recipient_email TEXT,
+          tournament_id   TEXT REFERENCES tournaments(id),
+          entry_id        TEXT REFERENCES entries(id),
+          message_payload TEXT NOT NULL,
+          status          TEXT NOT NULL DEFAULT 'SUCCESS'
+                            CHECK (status IN ('SUCCESS','FAILED')),
+          error_message   TEXT,
+          sent_at         TEXT NOT NULL DEFAULT (datetime('now', '+9 hours'))
+        );
+      `);
+      db.exec(`
+        INSERT INTO notification_logs
+          (id, delivery_type, user_id, recipient_email, tournament_id, entry_id,
+           message_payload, status, error_message, sent_at)
+        SELECT id, delivery_type, user_id, recipient_email, tournament_id, entry_id,
+               message_payload, status, error_message, sent_at
+          FROM notification_logs_old;
+      `);
+      db.exec("DROP TABLE notification_logs_old;");
+      db.exec("COMMIT");
+    } catch (e) {
+      db.exec("ROLLBACK");
+      throw e;
+    }
+  }
+
   // ※ チーム参加リクエスト（team_join_requests）は機能廃止。参加は代表者からの招待のみ。
   //   既存DBに残っているテーブルは削除せずそのまま残す（データ削除を伴うため）。
   db.exec("CREATE INDEX IF NOT EXISTS idx_entry_members_user ON entry_members(user_id, entry_id);");

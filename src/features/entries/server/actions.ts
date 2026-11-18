@@ -264,6 +264,14 @@ export async function submitWaitlistAction(
   const tournament = findTournamentWithStats(data.tournamentId);
   if (!tournament) return { ok: false, message: "大会が見つかりません。" };
 
+  // 中止・下書きの大会にはキャンセル待ち登録できない。
+  if (tournament.status === "CANCELLED" || tournament.status === "DRAFT") {
+    return {
+      ok: false,
+      message: "この大会はキャンセル待ちを受け付けていません。",
+    };
+  }
+
   const category = tournament.category;
 
   // 代表者権限・チーム検証（確定申込と同じルール）。
