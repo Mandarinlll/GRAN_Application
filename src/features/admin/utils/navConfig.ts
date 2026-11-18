@@ -39,7 +39,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     href: "/admin/users",
     icon: Users,
     permission: "accounts.manage",
-    implemented: false,
+    implemented: true,
   },
 ];
 

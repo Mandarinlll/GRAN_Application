@@ -560,6 +560,27 @@ export function applySchema(db: DatabaseSync): DatabaseSync {
     }
   }
 
+  // ------------------------------------------------------------------
+  // ユーザ・チーム管理（user-team-management design.md "Data Models"）。
+  // ------------------------------------------------------------------
+  // セッション無効化用の版数（既存行は 0）。
+  ensureColumn("users", "session_version", "INTEGER NOT NULL DEFAULT 0");
+
+  // 管理者操作の監査ログ。target_id に FK は付けない（削除・解散後もログを残すため）。
+  // created_at は DEFAULT なし。アプリ側で JST の日時を明示して書き込む。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_account_logs (
+      id               TEXT PRIMARY KEY,
+      action           TEXT NOT NULL CHECK (length(action) <= 50),
+      target_type      TEXT NOT NULL CHECK (target_type IN ('USER','TEAM')),
+      target_id        TEXT NOT NULL,
+      operator_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+      detail           TEXT CHECK (detail IS NULL OR length(detail) <= 2000),
+      created_at       TEXT NOT NULL
+    );
+  `);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_admin_account_logs_target ON admin_account_logs(target_type, target_id, created_at DESC);");
+
   // ※ チーム参加リクエスト（team_join_requests）は機能廃止。参加は代表者からの招待のみ。
   //   既存DBに残っているテーブルは削除せずそのまま残す（データ削除を伴うため）。
   db.exec("CREATE INDEX IF NOT EXISTS idx_entry_members_user ON entry_members(user_id, entry_id);");

@@ -8,6 +8,8 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import type { SessionPayload } from "@/types/user";
+import { findSessionState } from "@/lib/sessionState";
+import { evaluateSessionValidity } from "@/lib/sessionValidity";
 
 // Cookie 名とセッション有効期限（7日）。
 export const SESSION_COOKIE = "gran_session";
@@ -63,6 +65,7 @@ export async function verifySessionToken(
         loginId: payload.loginId as string,
         role: payload.role as SessionPayload["role"],
         isAdmin: payload.isAdmin,
+        sv: typeof payload.sv === "number" ? payload.sv : 0,
       };
     }
     return null;
@@ -73,7 +76,11 @@ export async function verifySessionToken(
 
 // セッション Cookie を発行する（ログイン成功時）。
 export async function setSessionCookie(payload: SessionPayload): Promise<void> {
-  const token = await createSessionToken(payload);
+  const state = findSessionState(payload.sub);
+  const token = await createSessionToken({
+    ...payload,
+    sv: state?.session_version ?? 0,
+  });
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -95,5 +102,9 @@ export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  return verifySessionToken(token);
+  const payload = await verifySessionToken(token);
+  if (!payload) return null;
+  const row = findSessionState(payload.sub);
+  if (!evaluateSessionValidity(row, payload.sv ?? 0)) return null;
+  return payload;
 }
