@@ -1,0 +1,510 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 `src/lib/db.ts` のスキーマを拡張する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975383438
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975392279
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975475933
+      }
+    ],
+    "1.2 権限・ナビ・通知リポジトリを拡張する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975383551
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975392916
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975476162
+      }
+    ],
+    "2.1 型定義を作成する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975383612
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975393531
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975476433
+      }
+    ],
+    "2.2 ステータス遷移と入金遷移の純粋関数を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975383667
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975484745
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975665894
+      }
+    ],
+    "2.5 管理者用 Zod スキーマ `types/adminSchema.ts` を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975383728
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975485549
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975668427
+      }
+    ],
+    "2.7 一覧・集計・一括・コピー・画像 URL・ページングの純粋関数を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975383790
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975486356
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975667567
+      }
+    ],
+    "3.1 `server/imageProcessor.ts` に `processTournamentImage` を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975383898
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975487096
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975666740
+      }
+    ],
+    "4.1 `server/tournamentAdminRepository.ts` を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975383989
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975674713
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975752442
+      }
+    ],
+    "4.2 `server/tournamentForm.ts` と `server/tournamentAdminService.ts`（登録・更新）を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975384064
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975755833
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975862008
+      }
+    ],
+    "4.5 コピー・一括登録・削除をサービスに追加する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975384144
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975867555
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975969768
+      }
+    ],
+    "5.1 `changeStatus` と `getCancelImpact` をサービスに追加する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975384285
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975974520
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976068500
+      }
+    ],
+    "5.2 `submitWaitlistAction` に大会ステータス検証を追加する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975384416
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975867799
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975970759
+      }
+    ],
+    "6.1 `server/entryStatusRepository.ts` と `server/entryStatusService.ts` を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975384561
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975868706
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975967890
+      }
+    ],
+    "6.3 `server/paymentRepository.ts` と `server/paymentService.ts` を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975384644
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975869490
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975968931
+      }
+    ],
+    "6.5 大会詳細の統計取得を `tournamentAdminRepository` に追加する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975384734
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975975428
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976106314
+      }
+    ],
+    "7. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975384833
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976502656
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976541627
+      }
+    ],
+    "8.1 大会の書き込み API を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975384932
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976111091
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976216482
+      }
+    ],
+    "8.2 入金更新 API と画像配信 API を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975385033
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976111718
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976217785
+      }
+    ],
+    "9.1 共通部品 `src/components/ui/ConfirmDialog.tsx` を作成する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975385140
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975675537
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975752622
+      }
+    ],
+    "9.2 一覧ページを実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975385271
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976222480
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976430963
+      }
+    ],
+    "9.3 登録・コピー・編集ページと `TournamentForm` を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975385372
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976223225
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976431987
+      }
+    ],
+    "9.4 一括登録ページを実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975385495
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976224149
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976432864
+      }
+    ],
+    "9.5 詳細ページと操作部品を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975385647
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976225458
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976433759
+      }
+    ],
+    "9.6 エントリー状況ページを実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975385751
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976225956
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976498172
+      }
+    ],
+    "10.1 `docs/db-schema.md` を更新する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975385913
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975756550
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975862686
+      }
+    ],
+    "11. Final checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975386018
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976546107
+      },
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976607386
+      }
+    ],
+    "1. スキーマと権限の土台を整える": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975476282
+      }
+    ],
+    "3. 要項画像の処理を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975666908
+      }
+    ],
+    "2. 型・検証スキーマ・純粋関数を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975668584
+      }
+    ],
+    "10. ドキュメントを更新する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975862900
+      }
+    ],
+    "4. 大会の登録・更新・コピー・一括登録・削除を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794975969968
+      }
+    ],
+    "5. ステータス変更と中止を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976068636
+      }
+    ],
+    "6. エントリー状況・統計・入金更新を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976106448
+      }
+    ],
+    "8. Route Handler を実装する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976217940
+      }
+    ],
+    "9. 画面を実装して結線する": [
+      {
+        "executionId": "97323d9d-04cd-4340-a0e7-fa92af53c082",
+        "chatSessionId": "sess_3b538853-93a4-42bc-98be-99c32a82398e",
+        "timestamp": 1794976498323
+      }
+    ]
+  }
+}

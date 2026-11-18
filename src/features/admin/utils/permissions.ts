@@ -14,6 +14,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   ADMIN: [
     "console.access",
     "entries.view",
+    "entries.manage",
     "scores.input",
     "topics.manage",
     "tournaments.manage",

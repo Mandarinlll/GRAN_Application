@@ -23,7 +23,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     href: "/admin/tournaments",
     icon: Trophy,
     permission: "entries.view",
-    implemented: false,
+    implemented: true,
   },
   {
     id: "notifications",

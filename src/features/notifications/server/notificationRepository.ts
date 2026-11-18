@@ -18,7 +18,8 @@ export type NotificationType =
   | "WAITLIST_OFFER"
   | "REMINDER_10DAYS"
   | "CAPACITY_ALERT"
-  | "URGENT_BROADCAST";
+  | "URGENT_BROADCAST"
+  | "TOURNAMENT_CANCELLED";
 
 export interface LogNotificationParams {
   deliveryType: NotificationType;
@@ -27,6 +28,9 @@ export interface LogNotificationParams {
   tournamentId?: string | null;
   entryId?: string | null;
   messagePayload: string;
+  // 省略時は SUCCESS。
+  status?: "SUCCESS" | "FAILED";
+  errorMessage?: string | null;
 }
 
 // 通知ログを1件記録する（スタブ: 実送信はしない）。
@@ -34,8 +38,8 @@ export function logNotification(params: LogNotificationParams): void {
   db.prepare(
     `INSERT INTO notification_logs (
       id, delivery_type, user_id, recipient_email, tournament_id, entry_id,
-      message_payload, status, sent_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'SUCCESS', ${NOW_JST})`,
+      message_payload, status, error_message, sent_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ${NOW_JST})`,
   ).run(
     randomUUID(),
     params.deliveryType,
@@ -44,5 +48,7 @@ export function logNotification(params: LogNotificationParams): void {
     params.tournamentId ?? null,
     params.entryId ?? null,
     params.messagePayload,
+    params.status ?? "SUCCESS",
+    params.errorMessage ?? null,
   );
 }
