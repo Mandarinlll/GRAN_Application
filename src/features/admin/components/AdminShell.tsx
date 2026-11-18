@@ -48,15 +48,6 @@ export function AdminShell({ admin, children }: Props) {
             <Link href={HOME_HREF} className="text-xs text-slate-300 hover:text-white min-h-[44px] flex items-center">
               ユーザー画面へ
             </Link>
-            <form action={logoutAction}>
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white min-h-[44px]"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>ログアウト</span>
-              </button>
-            </form>
           </div>
         </div>
       </header>
@@ -67,19 +58,42 @@ export function AdminShell({ admin, children }: Props) {
           <div className="flex-1 min-h-0 overflow-y-auto">
             <AdminNav allowedIds={allowedIds} variant="sidebar" />
           </div>
-          <div className="pt-3 mt-3 border-t border-slate-100">
+          {/* ユーザー画面（AppShell）のサイドバー下部と同じ構成: アカウントカード + ログアウト */}
+          <div className="pt-3 mt-3 border-t border-slate-100 space-y-2">
             <AdminUserCard {...card} variant="sidebar" />
+            <LogoutButton />
           </div>
         </aside>
 
         {/* モバイル: ヘッダー下の横並びナビ */}
         <div className="sm:hidden bg-white border-b border-slate-200 p-2 space-y-2">
-          <AdminUserCard {...card} variant="compact" />
+          {/* モバイルはサイドバーが無いため、カードの横にログアウトを置く */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <AdminUserCard {...card} variant="compact" />
+            </div>
+            <LogoutButton />
+          </div>
           <AdminNav allowedIds={allowedIds} variant="bar" />
         </div>
 
         <main className="flex-1 min-w-0 max-w-6xl px-4 py-6">{children}</main>
       </div>
     </div>
+  );
+}
+
+// ログアウトボタン。ユーザー画面（AppShell）のサイドバー下部と同じデザイン。
+function LogoutButton() {
+  return (
+    <form action={logoutAction}>
+      <button
+        type="submit"
+        className="w-full flex items-center gap-2 px-3.5 min-h-[44px] rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition"
+      >
+        <LogOut className="w-4 h-4" />
+        <span>ログアウト</span>
+      </button>
+    </form>
   );
 }
