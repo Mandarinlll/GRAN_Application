@@ -33,7 +33,7 @@ export function AdminUserCard({ realName, avatarText, granLevel, roleLabel, vari
       <div className="flex-1 min-w-0">
         <div className="text-xs font-bold text-slate-800 truncate">
           {realName}
-          <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white align-middle">
+          <span className="ml-1.5 inline-block text-[10px] leading-none font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white align-text-top">
             {roleLabel}
           </span>
         </div>
