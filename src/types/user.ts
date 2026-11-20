@@ -45,4 +45,5 @@ export interface SessionPayload {
   loginId: string;
   role: UserRole;
   isAdmin: boolean;
+  sv?: number; // users.session_version（未設定の旧トークンは 0 扱い）
 }

@@ -143,6 +143,8 @@ erDiagram
     entries ||--o{ entry_payment_logs : "入金ステータス変更履歴"
     users ||--o{ entry_payment_logs : "変更者(管理者)"
 
+    users ||--o{ admin_account_logs : "操作者(管理者, RESTRICT)"
+
     users ||--o{ notification_logs : "通知先"
     tournaments ||--o{ notification_logs : "対象大会"
     entries ||--o{ notification_logs : "対象エントリー"
@@ -158,6 +160,17 @@ erDiagram
         int gran_level "100-999"
         boolean is_level_calibrated "初期査定済フラグ"
         smallint rated_match_count "消化試合数"
+        int session_version "セッション失効用版数(既定0)"
+    }
+
+    admin_account_logs {
+        uuid id PK
+        varchar action "最大50文字"
+        varchar target_type "USER/TEAM"
+        varchar target_id "FKなし"
+        uuid operator_user_id FK "users(id) RESTRICT"
+        text detail "NULL可・最大2000文字"
+        timestamptz created_at "JST"
     }
 
     teams {
@@ -423,6 +436,7 @@ CREATE TYPE payment_status_enum AS ENUM (
 | **公式戦消化試合数** | `rated_match_count` | **SMALLINT** | **NO** | - | **【変更】初期値: `0`（K値判定用: 5戦未満=32, 以降=16）** |
 | **連続ログイン失敗回数** | `failed_login_attempts` | SMALLINT | NO | - | 初期値: `0`（ログイン成功で0リセット。詳細版 1.4 のアカウントロック用） |
 | **ロック解除予定日時** | `locked_until` | TIMESTAMPTZ | YES | - | 初期値: `NULL`（NULLまたは過去日時なら正常稼働。上限到達で事実上の永久ロック） |
+| **セッション版数** | `session_version` | INTEGER | NO | - | 初期値: `0`（既存行も 0）。パスワード再発行・停止・権限変更・削除時に +1 し、発行済みセッション（JWT の `sv`）を失効させる。実DBは `ensureColumn` で追加 |
 | 最終ログイン日時 | `last_login_at` | TIMESTAMPTZ | YES | - | 最終アクセス日時
 
  |
@@ -745,13 +759,39 @@ CREATE TYPE payment_status_enum AS ENUM (
 | --- | --- | --- | --- | --- |
 | トピックID | `id` | UUID | NO | PK |
 | タイトル | `title` | TEXT | NO | 画像の代替テキストに使用 |
-| 画像保存キー | `image_key` | TEXT | NO | imageStorage の保存キー。配信は `/api/topics/{id}/image` |
+| 本文 | `body` | TEXT | YES | プレーンテキスト（改行のみ）。最大 1000 文字。NULL は本文なし |
+| 画像保存キー | `image_key` | TEXT | NO | 【非推奨】`topic_images` へ移行。移行完了後に削除 |
 | リンク先 | `link_url` | TEXT | YES | 内部パス（`/`始まり）または https URL |
 | 表示順 | `sort_order` | INT | NO | 昇順。初期値 0 |
 | 公開フラグ | `is_published` | BOOLEAN | NO | 初期値 true |
 | 公開開始 / 終了 | `publish_from` / `publish_until` | TIMESTAMPTZ | YES | NULL は無期限 |
 | 作成 / 更新日時 | `created_at` / `updated_at` | TIMESTAMPTZ | NO | |
 
+---
+
+#### 3.10c topic_images（トピックス画像）【新規追加】
+1 トピックに複数枚の画像を紐づける。表示順の先頭（`sort_order` 最小）をカルーセルのカバー画像とする。
+
+| 論理名 | 物理名 | データ型 | NULL | 備考 |
+| --- | --- | --- | --- | --- |
+| 画像ID | `id` | UUID | NO | PK |
+| トピックID | `topic_id` | UUID | NO | FK `topics(id)`。トピック削除時は画像も削除 |
+| 画像保存キー | `image_key` | TEXT | NO | imageStorage の保存キー。配信は `/api/topics/{id}/images/{imageId}` |
+| 表示順 | `sort_order` | INT | NO | 昇順。トピック内で 0 から連番 |
+| 作成日時 | `created_at` | TIMESTAMPTZ | NO | |
+
+- 1 トピックあたり最大 10 枚（上限は実装時に定数化）。画像 0 枚のトピックは公開不可。
+- 移行: 既存の `topics.image_key` を `topic_images` に `sort_order = 0` で 1 行ずつコピーする。
+- 公開判定は `topics` と同じ条件（公開フラグ・公開期間・論理削除）を画像配信 API にも適用する。
+- 既存の `/api/topics/{id}/image` はカバー画像を返す互換エンドポイントとして残す。
+
+##### 画面・API 仕様（トピックス本文・複数画像）
+- 投稿（登録・更新・削除・並び替え）は管理者・運営者のみ。権限は既存の `admin/topics` と同じ。
+- 管理画面: 本文（任意、textarea、文字数カウンタ）と複数画像（追加・削除・並び替え）を入力できる。
+- ホーム: カルーセルはカバー画像とタイトルのみ表示する。
+- 遷移: 本文または 2 枚以上の画像がある場合は、タップで詳細画面 `/topics/{id}` を開く。詳細画面は画像（複数枚はスワイプ）、タイトル、本文を表示し、`link_url` があればボタンで遷移させる。本文なし・画像 1 枚のトピックは、従来どおり `link_url` へ直接遷移する。
+- 公開 API: `GET /api/topics/{id}` が詳細（タイトル、本文、画像 URL 一覧、`link_url`）を返す。非公開・期間外・削除済みは 404。
+- 本文は React のエスケープに任せて表示し、HTML として解釈しない。
 ---
 
 #### 3.11 【廃止】yearly_rankings（年間ランキング集計）
@@ -802,6 +842,22 @@ CREATE TYPE payment_status_enum AS ENUM (
 
 ---
 
+#### 3.13 admin_account_logs（ユーザ・チーム管理の監査ログ）【新規追加】
+
+| 論理名 | 物理名 | データ型 | NULL | キー | 初期値 / 備考 |
+| --- | --- | --- | --- | --- | --- |
+| ログID | `id` | UUID | NO | PK | 実DBは `randomUUID()` の TEXT |
+| 操作種別 | `action` | VARCHAR(50) | NO | - | CHECK: 50文字以内。`USER_CREATED` / `LOCK_RELEASED` / `PASSWORD_RESET` / `ACCOUNT_SUSPENDED` / `ACCOUNT_REACTIVATED` / `ROLE_CHANGED` / `LEVEL_CALIBRATED` / `USER_DELETED` / `TEAM_MEMBER_REMOVED` / `TEAM_DISBANDED` |
+| 対象種別 | `target_type` | VARCHAR(10) | NO | - | CHECK: `USER` / `TEAM` |
+| 対象ID | `target_id` | UUID | NO | - | **FK なし**（ユーザー削除・チーム解散後もログを残すため） |
+| 操作者ユーザーID | `operator_user_id` | UUID | NO | FK | `users(id)` 参照、`ON DELETE RESTRICT`（ログに残る操作者は削除不可） |
+| 詳細 | `detail` | TEXT | YES | - | JSON。CHECK: NULL または 2,000 文字以下。Initial_Password の平文・`password_hash`・セッショントークンは保存しない |
+| 操作日時 | `created_at` | TIMESTAMPTZ | NO | - | DEFAULT なし。アプリ側で JST 文字列（`YYYY-MM-DD HH:mm:ss`）を明示して書き込む |
+
+> インデックス：`idx_admin_account_logs_target ON admin_account_logs(target_type, target_id, created_at DESC)`。
+
+---
+
 ### 4. パフォーマンス向上・インデックス設計
 
 ```sql
@@ -835,5 +891,8 @@ CREATE INDEX idx_entry_members_user ON entry_members(user_id, entry_id);
 CREATE INDEX idx_results_user_recorded ON tournament_results(user_id, recorded_at DESC);
 CREATE INDEX idx_matches_entry1 ON tournament_matches(entry1_id);
 CREATE INDEX idx_matches_entry2 ON tournament_matches(entry2_id);
+
+-- 10. 管理者操作ログの対象別履歴取得用（ユーザ・チーム管理の詳細画面）
+CREATE INDEX idx_admin_account_logs_target ON admin_account_logs(target_type, target_id, created_at DESC);
 
 ```

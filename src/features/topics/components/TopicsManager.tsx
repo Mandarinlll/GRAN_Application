@@ -2,11 +2,17 @@
 // 操作は /api/admin/topics 系 API を呼ぶ。権限判定は API 側（サーバー）で行う。
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { AdminTopic, TopicStatus } from "@/features/topics/types/topic";
+import {
+  MAX_TOPIC_BODY_LENGTH,
+  MAX_TOPIC_IMAGES,
+  type AdminTopic,
+  type TopicImage,
+  type TopicStatus,
+} from "@/features/topics/types/topic";
 import { TOPIC_STATUS_LABEL } from "@/features/topics/utils/topicStatus";
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -127,6 +133,7 @@ export function TopicsManager({ topics }: { topics: AdminTopic[] }) {
                   <span className="text-xs text-slate-400 tabular-nums">表示順 {i + 1}</span>
                 </div>
                 <p className="font-bold text-sm text-slate-900 truncate">{t.title}</p>
+                <p className="text-xs text-slate-500">画像 {t.images.length} 枚{t.body ? "・本文あり" : ""}</p>
                 <p className="text-xs text-slate-500 truncate">リンク先: {t.linkUrl ?? "なし"}</p>
                 <p className="text-xs text-slate-500">
                   公開期間: {t.publishFrom?.slice(0, 16) ?? "指定なし"} 〜 {t.publishUntil?.slice(0, 16) ?? "指定なし"}
@@ -205,26 +212,54 @@ function TopicForm({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [bodyLength, setBodyLength] = useState((topic?.body ?? "").length);
+  // 既存画像（表示順。先頭がカバー画像）と、これから追加する画像。
+  const [kept, setKept] = useState<TopicImage[]>(topic?.images ?? []);
+  const [added, setAdded] = useState<File[]>([]);
+  const previews = useMemo(() => added.map((f) => URL.createObjectURL(f)), [added]);
+  const total = kept.length + added.length;
+
+  const moveKept = (i: number, delta: -1 | 1) => {
+    const j = i + delta;
+    if (j < 0 || j >= kept.length) return;
+    const next = [...kept];
+    [next[i], next[j]] = [next[j], next[i]];
+    setKept(next);
+  };
+
+  function onPickFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (picked.length === 0) return;
+    if (picked.some((f) => f.size > MAX_UPLOAD_BYTES)) {
+      setMessage("画像は1枚あたり10MB以下にしてください。");
+      return;
+    }
+    if (total + picked.length > MAX_TOPIC_IMAGES) {
+      setMessage(`画像は${MAX_TOPIC_IMAGES}枚までです。`);
+      return;
+    }
+    setMessage(null);
+    setAdded((cur) => [...cur, ...picked]);
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setMessage(null);
     setFieldErrors({});
-
+    if (total < 1) {
+      setMessage("画像を1枚以上選択してください。");
+      return;
+    }
     const fd = new FormData(e.currentTarget);
-    const file = fd.get("file");
-    if (file instanceof File && file.size > MAX_UPLOAD_BYTES) {
-      setMessage("画像は10MB以下にしてください。");
-      return;
-    }
-    if (!topic && !(file instanceof File && file.size > 0)) {
-      setMessage("画像ファイルを選択してください。");
-      return;
-    }
-    if (file instanceof File && file.size === 0) fd.delete("file");
     // チェックボックスは未チェックだと送信されないため、明示的に true/false を送る。
     fd.set("isPublished", String(fd.get("isPublished") === "on"));
-
+    added.forEach((f) => fd.append("files", f));
+    if (topic) {
+      const keptIds = new Set(kept.map((k) => k.id));
+      topic.images.filter((i) => !keptIds.has(i.id)).forEach((i) => fd.append("removeImageIds", i.id));
+      kept.forEach((k) => fd.append("imageOrder", k.id));
+    }
     setBusy(true);
     const r = await call(topic ? `/api/admin/topics/${topic.id}` : "/api/admin/topics", {
       method: topic ? "PATCH" : "POST",
@@ -237,37 +272,90 @@ function TopicForm({
   }
 
   const input = "w-full border border-slate-300 rounded-lg px-3 min-h-[44px] text-sm";
-
   return (
     <form onSubmit={onSubmit} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
       <h2 className="font-bold text-sm text-slate-900">{topic ? "トピックスを編集" : "トピックスを追加"}</h2>
-
       {message ? (
         <p role="alert" className="text-sm text-rose-700">
           {message}
         </p>
       ) : null}
-
       <label className="block space-y-1">
         <span className="text-xs font-bold text-slate-700">タイトル（画像の代替テキストにも使用）</span>
         <input name="title" defaultValue={topic?.title ?? ""} maxLength={60} required className={input} />
         <FieldError text={fieldErrors.title} />
       </label>
-
       <label className="block space-y-1">
-        <span className="text-xs font-bold text-slate-700">
-          画像（PNG / JPEG / WebP・10MBまで。自動で縮小しWebPに変換します）
+        <span className="text-xs font-bold text-slate-700">本文（任意・{MAX_TOPIC_BODY_LENGTH}文字まで。改行のみ反映されます）</span>
+        <textarea
+          name="body"
+          defaultValue={topic?.body ?? ""}
+          maxLength={MAX_TOPIC_BODY_LENGTH}
+          rows={6}
+          onChange={(e) => setBodyLength(e.target.value.length)}
+          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+        />
+        <span className="block text-xs text-slate-500 text-right tabular-nums">
+          {bodyLength} / {MAX_TOPIC_BODY_LENGTH}
         </span>
-        <input name="file" type="file" accept="image/png,image/jpeg,image/webp" className="block text-sm" />
-        {topic ? <span className="text-xs text-slate-500">未選択の場合は現在の画像を維持します。</span> : null}
+        <FieldError text={fieldErrors.body} />
       </label>
-
+      <div className="space-y-2">
+        <span className="block text-xs font-bold text-slate-700">
+          画像（{total} / {MAX_TOPIC_IMAGES} 枚・PNG / JPEG / WebP・1枚10MBまで。先頭がホームに表示されます）
+        </span>
+        {total > 0 ? (
+          <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {kept.map((img, i) => (
+              <li key={img.id} className="border border-slate-200 rounded-lg p-1 space-y-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.src} alt={`画像 ${i + 1}`} className="w-full aspect-video object-cover rounded bg-slate-100" />
+                <div className="flex gap-1 justify-between">
+                  <span className="text-xs text-slate-500 self-center">{i === 0 ? "カバー" : i + 1}</span>
+                  <div className="flex gap-1">
+                    <IconButton label="前へ" disabled={busy || i === 0} onClick={() => moveKept(i, -1)}>
+                      <ArrowUp className="w-4 h-4" />
+                    </IconButton>
+                    <IconButton label="後ろへ" disabled={busy || i === kept.length - 1} onClick={() => moveKept(i, 1)}>
+                      <ArrowDown className="w-4 h-4" />
+                    </IconButton>
+                    <IconButton label="画像を削除" disabled={busy} danger onClick={() => setKept(kept.filter((k) => k.id !== img.id))}>
+                      <Trash2 className="w-4 h-4" />
+                    </IconButton>
+                  </div>
+                </div>
+              </li>
+            ))}
+            {added.map((f, i) => (
+              <li key={`${f.name}-${i}`} className="border border-emerald-200 rounded-lg p-1 space-y-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={previews[i]} alt={`追加する画像 ${i + 1}`} className="w-full aspect-video object-cover rounded bg-slate-100" />
+                <div className="flex gap-1 justify-between">
+                  <span className="text-xs text-emerald-700 self-center">追加</span>
+                  <IconButton label="追加を取り消す" disabled={busy} danger onClick={() => setAdded(added.filter((_, k) => k !== i))}>
+                    <Trash2 className="w-4 h-4" />
+                  </IconButton>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <input
+          type="file"
+          multiple
+          accept="image/png,image/jpeg,image/webp"
+          onChange={onPickFiles}
+          disabled={busy || total >= MAX_TOPIC_IMAGES}
+          className="block text-sm"
+          aria-label="画像を追加"
+        />
+        <span className="block text-xs text-slate-500">自動で縮小しWebPに変換します。追加した画像は末尾に並びます。</span>
+      </div>
       <label className="block space-y-1">
         <span className="text-xs font-bold text-slate-700">リンク先（任意。「/」始まりの内部パスまたは https のURL）</span>
         <input name="linkUrl" defaultValue={topic?.linkUrl ?? ""} className={input} placeholder="/tournaments" />
         <FieldError text={fieldErrors.linkUrl} />
       </label>
-
       <div className="grid sm:grid-cols-2 gap-3">
         <label className="block space-y-1">
           <span className="text-xs font-bold text-slate-700">公開開始（任意）</span>
@@ -280,12 +368,10 @@ function TopicForm({
           <FieldError text={fieldErrors.publishUntil} />
         </label>
       </div>
-
       <label className="flex items-center gap-2 min-h-[44px] text-sm text-slate-700">
         <input name="isPublished" type="checkbox" defaultChecked={topic ? topic.isPublished : true} className="w-4 h-4" />
         公開する
       </label>
-
       <div className="flex gap-2 justify-end">
         <button type="button" onClick={onClose} disabled={busy} className="px-4 min-h-[44px] rounded-xl border border-slate-300 text-xs font-bold text-slate-700">
           キャンセル
@@ -297,7 +383,6 @@ function TopicForm({
     </form>
   );
 }
-
 function FieldError({ text }: { text?: string }) {
   return text ? <span className="block text-xs text-rose-600">{text}</span> : null;
 }

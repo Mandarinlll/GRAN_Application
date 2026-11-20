@@ -487,6 +487,25 @@ export function applySchema(db: DatabaseSync): DatabaseSync {
   // 論理削除用（NULL=有効）。既存DBへも冪等に追加する。
   ensureColumn("topics", "deleted_at", "TEXT");
   db.exec("CREATE INDEX IF NOT EXISTS idx_topics_publish ON topics(is_published, sort_order);");
+  // 本文（任意・プレーンテキスト）。既存DBへも冪等に追加する。
+  ensureColumn("topics", "body", "TEXT");
+  // 複数画像。先頭（sort_order 最小）がカバー画像。topics.image_key はカバー画像キーの複製として同期保持する。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS topic_images (
+      id         TEXT    PRIMARY KEY,
+      topic_id   TEXT    NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+      image_key  TEXT    NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours'))
+    );
+  `);
+  // 既存トピックスの画像を topic_images へ移行する（未移行のトピックスのみ）。
+  db.exec(`
+    INSERT INTO topic_images (id, topic_id, image_key, sort_order)
+    SELECT lower(hex(randomblob(16))), t.id, t.image_key, 0 FROM topics t
+     WHERE t.deleted_at IS NULL
+       AND NOT EXISTS (SELECT 1 FROM topic_images i WHERE i.topic_id = t.id);
+  `);
 
   // ------------------------------------------------------------------
   // 管理者向け大会管理（admin-tournament-management design.md "Data Models"）。
@@ -559,6 +578,27 @@ export function applySchema(db: DatabaseSync): DatabaseSync {
       throw e;
     }
   }
+
+  // ------------------------------------------------------------------
+  // ユーザ・チーム管理（user-team-management design.md "Data Models"）。
+  // ------------------------------------------------------------------
+  // セッション無効化用の版数（既存行は 0）。
+  ensureColumn("users", "session_version", "INTEGER NOT NULL DEFAULT 0");
+
+  // 管理者操作の監査ログ。target_id に FK は付けない（削除・解散後もログを残すため）。
+  // created_at は DEFAULT なし。アプリ側で JST の日時を明示して書き込む。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_account_logs (
+      id               TEXT PRIMARY KEY,
+      action           TEXT NOT NULL CHECK (length(action) <= 50),
+      target_type      TEXT NOT NULL CHECK (target_type IN ('USER','TEAM')),
+      target_id        TEXT NOT NULL,
+      operator_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+      detail           TEXT CHECK (detail IS NULL OR length(detail) <= 2000),
+      created_at       TEXT NOT NULL
+    );
+  `);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_admin_account_logs_target ON admin_account_logs(target_type, target_id, created_at DESC);");
 
   // ※ チーム参加リクエスト（team_join_requests）は機能廃止。参加は代表者からの招待のみ。
   //   既存DBに残っているテーブルは削除せずそのまま残す（データ削除を伴うため）。

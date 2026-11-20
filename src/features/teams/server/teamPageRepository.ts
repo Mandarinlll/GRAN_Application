@@ -314,6 +314,27 @@ export function renameTeam(teamId: string, userId: string, name: string): TeamMu
   return { ok: true, teamId };
 }
 
+// チームの行と関連行を削除する。トランザクション制御は持たない（呼び出し側が BEGIN/COMMIT する）。
+export function purgeTeamRows(teamId: string): void {
+  // 未対応のチーム招待通知は対応済みにする（招待自体は teams の CASCADE で消える）。
+  db.prepare(
+    `UPDATE inbox_notifications SET is_resolved = 1, is_read = 1
+      WHERE kind = 'TEAM_INVITE' AND is_resolved = 0
+        AND ref_id IN (SELECT id FROM team_invitations WHERE team_id = ?)`,
+  ).run(teamId);
+
+  // entries を参照する FK（ON DELETE なし）を先に外す。
+  const entryIds = `SELECT id FROM entries WHERE team_id = ?`;
+  db.prepare(`UPDATE tournament_matches SET entry1_id = NULL WHERE entry1_id IN (${entryIds})`).run(teamId);
+  db.prepare(`UPDATE tournament_matches SET entry2_id = NULL WHERE entry2_id IN (${entryIds})`).run(teamId);
+  db.prepare(`UPDATE tournament_matches SET winner_entry_id = NULL WHERE winner_entry_id IN (${entryIds})`).run(teamId);
+  db.prepare(`UPDATE notification_logs SET entry_id = NULL WHERE entry_id IN (${entryIds})`).run(teamId);
+  db.prepare("DELETE FROM entries WHERE team_id = ?").run(teamId); // entry_members / cancellations は CASCADE
+  db.prepare("DELETE FROM waitlists WHERE team_id = ?").run(teamId);
+  db.prepare("DELETE FROM tournament_results WHERE team_id = ?").run(teamId);
+  db.prepare("DELETE FROM teams WHERE id = ?").run(teamId); // team_members / team_invitations は CASCADE
+}
+
 // チーム解散（代表者のみ）。要件 4.1 に従い、過去エントリー・戦績も残さず削除する。
 // 削除した画像のキーを返す（呼び出し側でストレージから削除する）。
 export function deleteTeamAsLeader(
@@ -334,23 +355,7 @@ export function deleteTeamAsLeader(
       return { ok: false, reason: "FORBIDDEN" };
     }
 
-    // 未対応のチーム招待通知は対応済みにする（招待自体は teams の CASCADE で消える）。
-    db.prepare(
-      `UPDATE inbox_notifications SET is_resolved = 1, is_read = 1
-        WHERE kind = 'TEAM_INVITE' AND is_resolved = 0
-          AND ref_id IN (SELECT id FROM team_invitations WHERE team_id = ?)`,
-    ).run(teamId);
-
-    // entries を参照する FK（ON DELETE なし）を先に外す。
-    const entryIds = `SELECT id FROM entries WHERE team_id = ?`;
-    db.prepare(`UPDATE tournament_matches SET entry1_id = NULL WHERE entry1_id IN (${entryIds})`).run(teamId);
-    db.prepare(`UPDATE tournament_matches SET entry2_id = NULL WHERE entry2_id IN (${entryIds})`).run(teamId);
-    db.prepare(`UPDATE tournament_matches SET winner_entry_id = NULL WHERE winner_entry_id IN (${entryIds})`).run(teamId);
-    db.prepare(`UPDATE notification_logs SET entry_id = NULL WHERE entry_id IN (${entryIds})`).run(teamId);
-    db.prepare("DELETE FROM entries WHERE team_id = ?").run(teamId); // entry_members / cancellations は CASCADE
-    db.prepare("DELETE FROM waitlists WHERE team_id = ?").run(teamId);
-    db.prepare("DELETE FROM tournament_results WHERE team_id = ?").run(teamId);
-    db.prepare("DELETE FROM teams WHERE id = ?").run(teamId); // team_members / team_invitations は CASCADE
+    purgeTeamRows(teamId);
 
     // 他にチームを持たない代表者は role を USER に戻す（ADMIN/OPERATOR は変更しない）。
     db.prepare(

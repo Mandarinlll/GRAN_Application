@@ -1,7 +1,7 @@
 // トピックスの multipart フォーム入力を、検証前のオブジェクトへ取り出す。
 // 送られていない（または文字列でない）項目は含めない（Zod 側で default / optional を適用させるため）。
 
-const FIELDS = ["title", "linkUrl", "publishFrom", "publishUntil", "isPublished"] as const;
+const FIELDS = ["title", "body", "linkUrl", "publishFrom", "publishUntil", "isPublished"] as const;
 
 export function extractTopicFields(form: FormData): Record<string, string> {
   const out: Record<string, string> = {};
