@@ -759,13 +759,39 @@ CREATE TYPE payment_status_enum AS ENUM (
 | --- | --- | --- | --- | --- |
 | トピックID | `id` | UUID | NO | PK |
 | タイトル | `title` | TEXT | NO | 画像の代替テキストに使用 |
-| 画像保存キー | `image_key` | TEXT | NO | imageStorage の保存キー。配信は `/api/topics/{id}/image` |
+| 本文 | `body` | TEXT | YES | プレーンテキスト（改行のみ）。最大 1000 文字。NULL は本文なし |
+| 画像保存キー | `image_key` | TEXT | NO | 【非推奨】`topic_images` へ移行。移行完了後に削除 |
 | リンク先 | `link_url` | TEXT | YES | 内部パス（`/`始まり）または https URL |
 | 表示順 | `sort_order` | INT | NO | 昇順。初期値 0 |
 | 公開フラグ | `is_published` | BOOLEAN | NO | 初期値 true |
 | 公開開始 / 終了 | `publish_from` / `publish_until` | TIMESTAMPTZ | YES | NULL は無期限 |
 | 作成 / 更新日時 | `created_at` / `updated_at` | TIMESTAMPTZ | NO | |
 
+---
+
+#### 3.10c topic_images（トピックス画像）【新規追加】
+1 トピックに複数枚の画像を紐づける。表示順の先頭（`sort_order` 最小）をカルーセルのカバー画像とする。
+
+| 論理名 | 物理名 | データ型 | NULL | 備考 |
+| --- | --- | --- | --- | --- |
+| 画像ID | `id` | UUID | NO | PK |
+| トピックID | `topic_id` | UUID | NO | FK `topics(id)`。トピック削除時は画像も削除 |
+| 画像保存キー | `image_key` | TEXT | NO | imageStorage の保存キー。配信は `/api/topics/{id}/images/{imageId}` |
+| 表示順 | `sort_order` | INT | NO | 昇順。トピック内で 0 から連番 |
+| 作成日時 | `created_at` | TIMESTAMPTZ | NO | |
+
+- 1 トピックあたり最大 10 枚（上限は実装時に定数化）。画像 0 枚のトピックは公開不可。
+- 移行: 既存の `topics.image_key` を `topic_images` に `sort_order = 0` で 1 行ずつコピーする。
+- 公開判定は `topics` と同じ条件（公開フラグ・公開期間・論理削除）を画像配信 API にも適用する。
+- 既存の `/api/topics/{id}/image` はカバー画像を返す互換エンドポイントとして残す。
+
+##### 画面・API 仕様（トピックス本文・複数画像）
+- 投稿（登録・更新・削除・並び替え）は管理者・運営者のみ。権限は既存の `admin/topics` と同じ。
+- 管理画面: 本文（任意、textarea、文字数カウンタ）と複数画像（追加・削除・並び替え）を入力できる。
+- ホーム: カルーセルはカバー画像とタイトルのみ表示する。
+- 遷移: 本文または 2 枚以上の画像がある場合は、タップで詳細画面 `/topics/{id}` を開く。詳細画面は画像（複数枚はスワイプ）、タイトル、本文を表示し、`link_url` があればボタンで遷移させる。本文なし・画像 1 枚のトピックは、従来どおり `link_url` へ直接遷移する。
+- 公開 API: `GET /api/topics/{id}` が詳細（タイトル、本文、画像 URL 一覧、`link_url`）を返す。非公開・期間外・削除済みは 404。
+- 本文は React のエスケープに任せて表示し、HTML として解釈しない。
 ---
 
 #### 3.11 【廃止】yearly_rankings（年間ランキング集計）

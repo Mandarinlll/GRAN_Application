@@ -1,6 +1,7 @@
 // トピックス入力の検証（Zod）。
 import { z } from "zod";
 
+import { MAX_TOPIC_BODY_LENGTH } from "@/features/topics/types/topic";
 export const MAX_TITLE_LENGTH = 60;
 
 // 内部パス（/ 始まり、// は除く）または https のみ許可（TopicsCarousel と同じ基準）。
@@ -39,6 +40,16 @@ const linkUrl = z.preprocess(
     .nullable(),
 );
 
+// 本文（任意）。改行を LF に揃え、空白のみは null。HTML は解釈せずそのまま保存する。
+const body = z.preprocess(
+  (v) => {
+    if (typeof v !== "string") return v;
+    const s = v.replace(/\r\n?/g, "\n");
+    return s.trim() === "" ? null : s;
+  },
+  z.string().max(MAX_TOPIC_BODY_LENGTH, `本文は${MAX_TOPIC_BODY_LENGTH}文字以内にしてください`).nullable(),
+);
+
 const bool = z.preprocess((v) => v === true || v === "true" || v === "1" || v === "on", z.boolean());
 
 const periodOk = (v: { publishFrom?: string | null; publishUntil?: string | null }) =>
@@ -49,6 +60,7 @@ const periodMessage = { message: "公開終了は公開開始より後にして�
 export const createTopicSchema = z
   .object({
     title,
+    body: body.default(null),
     linkUrl: linkUrl.default(null),
     publishFrom: dateTime.default(null),
     publishUntil: dateTime.default(null),
@@ -60,6 +72,7 @@ export const createTopicSchema = z
 export const updateTopicSchema = z
   .object({
     title: title.optional(),
+    body: body.optional(),
     linkUrl: linkUrl.optional(),
     publishFrom: dateTime.optional(),
     publishUntil: dateTime.optional(),

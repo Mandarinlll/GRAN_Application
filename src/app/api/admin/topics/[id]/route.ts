@@ -3,11 +3,11 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { withAdminApi } from "@/features/admin/server/guard";
-import { imageStorage } from "@/features/teams/server/imageStorage";
-import { processTopicImage } from "@/features/topics/server/imageProcessor";
 import { getTopicById, softDeleteTopic, updateTopic } from "@/features/topics/server/topicAdminRepository";
 import { extractTopicFields, flattenIssues } from "@/features/topics/server/topicForm";
+import { deleteKeys, filesOf, saveTopicUploads } from "@/features/topics/server/topicUploads";
 import { updateTopicSchema } from "@/features/topics/types/schema";
+import { MAX_TOPIC_IMAGES } from "@/features/topics/types/topic";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -48,29 +48,46 @@ export const PATCH = withAdminApi<Ctx>("topics.manage", async (req, { params }) 
     );
   }
 
-  // 画像は任意。指定があれば検証・加工して差し替える。
-  let newKey: string | undefined;
-  const file = form.get("file");
-  if (file instanceof File && file.size > 0) {
-    const image = await processTopicImage(new Uint8Array(await file.arrayBuffer()));
-    if (!image.ok) {
-      return NextResponse.json({ ok: false, message: image.message }, { status: image.status });
-    }
-    newKey = await imageStorage.save("topic", image.bytes, image.extension);
+  // 画像は任意。
+  //  files          : 末尾に追加する新規画像（複数可）
+  //  file           : カバー画像（先頭）の差し替え（旧形式）
+  //  removeImageIds : 削除する既存画像ID（複数可）
+  //  imageOrder     : 既存画像IDの並び（複数可。先頭がカバー画像）
+  const addFiles = filesOf(form, "files");
+  const coverFile = filesOf(form, "file")[0];
+  if (addFiles.length + (coverFile ? 1 : 0) > MAX_TOPIC_IMAGES) {
+    return NextResponse.json(
+      { ok: false, message: `画像は${MAX_TOPIC_IMAGES}枚までです。` },
+      { status: 400 },
+    );
   }
+  const saved = await saveTopicUploads(coverFile ? [coverFile, ...addFiles] : addFiles);
+  if (!saved.ok) {
+    return NextResponse.json({ ok: false, message: saved.message }, { status: saved.status });
+  }
+  const strings = (name: string) => form.getAll(name).filter((v): v is string => typeof v === "string");
+  const order = strings("imageOrder");
 
   let result: ReturnType<typeof updateTopic>;
   try {
-    result = updateTopic(id, parsed.data, newKey);
+    result = updateTopic(id, parsed.data, {
+      addKeys: coverFile ? saved.keys.slice(1) : saved.keys,
+      replaceCoverKey: coverFile ? saved.keys[0] : undefined,
+      removeIds: strings("removeImageIds"),
+      order: order.length > 0 ? order : undefined,
+    });
   } catch (e) {
-    if (newKey) await imageStorage.delete(newKey);
+    await deleteKeys(saved.keys);
     throw e;
   }
-  if (!result) {
-    if (newKey) await imageStorage.delete(newKey);
-    return notFound();
+  if (!result.ok) {
+    await deleteKeys(saved.keys);
+    if (result.reason === "NOT_FOUND") return notFound();
+    const message =
+      result.reason === "NO_IMAGE" ? "画像は1枚以上必要です。" : `画像は${MAX_TOPIC_IMAGES}枚までです。`;
+    return NextResponse.json({ ok: false, message }, { status: 400 });
   }
-  if (newKey) await imageStorage.delete(result.oldImageKey);
+  await deleteKeys(result.deleteKeys);
 
   revalidatePath("/home");
   return NextResponse.json({ ok: true, topic: getTopicById(id) });
@@ -81,8 +98,7 @@ export const DELETE = withAdminApi<Ctx>("topics.manage", async (_req, { params }
   const deleted = softDeleteTopic(id);
   if (!deleted) return notFound();
   // 論理削除でも画像ファイルは消す（行は監査用に残す）。
-  await imageStorage.delete(deleted.imageKey);
-
+  await deleteKeys(deleted.imageKeys);
   revalidatePath("/home");
   return NextResponse.json({ ok: true });
 });
