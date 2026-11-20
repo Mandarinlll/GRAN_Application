@@ -3,11 +3,11 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { withAdminApi } from "@/features/admin/server/guard";
-import { imageStorage } from "@/features/teams/server/imageStorage";
-import { processTopicImage } from "@/features/topics/server/imageProcessor";
 import { createTopic, getTopicById, listAllTopics } from "@/features/topics/server/topicAdminRepository";
 import { extractTopicFields, flattenIssues } from "@/features/topics/server/topicForm";
+import { deleteKeys, filesOf, saveTopicUploads } from "@/features/topics/server/topicUploads";
 import { createTopicSchema } from "@/features/topics/types/schema";
+import { MAX_TOPIC_IMAGES } from "@/features/topics/types/topic";
 
 export const GET = withAdminApi("topics.manage", () =>
   NextResponse.json({ ok: true, topics: listAllTopics() }),
@@ -29,27 +29,30 @@ export const POST = withAdminApi("topics.manage", async (req) => {
     );
   }
 
-  const file = form.get("file");
-  if (!(file instanceof File)) {
+  // 画像は `files`（複数）。旧形式の `file`（1 枚）も受け付ける。先頭がカバー画像になる。
+  const uploads = [...filesOf(form, "file"), ...filesOf(form, "files")];
+  if (uploads.length === 0) {
     return NextResponse.json(
       { ok: false, message: "画像ファイルを選択してください。" },
       { status: 400 },
     );
   }
-  const image = await processTopicImage(new Uint8Array(await file.arrayBuffer()));
-  if (!image.ok) {
-    return NextResponse.json({ ok: false, message: image.message }, { status: image.status });
+  if (uploads.length > MAX_TOPIC_IMAGES) {
+    return NextResponse.json(
+      { ok: false, message: `画像は${MAX_TOPIC_IMAGES}枚までです。` },
+      { status: 400 },
+    );
   }
-
-  const key = await imageStorage.save("topic", image.bytes, image.extension);
+  const saved = await saveTopicUploads(uploads);
+  if (!saved.ok) {
+    return NextResponse.json({ ok: false, message: saved.message }, { status: saved.status });
+  }
   let id: string;
   try {
-    id = createTopic(parsed.data, key);
+    id = createTopic(parsed.data, saved.keys);
   } catch (e) {
-    await imageStorage.delete(key);
+    await deleteKeys(saved.keys);
     throw e;
-  }
-
-  revalidatePath("/home");
+  }  revalidatePath("/home");
   return NextResponse.json({ ok: true, topic: getTopicById(id) }, { status: 201 });
 });

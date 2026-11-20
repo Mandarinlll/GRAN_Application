@@ -1,12 +1,12 @@
 // ホーム画面のトピックス。横スワイプ（CSS scroll-snap）で画像を切り替える。
 // JS 不要のためサーバーコンポーネントのまま使える。0件のときは何も描画しない。
 import Link from "next/link";
-import type { Topic } from "@/features/topics/types/topic";
+import { topicHasDetail, type Topic } from "@/features/topics/types/topic";
 
 type Props = { topics: Topic[] };
 
 // 内部パス（/ 始まり、// は除く）か https のみ許可（不正な遷移先を防ぐ）。
-function isSafeLink(url: string | null): url is string {
+export function isSafeLink(url: string | null): url is string {
   return !!url && (/^\/(?!\/)/.test(url) || /^https:\/\//.test(url));
 }
 
@@ -15,6 +15,14 @@ function Slide({ topic }: { topic: Topic }) {
   const img = <img src={topic.imageSrc} alt={topic.title} className="w-full h-full object-cover" draggable={false} />;
   const cls =
     "block w-full aspect-video rounded-xl overflow-hidden bg-slate-100 shadow-sm ring-1 ring-slate-200";
+  // 本文または複数画像があるときは詳細画面へ。なければ従来どおり linkUrl へ直接遷移する。
+  if (topicHasDetail(topic)) {
+    return (
+      <Link href={`/topics/${topic.id}`} className={cls}>
+        {img}
+      </Link>
+    );
+  }
   if (!isSafeLink(topic.linkUrl)) return <div className={cls}>{img}</div>;
   const external = topic.linkUrl.startsWith("https://");
   return external ? (

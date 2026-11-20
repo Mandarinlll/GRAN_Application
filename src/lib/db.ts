@@ -487,6 +487,25 @@ export function applySchema(db: DatabaseSync): DatabaseSync {
   // 論理削除用（NULL=有効）。既存DBへも冪等に追加する。
   ensureColumn("topics", "deleted_at", "TEXT");
   db.exec("CREATE INDEX IF NOT EXISTS idx_topics_publish ON topics(is_published, sort_order);");
+  // 本文（任意・プレーンテキスト）。既存DBへも冪等に追加する。
+  ensureColumn("topics", "body", "TEXT");
+  // 複数画像。先頭（sort_order 最小）がカバー画像。topics.image_key はカバー画像キーの複製として同期保持する。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS topic_images (
+      id         TEXT    PRIMARY KEY,
+      topic_id   TEXT    NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+      image_key  TEXT    NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT    NOT NULL DEFAULT (datetime('now', '+9 hours'))
+    );
+  `);
+  // 既存トピックスの画像を topic_images へ移行する（未移行のトピックスのみ）。
+  db.exec(`
+    INSERT INTO topic_images (id, topic_id, image_key, sort_order)
+    SELECT lower(hex(randomblob(16))), t.id, t.image_key, 0 FROM topics t
+     WHERE t.deleted_at IS NULL
+       AND NOT EXISTS (SELECT 1 FROM topic_images i WHERE i.topic_id = t.id);
+  `);
 
   // ------------------------------------------------------------------
   // 管理者向け大会管理（admin-tournament-management design.md "Data Models"）。
